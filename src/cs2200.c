@@ -1,0 +1,495 @@
+/**
+ * \file
+ *
+ * \brief Driver for fractional PLL CS2200
+ *
+ * Created:  12.03.2014\n
+ * Modified: 16.03.2014
+ *
+ * \version 0.1
+ * \author Martin Stejskal
+ */
+
+#include "cs2200.h"
+
+//=========================| Generic driver support |==========================
+#if CS2200_SUPPORT_GENERIC_DRIVER == 1
+/**
+ * \brief Configure table for device
+ */
+
+// Test architecture (AVR8 versus other)
+#ifndef __PGMSPACE_H_
+const gd_config_struct CS2200_config_table_flash[]
+#else
+const gd_config_struct CS2200_config_table_flash[] PROGMEM =
+#endif
+    {
+        {
+                0,              // Command ID
+                "Initialize",   // Descriptor
+                void_type,      // Input data type
+                {.data_uint32 = 0},     // Minimum input value
+                {.data_uint32 = 0},     // Maximum input value
+                void_type,              // Output data type
+                {.data_uint32 = 0},     // Minimum output value
+                {.data_uint32 = 0},     // Maximum output value
+                (GD_DATA_VALUE*)&gd_void_value, // Output value
+                cs2200_init                     /* Function, that should be
+                                                 * called
+                                                 */
+          }
+    };
+// \brief Maximum command ID (is defined by last command)
+#define CS2200_MAX_CMD_ID          0
+
+
+const gd_metadata CS2200_metadata =
+{
+        CS2200_MAX_CMD_ID, // Max CMD ID
+        "Fractional PLL CS2200",        // Description
+        (gd_config_struct*)&CS2200_config_table_flash[0],
+        0x01    // Serial number (0~255)
+};
+#endif
+
+
+//============================| Global variables |=============================
+/**
+ * \brief Register image of CS2200.
+ *
+ * It is static, so it is "global" only for this file.
+ *
+ */
+static cs2200_reg_img_t s_register_img;
+
+//==========================| High level functions |===========================
+
+/**
+ * \brief Initialize CS2200
+ *
+ * Must be called \b before any \b other \b function from this library!
+ *
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_init(void)
+{
+  // Initialize low-level driver and test status
+  if(cs2200_HAL_init() != CS2200_OK)
+  {
+    /* If not OK (do not care about error), just return FAIL (because of limit
+     * return values GD_RES_CODE)
+     */
+    return GD_FAIL;
+  }
+
+  // Clean image register. Exclude register Device ID
+  s_register_img.device_crtl_reg = 0;
+  s_register_img.device_cfg_1_reg = 0;
+  s_register_img.global_cfg_reg = 0;
+  s_register_img.Ratio.i_32bit = 0;     // Set ratio to 0
+  s_register_img.func_cfg_1_reg = 0;
+  s_register_img.func_cfg_2_reg = 0;
+
+  // Create TX buffer
+  uint8_t i_tx_buffer[2];
+
+  // Set MAP address
+  i_tx_buffer[0] = CS2200_REG_DEVICE_ID;
+
+  /* Now load Device ID register from PLL. Send memory address from which we
+   * will read.
+   * Write just one byte.
+   */
+  if(cs2200_HAL_write_data(&i_tx_buffer[0], 1) != CS2200_OK)
+  {
+    return GD_FAIL;
+  }
+
+  // OK, now read value from PLL directly to structure
+  if(cs2200_HAL_read_data(&(s_register_img.device_id_reg), 1) != CS2200_OK)
+  {
+    return GD_FAIL;
+  }
+
+  // If we know input clock, then set divider
+#if CS2200_REF_CLK_FREQ != 0
+  // Check for too sloooow clock
+#if CS2200_REF_CLK_FREQ < 8000000UL
+  /* Lower than 8 MHz -> it should not be. Anyway, set prescaller to 1 and
+   * write warning.
+   */
+#warning "CS2200_REF_CLK_FREQ is lower than 8 MHz! PLL should operate in range\
+  from 8 MHz up to 56 MHz (50 MHz if used crystal). Please consider source\
+  with higher frequency. Prescaller set to 1x."
+  return cs2200_set_in_divider(CS2200_INPUT_DIVIDER_1x);
+#elif CS2200_REF_CLK_FREQ <= 14000000UL
+  // Set divider to 1x
+  return cs2200_set_in_divider(CS2200_INPUT_DIVIDER_1x);
+#elif CS2200_REF_CLK_FREQ < 16000000UL
+  // 14 - 16 MHz is not directly supported
+#warning "CS2200_REF_CLK_FREQ is between 14 and 16 MHz. These frequencies are\
+  not directly supported by PLL! Prescaller set to 1x."
+  return cs2200_set_in_divider(CS2200_INPUT_DIVIDER_1x);
+#elif CS2200_REF_CLK_FREQ <= 28000000UL
+  return cs2200_set_in_divider(CS2200_INPUT_DIVIDER_2x);
+#elif CS2200_REF_CLK_FREQ < 32000000UL
+#warning "CS2200_REF_CLK_FREQ is between 14 and 32 MHz. These frequencies are\
+  not directly supported by PLL! Prescaller se to 2x"
+  return cs2200_set_in_divider(CS2200_INPUT_DIVIDER_2x);
+#elif CS2200_REF_CLK_FREQ <= 56000000UL
+  return cs2200_set_in_divider(CS2200_INPUT_DIVIDER_4x);
+#else
+#warning "CS2200_REF_CLK_FREQ is higher than 56 MHz. PLL should operate in\
+  range from 8 MHz up to 56 MHz (50 MHz if used crystal). Please consider\
+  source with lower frequency. Prescaller set to 4x."
+  return cs2200_set_in_divider(CS2200_INPUT_DIVIDER_4x);
+#endif
+#endif
+
+}
+
+
+
+/**
+ * \brief Set PLL to get user defined frequency
+ *
+ * If CS2200_REF_CLK_FREQ is 0, then just send data (i_freq argument) to PLL\n
+ * and activate values.
+ *
+ * @param i_freq Frequency which user want. In case, that CS2200_REF_CLK_FREQ\n
+ * is 0, then no calculation is done and data are send directly to PLL.
+ *
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_set_PLL_freq(uint32_t i_freq)
+{
+  // Buffer for transmitting. Allow prepare bytes
+  uint8_t i_tx_buffer[5];
+
+  // Temporary 32 bit value (allow split 32 bits into 8 bits)
+  cs2200_32b_to_8b_t u_tmp32;
+
+
+  /* Preprocessor test if user want just dummy set value or if want calculate
+   * frequency
+   */
+#if CS2200_REF_CLK_FREQ != 0
+  /* Need to calculate fractional value and other stuff.
+   * Calculated frequency save back to i_freq
+   * Because we multiply 2^20 and input frequency number, we need 64bit value
+   * to avoid overflow.
+   */
+  uint64_t i_tmp64;
+  i_tmp64 = (((uint64_t)i_freq) *1048576UL) /CS2200_REF_CLK_FREQ;
+
+  // Copy to 32 bit value
+  u_tmp32.i_32bit = (uint32_t)i_tmp64;
+#else   // When CLK is not defined
+  // i_freq save to union structure -> easy to split into bytes
+  u_tmp32.i_32bit = i_freq;
+#endif
+
+
+  // Set freeze bit if not set (to avoid glitches when configuration is enabled
+  if(s_register_img.Global_Cfg.Freeze == 0)
+  {
+    // Try to set freeze bit
+    if(cs2200_set_freeze_bit(1) != GD_SUCCESS)
+    {
+      // If configuration failed
+      return GD_FAIL;
+    }
+  }
+
+
+  // Write register address (1B, enable auto increment) and value (4B)
+  i_tx_buffer[0] = CS2200_REG_RATIO | (1<<CS2200_MAP_AUTO_INC_BIT);
+  i_tx_buffer[1] = u_tmp32.i_8bit[0];
+  i_tx_buffer[2] = u_tmp32.i_8bit[1];
+  i_tx_buffer[3] = u_tmp32.i_8bit[2];
+  i_tx_buffer[4] = u_tmp32.i_8bit[3];
+
+  // Send data from buffer (5B) and test return value
+  if(cs2200_HAL_write_data(&i_tx_buffer[0], 5) != CS2200_OK)
+  {
+    return GD_FAIL;
+  }
+
+  // Disable freeze
+  if(cs2200_set_freeze_bit(0) != GD_SUCCESS)
+  {
+    return GD_FAIL;
+  }
+
+  // Check if is needed to activate configuration
+  if((s_register_img.Device_Cfg_1.EnDevCfg1 == 0) ||
+     (s_register_img.Global_Cfg.EnDevCfg2 == 0))
+  {     // Not set - need to set
+    // If all OK, then just activate configuration
+    return cs2200_enable_device_cfg();
+  }
+  // Else is already set. Do not need to set again
+  return GD_SUCCESS;
+}
+
+
+
+/**
+ * \brief Set output divider
+ *
+ * This function allow easily a quickly change output frequency. Sometimes\n
+ * can be this useful when need just change frequency to 1/2x, 1/4x, 2x an so\n
+ * on.
+ *
+ * @param e_out_div_mul Options: CS2200_R_MOD__MUL_1x, CS2200_R_MOD__MUL_2x,\n
+ * CS2200_R_MOD__MUL_4x, CS2200_R_MOD__MUL_8x, CS2200_R_MOD__DIV_2x,\n
+ * CS2200_R_MOD__DIV_4x, CS2200_R_MOD__DIV_8x, CS2200_R_MOD__DIV_16x
+ *
+ * @return  GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_set_out_divider_multiplier(cs2200_r_mod_t e_out_div_mul)
+{
+  // Check input values
+  if( (e_out_div_mul != CS2200_R_MOD__MUL_1x) &&
+      (e_out_div_mul != CS2200_R_MOD__MUL_2x) &&
+      (e_out_div_mul != CS2200_R_MOD__MUL_4x) &&
+      (e_out_div_mul != CS2200_R_MOD__MUL_8x) &&
+      (e_out_div_mul != CS2200_R_MOD__DIV_2x) &&
+      (e_out_div_mul != CS2200_R_MOD__DIV_4x) &&
+      (e_out_div_mul != CS2200_R_MOD__DIV_8x) &&
+      (e_out_div_mul != CS2200_R_MOD__DIV_16x))
+  {
+    // If not at least one of them -> return error
+    return GD_INCORRECT_PARAMETER;
+  }
+  // Create TX buffer
+  uint8_t i_tx_buffer[2];
+
+  // Backup register value
+  uint8_t i_backup = s_register_img.device_cfg_1_reg;
+
+  // Fill TX buffer
+  i_tx_buffer[0] = CS2200_REG_DEVICE_CFG_1;
+
+  // Set new value
+  s_register_img.Device_Cfg_1.RModSel = e_out_div_mul;
+
+  i_tx_buffer[1] = s_register_img.device_cfg_1_reg;
+
+  // Buffer ready, send data
+  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  {
+    // If problem occurs, then use backup value and return FAIL
+    s_register_img.device_cfg_1_reg = i_backup;
+    return GD_FAIL;
+  }
+
+  // Else all OK
+  return GD_SUCCESS;
+}
+
+//===========================| Low level functions |===========================
+/**
+ * \brief Set or clear freeze bit
+ * @param i_freeze_flag 0 clear freeze bit, otherwise set freeze bit
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_set_freeze_bit(uint8_t i_freeze_flag)
+{
+  // TX buffer - MAP value, register value
+  uint8_t i_tx_buffer[2];
+
+  // Backup register value
+  uint8_t i_backup = s_register_img.global_cfg_reg;
+
+  i_tx_buffer[0] = CS2200_REG_GLOBAL_CFG;
+
+  // Test if we want freeze enable or disable
+  if(i_freeze_flag == 0)
+  {     // disable freeze
+    // Disable freeze value in image
+    s_register_img.Global_Cfg.Freeze = 0;
+  }
+  else
+  {     // Enable freeze
+    // Enable freeze in image
+    s_register_img.Global_Cfg.Freeze = 1;
+  }
+
+  // Load register value to buffer
+  i_tx_buffer[1] = s_register_img.global_cfg_reg;
+
+  // Send data (register value). Send register address and value
+  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  {
+    // If failed -> set value back
+    s_register_img.global_cfg_reg = i_backup;
+
+    return GD_FAIL;
+  }
+
+  // If everything is OK
+  return GD_SUCCESS;
+}
+
+
+
+/**
+ * \brief Ebable configuration in PLL registers
+ *
+ * For normal operation (enable control port mode) is needed activate\n
+ * configuration. This is done by this function.
+ *
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_enable_device_cfg(void)
+{
+  // TX buffer - MAP value, register value
+  uint8_t i_tx_buffer[2];
+
+  // Backup values
+  uint8_t i_backup =
+      (s_register_img.Device_Cfg_1.EnDevCfg1) | // Bit position: 0
+      (s_register_img.Global_Cfg.EnDevCfg2<<1); // Bit position: 1
+
+  // Set new values
+  s_register_img.Device_Cfg_1.EnDevCfg1 = 1;
+  s_register_img.Global_Cfg.EnDevCfg2 = 1;
+
+
+  // First set register Device cfg 1
+  i_tx_buffer[0] = CS2200_REG_DEVICE_CFG_1;
+  i_tx_buffer[1] = s_register_img.device_cfg_1_reg;
+
+  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  {
+    // If something goes wrong... restore origin values and return FAIL
+    s_register_img.Device_Cfg_1.EnDevCfg1 = i_backup & 0x01;
+    s_register_img.Global_Cfg.EnDevCfg2 = i_backup >>1;
+    return GD_FAIL;
+  }
+
+  // Then set register Global cfg
+  i_tx_buffer[0] = CS2200_REG_GLOBAL_CFG;
+  i_tx_buffer[1] = s_register_img.global_cfg_reg;
+
+  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  {
+    // If something goes wrong... restore origin values and return FAIL
+    s_register_img.Device_Cfg_1.EnDevCfg1 = i_backup & 0x01;
+    s_register_img.Global_Cfg.EnDevCfg2 = i_backup >>1;
+    return GD_FAIL;
+  }
+
+  // If there is no problem, return SUCCESS
+  return GD_SUCCESS;
+}
+
+
+
+/**
+ * \brief Disable configuration in PLL registers
+ *
+ * For normal operation (enable control port mode) is needed activate\n
+ * configuration. This function turn off this
+ *
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_disable_device_cfg(void)
+{
+  // TX buffer - MAP value, register value
+  uint8_t i_tx_buffer[2];
+
+  // Backup values
+  uint8_t i_backup =
+      (s_register_img.Device_Cfg_1.EnDevCfg1) | // Bit position: 0
+      (s_register_img.Global_Cfg.EnDevCfg2<<1); // Bit position: 1
+
+  // Set new values
+  s_register_img.Device_Cfg_1.EnDevCfg1 = 0;
+  s_register_img.Global_Cfg.EnDevCfg2 = 0;
+
+
+  // First set register Device cfg 1
+  i_tx_buffer[0] = CS2200_REG_DEVICE_CFG_1;
+  i_tx_buffer[1] = s_register_img.device_cfg_1_reg;
+
+  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  {
+    // If something goes wrong... restore origin values and return FAIL
+    s_register_img.Device_Cfg_1.EnDevCfg1 = i_backup & 0x01;
+    s_register_img.Global_Cfg.EnDevCfg2 = i_backup >>1;
+    return GD_FAIL;
+  }
+
+  // Then set register Global cfg
+  i_tx_buffer[0] = CS2200_REG_GLOBAL_CFG;
+  i_tx_buffer[1] = s_register_img.global_cfg_reg;
+
+  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  {
+    // If something goes wrong... restore origin values and return FAIL
+    s_register_img.Device_Cfg_1.EnDevCfg1 = i_backup & 0x01;
+    s_register_img.Global_Cfg.EnDevCfg2 = i_backup >>1;
+    return GD_FAIL;
+  }
+
+  // If there is no problem, return SUCCESS
+  return GD_SUCCESS;
+}
+
+
+
+/**
+ * \brief Allow easily set input divider
+ *
+ * This function is called in cs2200_init when CS2200_REF_CLK_FREQ is non\n
+ * zero value
+ * @param e_in_div Options: CS2200_INPUT_DIVIDER_1x, CS2200_INPUT_DIVIDER_2x,\n
+ * CS2200_INPUT_DIVIDER_4x
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_set_in_divider(cs2200_in_div_t e_in_div)
+{
+  // Check input value if correct or not
+  if((e_in_div != CS2200_INPUT_DIVIDER_1x) &&
+     (e_in_div != CS2200_INPUT_DIVIDER_2x) &&
+     (e_in_div != CS2200_INPUT_DIVIDER_4x))
+  {
+    /* If not equal to at least one of configuration, then input parameter
+     * is incorrect -> return incorrect parameter
+     */
+    return GD_INCORRECT_PARAMETER;
+  }
+
+  // Create TX buffer
+  uint8_t i_tx_buffer[2];
+
+  // Backup register value
+  uint8_t i_backup = s_register_img.func_cfg_1_reg;
+
+  // Fill TX buffer
+  i_tx_buffer[0] = CS2200_REG_FUNC_CFG_1;
+
+  // OK, input value is correct, so let's set new value
+  s_register_img.Func_Cfg_1.RefClkDiv = e_in_div;
+
+  i_tx_buffer[1] = s_register_img.func_cfg_1_reg;
+
+  // Buffer ready, so send data
+  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  {
+    // If problem occurs, then use backup value and return FAIL
+    s_register_img.func_cfg_1_reg = i_backup;
+    return GD_FAIL;
+  }
+
+  // Else all OK
+  return GD_SUCCESS;
+}
+
+
+
+
+

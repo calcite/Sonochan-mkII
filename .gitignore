@@ -8,3 +8,5 @@
 *.d
 *.elf
 widget-control
+widget-control.bin
+src/.directory
