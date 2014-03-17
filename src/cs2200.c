@@ -4,14 +4,13 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 16.03.2014
+ * Modified: 17.03.2014
  *
- * \version 0.1
+ * \version 0.2
  * \author Martin Stejskal
  */
 
 #include "cs2200.h"
-
 //=========================| Generic driver support |==========================
 #if CS2200_SUPPORT_GENERIC_DRIVER == 1
 /**
@@ -54,6 +53,13 @@ const gd_metadata CS2200_metadata =
 #endif
 
 
+//=============================| FreeRTOS stuff |==============================
+// If RTOS support is enabled, create this
+#if CS2200_SUPPORT_RTOS != 0
+portBASE_TYPE xStatus;
+xSemaphoreHandle mutexI2C;
+#endif
+
 //============================| Global variables |=============================
 /**
  * \brief Register image of CS2200.
@@ -62,6 +68,16 @@ const gd_metadata CS2200_metadata =
  *
  */
 static cs2200_reg_img_t s_register_img;
+
+/**
+ * \brief Virtual register image
+ *
+ * This values PLL directly do not have in memory. However, there are in more\n
+ * human readable format. Also some values can use generic driver (need to\n
+ * point to result variables and so on).\n
+ * t is static, so it is "global" only for this file.
+ */
+static cs2200_virtual_reg_img_t s_virtual_reg_img;
 
 //==========================| High level functions |===========================
 
@@ -74,14 +90,25 @@ static cs2200_reg_img_t s_register_img;
  */
 GD_RES_CODE cs2200_init(void)
 {
+  // If RTOS support enable and create flag is set then create mutex
+#if (CS2200_SUPPORT_RTOS != 0) && (CS2200_RTOS_CREATE_MUTEX != 0)
+  mutexI2C = xSemaphoreCreateMutex();
+#endif
+
+
+  // Lock TWI module if RTOS used
+  CS2200_LOCK_TWI_MODULE_IF_RTOS
   // Initialize low-level driver and test status
   if(cs2200_HAL_init() != CS2200_OK)
   {
     /* If not OK (do not care about error), just return FAIL (because of limit
-     * return values GD_RES_CODE)
+     * return values GD_RES_CODE). Also unlock TWI module
      */
+    CS2200_UNLOCK_TWI_MODULE_IF_RTOS
     return GD_FAIL;
   }
+  // Unlock TWI module
+  CS2200_UNLOCK_TWI_MODULE_IF_RTOS
 
   // Clean image register. Exclude register Device ID
   s_register_img.device_crtl_reg = 0;
@@ -90,6 +117,11 @@ GD_RES_CODE cs2200_init(void)
   s_register_img.Ratio.i_32bit = 0;     // Set ratio to 0
   s_register_img.func_cfg_1_reg = 0;
   s_register_img.func_cfg_2_reg = 0;
+
+  s_virtual_reg_img.i_real_freq.i_32bit = 0;    // Frequency not set yet
+
+  // Create status variable
+  GD_RES_CODE e_status;
 
   // Create TX buffer
   uint8_t i_tx_buffer[2];
@@ -101,15 +133,17 @@ GD_RES_CODE cs2200_init(void)
    * will read.
    * Write just one byte.
    */
-  if(cs2200_HAL_write_data(&i_tx_buffer[0], 1) != CS2200_OK)
+  e_status = cs2200_write_data(&i_tx_buffer[0], 1);
+  if(e_status != GD_SUCCESS)
   {
-    return GD_FAIL;
+    return e_status;
   }
 
   // OK, now read value from PLL directly to structure
-  if(cs2200_HAL_read_data(&(s_register_img.device_id_reg), 1) != CS2200_OK)
+  e_status = cs2200_read_data(&(s_register_img.device_id_reg), 1);
+  if(e_status != GD_SUCCESS)
   {
-    return GD_FAIL;
+    return e_status;
   }
 
   // If we know input clock, then set divider
@@ -164,27 +198,25 @@ GD_RES_CODE cs2200_init(void)
  */
 GD_RES_CODE cs2200_set_PLL_freq(uint32_t i_freq)
 {
-  // Buffer for transmitting. Allow prepare bytes
-  uint8_t i_tx_buffer[5];
+  // Temporary 32 bit value
+  uint32_t i_ratio;
 
-  // Temporary 32 bit value (allow split 32 bits into 8 bits)
-  cs2200_32b_to_8b_t u_tmp32;
+  // Create status variable
+  GD_RES_CODE e_status;
 
 
   /* Preprocessor test if user want just dummy set value or if want calculate
    * frequency
    */
 #if CS2200_REF_CLK_FREQ != 0
-  /* Need to calculate fractional value and other stuff.
-   * Calculated frequency save back to i_freq
-   * Because we multiply 2^20 and input frequency number, we need 64bit value
-   * to avoid overflow.
+  /* Calculate ratio form frequency. Result will be saved to u_tmp as 32 bit
+   * value
    */
-  uint64_t i_tmp64;
-  i_tmp64 = (((uint64_t)i_freq) *1048576UL) /CS2200_REF_CLK_FREQ;
-
-  // Copy to 32 bit value
-  u_tmp32.i_32bit = (uint32_t)i_tmp64;
+  e_status = cs2200_calc_ratio(i_freq, &i_ratio);
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
 #else   // When CLK is not defined
   // i_freq save to union structure -> easy to split into bytes
   u_tmp32.i_32bit = i_freq;
@@ -195,32 +227,28 @@ GD_RES_CODE cs2200_set_PLL_freq(uint32_t i_freq)
   if(s_register_img.Global_Cfg.Freeze == 0)
   {
     // Try to set freeze bit
-    if(cs2200_set_freeze_bit(1) != GD_SUCCESS)
+    e_status = cs2200_set_freeze_bit(1);
+    if(e_status != GD_SUCCESS)
     {
       // If configuration failed
-      return GD_FAIL;
+      return e_status;
     }
   }
 
-
-  // Write register address (1B, enable auto increment) and value (4B)
-  i_tx_buffer[0] = CS2200_REG_RATIO | (1<<CS2200_MAP_AUTO_INC_BIT);
-  i_tx_buffer[1] = u_tmp32.i_8bit[0];
-  i_tx_buffer[2] = u_tmp32.i_8bit[1];
-  i_tx_buffer[3] = u_tmp32.i_8bit[2];
-  i_tx_buffer[4] = u_tmp32.i_8bit[3];
-
-  // Send data from buffer (5B) and test return value
-  if(cs2200_HAL_write_data(&i_tx_buffer[0], 5) != CS2200_OK)
+  // Set ratio
+  e_status = cs2200_set_ratio(i_ratio);
+  if(e_status != GD_SUCCESS)
   {
-    return GD_FAIL;
+    return e_status;
   }
 
   // Disable freeze
-  if(cs2200_set_freeze_bit(0) != GD_SUCCESS)
+  e_status = cs2200_set_freeze_bit(0);
+  if(e_status != GD_SUCCESS)
   {
-    return GD_FAIL;
+    return e_status;
   }
+
 
   // Check if is needed to activate configuration
   if((s_register_img.Device_Cfg_1.EnDevCfg1 == 0) ||
@@ -230,6 +258,19 @@ GD_RES_CODE cs2200_set_PLL_freq(uint32_t i_freq)
     return cs2200_enable_device_cfg();
   }
   // Else is already set. Do not need to set again
+  return GD_SUCCESS;
+}
+
+
+/**
+ * \brief Load set PLL frequency
+ * @param p_i_freq Pointer to memory where frequency will be written
+ * @return GD_SUCCESS if all right
+ */
+inline GD_RES_CODE cs2200_get_PLL_freq(uint32_t *p_i_freq)
+{
+  *p_i_freq = s_virtual_reg_img.i_real_freq.i_32bit;
+
   return GD_SUCCESS;
 }
 
@@ -266,6 +307,9 @@ GD_RES_CODE cs2200_set_out_divider_multiplier(cs2200_r_mod_t e_out_div_mul)
   // Create TX buffer
   uint8_t i_tx_buffer[2];
 
+  // Create status variable
+  GD_RES_CODE e_status;
+
   // Backup register value
   uint8_t i_backup = s_register_img.device_cfg_1_reg;
 
@@ -278,30 +322,113 @@ GD_RES_CODE cs2200_set_out_divider_multiplier(cs2200_r_mod_t e_out_div_mul)
   i_tx_buffer[1] = s_register_img.device_cfg_1_reg;
 
   // Buffer ready, send data
-  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+  if(e_status != GD_SUCCESS)
   {
     // If problem occurs, then use backup value and return FAIL
     s_register_img.device_cfg_1_reg = i_backup;
-    return GD_FAIL;
+    return e_status;
   }
 
   // Else all OK
   return GD_SUCCESS;
 }
 
-//===========================| Low level functions |===========================
+
+
+/**
+ * \brief Load value for output divider/multiplier
+ * @param p_e_out_div_mul Pointer to memory where value will be written
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_get_out_divider_multiplier(cs2200_r_mod_t *p_e_out_div_mul)
+{
+  *p_e_out_div_mul = s_register_img.Device_Cfg_1.RModSel;
+  return GD_SUCCESS;
+}
+
+//===========================| Mid level functions |===========================
+
+/**
+ * \brief Set ratio in PLL
+ *
+ * This function set ratio and if possible then calculate actual frequency.
+ *
+ * @param i_ratio Ratio value
+ * @return GD_SUCCESS if all right
+ */
+inline GD_RES_CODE cs2200_set_ratio(uint32_t i_ratio)
+{
+  // Buffer for transmitting. Allow prepare bytes
+  uint8_t i_tx_buffer[5];
+
+  // Create status variable
+  GD_RES_CODE e_status;
+
+  // Temporary 32 bit value (allow split 32 bits into 8 bits)
+  cs2200_32b_to_8b_t u_tmp32;
+  u_tmp32.i_32bit = i_ratio;
+
+  // Write register address (1B, enable auto increment) and value (4B)
+  i_tx_buffer[0] = CS2200_REG_RATIO | (1<<CS2200_MAP_AUTO_INC_BIT);
+  i_tx_buffer[1] = u_tmp32.i_8bit[0];
+  i_tx_buffer[2] = u_tmp32.i_8bit[1];
+  i_tx_buffer[3] = u_tmp32.i_8bit[2];
+  i_tx_buffer[4] = u_tmp32.i_8bit[3];
+
+  // Write data to PLL
+  e_status = cs2200_write_data(&i_tx_buffer[0], 5);
+  if(e_status != GD_SUCCESS)
+  {
+    // Operation failed
+    return e_status;
+  }
+
+  // Ratio written, update in image
+  s_register_img.Ratio.i_32bit = i_ratio;
+
+  // Check if know clock. If yes, then calculate frequency
+#if CS2200_REF_CLK_FREQ != 0
+  // Else OK, so recalculate frequency (and update frequency value)
+  return cs2200_calc_frequency(
+      i_ratio,
+      &s_virtual_reg_img.i_real_freq.i_32bit);
+#else
+  return GD_SUCCESS
+#endif
+}
+
+/**
+ * \brief Load ratio value
+ * @param p_i_ratio Pointer define address where value will be written
+ * @return GD_SUCCESS if all right
+ */
+inline GD_RES_CODE cs2200_get_ratio(uint32_t *p_i_ratio)
+{
+  *p_i_ratio = s_register_img.Ratio.i_32bit;
+
+  return GD_SUCCESS;
+}
+
+
+
+
+
 /**
  * \brief Set or clear freeze bit
  * @param i_freeze_flag 0 clear freeze bit, otherwise set freeze bit
  * @return GD_SUCCESS if all right
  */
-GD_RES_CODE cs2200_set_freeze_bit(uint8_t i_freeze_flag)
+inline GD_RES_CODE cs2200_set_freeze_bit(uint8_t i_freeze_flag)
 {
   // TX buffer - MAP value, register value
   uint8_t i_tx_buffer[2];
 
   // Backup register value
   uint8_t i_backup = s_register_img.global_cfg_reg;
+
+  // Create status variable
+  GD_RES_CODE e_status;
 
   i_tx_buffer[0] = CS2200_REG_GLOBAL_CFG;
 
@@ -321,12 +448,13 @@ GD_RES_CODE cs2200_set_freeze_bit(uint8_t i_freeze_flag)
   i_tx_buffer[1] = s_register_img.global_cfg_reg;
 
   // Send data (register value). Send register address and value
-  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+  if(e_status != GD_SUCCESS)
   {
     // If failed -> set value back
     s_register_img.global_cfg_reg = i_backup;
 
-    return GD_FAIL;
+    return e_status;
   }
 
   // If everything is OK
@@ -336,17 +464,33 @@ GD_RES_CODE cs2200_set_freeze_bit(uint8_t i_freeze_flag)
 
 
 /**
- * \brief Ebable configuration in PLL registers
+ * \brief Load freeze bit
+ * @param p_i_freeze_flag Pointer to memory where freeze bit will be written
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_get_freeze_bit(uint8_t *p_i_freeze_flag)
+{
+  *p_i_freeze_flag = s_register_img.Global_Cfg.Freeze;
+  return GD_SUCCESS;
+}
+
+
+
+/**
+ * \brief Enable configuration in PLL registers
  *
  * For normal operation (enable control port mode) is needed activate\n
  * configuration. This is done by this function.
  *
  * @return GD_SUCCESS if all right
  */
-GD_RES_CODE cs2200_enable_device_cfg(void)
+inline GD_RES_CODE cs2200_enable_device_cfg(void)
 {
   // TX buffer - MAP value, register value
   uint8_t i_tx_buffer[2];
+
+  // Create status variable
+  GD_RES_CODE e_status;
 
   // Backup values
   uint8_t i_backup =
@@ -362,24 +506,26 @@ GD_RES_CODE cs2200_enable_device_cfg(void)
   i_tx_buffer[0] = CS2200_REG_DEVICE_CFG_1;
   i_tx_buffer[1] = s_register_img.device_cfg_1_reg;
 
-  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+  if(e_status != GD_SUCCESS)
   {
-    // If something goes wrong... restore origin values and return FAIL
+    // If something goes wrong... restore origin values and return FAIL code
     s_register_img.Device_Cfg_1.EnDevCfg1 = i_backup & 0x01;
     s_register_img.Global_Cfg.EnDevCfg2 = i_backup >>1;
-    return GD_FAIL;
+    return e_status;
   }
 
   // Then set register Global cfg
   i_tx_buffer[0] = CS2200_REG_GLOBAL_CFG;
   i_tx_buffer[1] = s_register_img.global_cfg_reg;
 
-  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+  if(e_status != GD_SUCCESS)
   {
     // If something goes wrong... restore origin values and return FAIL
     s_register_img.Device_Cfg_1.EnDevCfg1 = i_backup & 0x01;
     s_register_img.Global_Cfg.EnDevCfg2 = i_backup >>1;
-    return GD_FAIL;
+    return e_status;
   }
 
   // If there is no problem, return SUCCESS
@@ -396,10 +542,13 @@ GD_RES_CODE cs2200_enable_device_cfg(void)
  *
  * @return GD_SUCCESS if all right
  */
-GD_RES_CODE cs2200_disable_device_cfg(void)
+inline GD_RES_CODE cs2200_disable_device_cfg(void)
 {
   // TX buffer - MAP value, register value
   uint8_t i_tx_buffer[2];
+
+  // Create status variable
+  GD_RES_CODE e_status;
 
   // Backup values
   uint8_t i_backup =
@@ -415,24 +564,26 @@ GD_RES_CODE cs2200_disable_device_cfg(void)
   i_tx_buffer[0] = CS2200_REG_DEVICE_CFG_1;
   i_tx_buffer[1] = s_register_img.device_cfg_1_reg;
 
-  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+  if(e_status != GD_SUCCESS)
   {
     // If something goes wrong... restore origin values and return FAIL
     s_register_img.Device_Cfg_1.EnDevCfg1 = i_backup & 0x01;
     s_register_img.Global_Cfg.EnDevCfg2 = i_backup >>1;
-    return GD_FAIL;
+    return e_status;
   }
 
   // Then set register Global cfg
   i_tx_buffer[0] = CS2200_REG_GLOBAL_CFG;
   i_tx_buffer[1] = s_register_img.global_cfg_reg;
 
-  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+  if(e_status != GD_SUCCESS)
   {
     // If something goes wrong... restore origin values and return FAIL
     s_register_img.Device_Cfg_1.EnDevCfg1 = i_backup & 0x01;
     s_register_img.Global_Cfg.EnDevCfg2 = i_backup >>1;
-    return GD_FAIL;
+    return e_status;
   }
 
   // If there is no problem, return SUCCESS
@@ -450,7 +601,7 @@ GD_RES_CODE cs2200_disable_device_cfg(void)
  * CS2200_INPUT_DIVIDER_4x
  * @return GD_SUCCESS if all right
  */
-GD_RES_CODE cs2200_set_in_divider(cs2200_in_div_t e_in_div)
+inline GD_RES_CODE cs2200_set_in_divider(cs2200_in_div_t e_in_div)
 {
   // Check input value if correct or not
   if((e_in_div != CS2200_INPUT_DIVIDER_1x) &&
@@ -466,6 +617,9 @@ GD_RES_CODE cs2200_set_in_divider(cs2200_in_div_t e_in_div)
   // Create TX buffer
   uint8_t i_tx_buffer[2];
 
+  // Create status variable
+  GD_RES_CODE e_status;
+
   // Backup register value
   uint8_t i_backup = s_register_img.func_cfg_1_reg;
 
@@ -478,11 +632,12 @@ GD_RES_CODE cs2200_set_in_divider(cs2200_in_div_t e_in_div)
   i_tx_buffer[1] = s_register_img.func_cfg_1_reg;
 
   // Buffer ready, so send data
-  if(cs2200_HAL_write_data(&i_tx_buffer[0], 2) != CS2200_OK)
+  e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+  if(e_status != GD_SUCCESS)
   {
     // If problem occurs, then use backup value and return FAIL
     s_register_img.func_cfg_1_reg = i_backup;
-    return GD_FAIL;
+    return e_status;
   }
 
   // Else all OK
@@ -491,5 +646,138 @@ GD_RES_CODE cs2200_set_in_divider(cs2200_in_div_t e_in_div)
 
 
 
+/**
+ * \brief Load in divider value
+ * @param p_e_in_div Pointer to memory where divider value will be written
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_get_in_divider(cs2200_in_div_t *p_e_in_div)
+{
+  *p_e_in_div = s_register_img.Func_Cfg_1.RefClkDiv;
+  return GD_SUCCESS;
+}
+//===========================| Low level functions |===========================
+/**
+ * \brief Calculate actual frequency from ratio
+ * @param i_ratio Ratio value
+ * @param p_i_frequency Pointer to memory where frequency will be written
+ * @return GD_SUCCESS if clock source is known
+ */
+inline GD_RES_CODE cs2200_calc_frequency(
+    uint32_t i_ratio,
+    uint32_t *p_i_frequency)
+{
+#if CS2200_REF_CLK_FREQ == 0
+  // If 0 -> do not know clock source -> return fail
+  return GD_FAIL;
+#else
+  // We know actual clock source frequency -> calculate
+  /* Need to multiply two 32 bit values -> 64 bit temporary variable to aviod
+   * overflow
+   */
+  uint64_t i_tmp64;
+  i_tmp64 = ((uint64_t)i_ratio*CS2200_REF_CLK_FREQ)/ 1048576UL;
 
+  // Copy to 32 bit value
+  *p_i_frequency = (uint32_t)i_tmp64;
+
+  return GD_SUCCESS;
+#endif
+}
+
+/**
+ * \brief Calculate actual ratio from frequency
+ * @param i_frequency Frequency
+ * @param p_i_ratio Pointer to memory where ratio will be written
+ * @return GD_SUCCESS if clock source is known
+ */
+inline GD_RES_CODE cs2200_calc_ratio(uint32_t i_frequency, uint32_t *p_i_ratio)
+{
+#if CS2200_REF_CLK_FREQ == 0
+  // If 0 -> do not know clock source -> return fail
+  return GD_FAIL;
+#else
+  // We know actual clock source frequency -> calculate
+  /* Need to calculate fractional value and other stuff.
+   * Calculated frequency save back to i_freq
+   * Because we multiply 2^20 and input frequency number, we need 64bit value
+   * to avoid overflow.
+   */
+  uint64_t i_tmp64;
+  i_tmp64 = (((uint64_t)i_frequency) *1048576UL) /CS2200_REF_CLK_FREQ;
+
+  // Copy to 32 bit value
+  *p_i_ratio = (uint32_t)i_tmp64;
+
+  return GD_SUCCESS;
+#endif
+}
+
+
+
+/**
+ * \brief Write data on TWI (I2C) bus
+ *
+ * MCU is in master mode. Send CS2200 address and then data (argument). This\n
+ * function also check if TWI module is available (when RTOS support is\n
+ * enabled).
+ *
+ * @param p_data Pointer to data array which will be send to PLL thru TWI (I2C)
+ *
+ * @param i_number_of_bytes Number of data bytes, which will be send
+ *
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE cs2200_write_data(
+    uint8_t *p_data,
+    uint8_t i_number_of_bytes)
+{
+  // If RTOS support enable, then "lock" TWI module
+  CS2200_LOCK_TWI_MODULE_IF_RTOS
+
+  // Write data to PLL thru HAL. Also check result status
+  if(cs2200_HAL_write_data(p_data, i_number_of_bytes) != CS2200_OK)
+  {
+    // If not OK -> unlock device (if needed) and return FAIL
+    CS2200_UNLOCK_TWI_MODULE_IF_RTOS
+    return GD_FAIL;
+  }
+
+  // "Unlock" device if needed
+  CS2200_UNLOCK_TWI_MODULE_IF_RTOS
+  return GD_SUCCESS;
+}
+
+/**
+ * \brief Read data on TWI (I2C) bus
+ *
+ * MCU is in master mode. Send CS2200 address and then receive data. This\n
+ * function also check if TWI module is available (when RTOS support is\n
+ * enabled).
+ *
+ * @param p_data Data are saved thru this pointer
+ *
+ * @param i_number_of_bytes Number of data bytes, which will be received
+ *
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE cs2200_read_data(
+    uint8_t *p_data,
+    uint8_t i_number_of_bytes)
+{
+  // If RTOS support enable, then "lock" TWI module
+  CS2200_LOCK_TWI_MODULE_IF_RTOS
+
+  // Read data from PLL thru HAL. Also check result status
+  if(cs2200_HAL_read_data(p_data, i_number_of_bytes) != CS2200_OK)
+  {
+    // If not OK -> unlock device (if needed) and return FAIL
+    CS2200_UNLOCK_TWI_MODULE_IF_RTOS
+    return GD_FAIL;
+  }
+
+  // "Unlock" device if needed
+  CS2200_UNLOCK_TWI_MODULE_IF_RTOS
+  return GD_SUCCESS;
+}
 

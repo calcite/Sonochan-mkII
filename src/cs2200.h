@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 16.03.2014
+ * Modified: 17.03.2014
  *
- * \version 0.1
+ * \version 0.2
  * \author Martin Stejskal
  */
 
@@ -63,6 +63,25 @@
  *
  * @{
  */
+/**
+ * \brief Allow enable FreeRTOS features
+ *
+ * Options: 0 (disabled) or 1 (enabled). When enabled, then FreeRTOS features\n
+ * are enabled.
+ */
+#define CS2200_SUPPORT_RTOS             1
+
+/**
+ * \brief Allow create mutex mutexI2C when cs2200_init is called.
+ *
+ * Mutexes is needed when in RTOS two functions share same hardware. This\n
+ * option allow create mutex mutexI2C, so any other functions just can use\n
+ * xSemaphoreTake and xSemaphoreGive functions.\n
+ * Options: 0 (disabled) or 1 (enabled).\n
+ *
+ * \note This option is valid only if RTOS support is enabled.
+ */
+#define CS2200_RTOS_CREATE_MUTEX        1
 
 /// @}
 
@@ -76,9 +95,9 @@
  * input divider.
  */
 typedef enum{
-  CS2200_INPUT_DIVIDER_1x = 2,
-  CS2200_INPUT_DIVIDER_2x = 1,
-  CS2200_INPUT_DIVIDER_4x = 0
+  CS2200_INPUT_DIVIDER_1x = 2,//!< CS2200_INPUT_DIVIDER_1x
+  CS2200_INPUT_DIVIDER_2x = 1,//!< CS2200_INPUT_DIVIDER_2x
+  CS2200_INPUT_DIVIDER_4x = 0 //!< CS2200_INPUT_DIVIDER_4x
 } cs2200_in_div_t;
 
 /**
@@ -211,13 +230,23 @@ typedef struct{
   };
 } cs2200_reg_img_t;
 
+/**
+ * \brief Virtual settings variables
+ *
+ * Because some variables are not directly represented in registers, so there\n
+ * is it virtual structure which represent some values more human readable.
+ */
+typedef struct{
+  // Frequency as integer value
+  cs2200_32b_to_8b_t i_real_freq;
+} cs2200_virtual_reg_img_t;
 
 //===========================| Additional includes |===========================
 #if CS2200_SUPPORT_GENERIC_DRIVER == 1
 // If used generic driver, get actual structures
 #include "ALPS_generic_driver.h"
 // Also say compiler, that there exist settings on flash
-extern const gd_config_struct CS2200_config_table_flash[] PROGMEM;
+extern const gd_config_struct CS2200_config_table_flash[];
 // And metadata
 extern const gd_metadata CS2200_metadata;
 
@@ -244,6 +273,19 @@ typedef enum{
 
 #endif
 
+
+
+#if CS2200_SUPPORT_RTOS != 0
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
+
+extern xSemaphoreHandle mutexI2C;
+
+
+
+#endif
 
 //===============================| Definitions |===============================
 /**
@@ -348,19 +390,64 @@ typedef enum{
 
 //=================================| Macros |==================================
 
+/**
+ * \brief Define lock function when support for RTOS is enabled
+ *
+ * If CS2200_SUPPORT_RTOS is enabled, then there is defined function, that\n
+ * "lock" TWI device, so any other device can not use it.\n
+ * If CS2200_SUPPORT_RTOS is disabled, there is defined just void macro.
+ */
+#if CS2200_SUPPORT_RTOS != 0
+  #define CS2200_LOCK_TWI_MODULE_IF_RTOS    \
+    xSemaphoreTake( mutexI2C, portMAX_DELAY );
+#else
+  #define CS2200_LOCK_TWI_MODULE_IF_RTOS
+#endif
+
+
+#if CS2200_SUPPORT_RTOS != 0
+  #define CS2200_UNLOCK_TWI_MODULE_IF_RTOS        \
+    xSemaphoreGive( mutexI2C );
+#else
+  #define CS2200_UNLOCK_TWI_MODULE_IF_RTOS
+#endif
 
 //==========================| High level functions |===========================
 GD_RES_CODE cs2200_init(void);
 
 GD_RES_CODE cs2200_set_PLL_freq(uint32_t i_freq);
 
+GD_RES_CODE cs2200_get_PLL_freq(uint32_t *p_i_freq);
+
 GD_RES_CODE cs2200_set_out_divider_multiplier(cs2200_r_mod_t e_out_div_mul);
-//===========================| Low level functions |===========================
+
+GD_RES_CODE cs2200_get_out_divider_multiplier(cs2200_r_mod_t *p_e_out_div_mul);
+//===========================| Mid level functions |===========================
+GD_RES_CODE cs2200_set_ratio(uint32_t i_ratio);
+
+GD_RES_CODE cs2200_get_ratio(uint32_t *p_i_ratio);
+
 GD_RES_CODE cs2200_set_freeze_bit(uint8_t i_freeze_flag);
+
+GD_RES_CODE cs2200_get_freeze_bit(uint8_t *p_i_freeze_flag);
 
 GD_RES_CODE cs2200_enable_device_cfg(void);
 
 GD_RES_CODE cs2200_disable_device_cfg(void);
 
 GD_RES_CODE cs2200_set_in_divider(cs2200_in_div_t e_in_div);
+
+GD_RES_CODE cs2200_get_in_divider(cs2200_in_div_t *p_e_in_div);
+//===========================| Low level functions |===========================
+GD_RES_CODE cs2200_calc_frequency(uint32_t i_ratio, uint32_t *p_i_frequency);
+
+GD_RES_CODE cs2200_calc_ratio(uint32_t i_frequency, uint32_t *p_i_ratio);
+
+GD_RES_CODE cs2200_write_data(
+    uint8_t *p_data,
+    uint8_t i_number_of_bytes);
+
+GD_RES_CODE cs2200_read_data(
+    uint8_t *p_data,
+    uint8_t i_number_of_bytes);
 #endif

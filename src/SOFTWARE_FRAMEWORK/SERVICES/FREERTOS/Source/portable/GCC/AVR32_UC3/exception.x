@@ -98,7 +98,9 @@ _handle_NMI:
         
         //*********TF3LJ* rjmp $
         // replaced with the below
-        lda.w   pc, eic_nmi_handler
+        // lda.w   pc, eic_nmi_handler
+        //[Martin] Commented lda.w .... and set back rjmp $
+        rjmp $
         
         .org  0x014
         // Instruction Address.

@@ -202,6 +202,8 @@ int ssc_i2s_init(volatile avr32_ssc_t *ssc,
        */
       ssc->tcmr = AVR32_SSC_TCMR_CKS_TK_PIN	                << AVR32_SSC_TCMR_CKS_OFFSET    |
                   AVR32_SSC_TCMR_CKO_INPUT_ONLY				<< AVR32_SSC_TCMR_CKO_OFFSET    |
+                  //AVR32_SSC_TCMR_CKS_DIV_CLOCK                     << AVR32_SSC_TCMR_CKS_OFFSET    |
+                  //AVR32_SSC_TCMR_CKO_CONTINOUS_CLOCK_OUTPUT << AVR32_SSC_TCMR_CKO_OFFSET |
                   0                                         << AVR32_SSC_TCMR_CKI_OFFSET    |
                   AVR32_SSC_TCMR_CKG_NONE                   << AVR32_SSC_TCMR_CKG_OFFSET    |
                   AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF   << AVR32_SSC_TCMR_START_OFFSET  |

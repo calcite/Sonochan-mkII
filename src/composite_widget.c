@@ -132,7 +132,7 @@
  * HID (generic HID interface, compatible with Jan Axelson's generichid.exe test programs
  * DG8SAQ (libusb API compatible interface for implementing DG8SAQ EP0 type of interface)
  * Audio (Start with Audio Class v1.  Will progress to Audio Class V2.  Tweaked for
- * 		compatibility when running at HIGH speed USB.)
+ *     compatibility when running at HIGH speed USB.)
  * For SDR-Widget and SDR-Widget-lite, custom boards based on the AT32UC3A3256
  *
  * See http://code.google.com/p/sdr-widget/
@@ -176,7 +176,11 @@
 #include "widget.h"
 #include "image.h"
 #include "composite_widget.h"
-#include "Mobo_config.h"
+
+///\TODO REMOVE
+#include "cs2200.h"
+#include <stdio.h>
+#include <string.h>
 /*
  *  A few global variables.
  */
@@ -203,84 +207,75 @@ pm_freq_param_t   pm_freq_param=
  */
 int main(void)
 {
-int i;
+  // Make sure Watchdog timer is disabled initially (otherwise it interferes upon restart)
+  wdt_disable();
 
-	// Make sure Watchdog timer is disabled initially (otherwise it interferes upon restart)
-	wdt_disable();
+  // Initialize Real Time Counter
+  rtc_init(&AVR32_RTC, RTC_OSC_RC, 0);  // RC clock at 115kHz
+  rtc_disable_interrupt(&AVR32_RTC);
+  rtc_set_top_value(&AVR32_RTC, RTC_COUNTER_MAX);  // Counter reset once per 10 seconds
+  rtc_enable(&AVR32_RTC);
 
-	// The reason this is put as early as possible in the code
-	// is that AK5394A has to be put in reset when the clocks are not
-	// fully set up.  Otherwise the chip will overheat
-	for (i=0; i< 1000; i++) gpio_clr_gpio_pin(AK5394_RSTN);	// put AK5394A in reset, and use this to delay the start up
-															// time for various voltages (eg to the XO) to stablize
+  // Set CPU and PBA clock
+  if( PM_FREQ_STATUS_FAIL==pm_configure_clocks(&pm_freq_param) )
+  {
+    return 42;
+  }
 
-	gpio_set_gpio_pin(AVR32_PIN_PX51);	// Enables power to XO and DAC in USBI2C AB-1 board
-	gpio_clr_gpio_pin(AVR32_PIN_PX52);
+  // Initialize features management
+  features_init();
 
-
-
-	// Initialize Real Time Counter
-	rtc_init(&AVR32_RTC, RTC_OSC_RC, 0);	// RC clock at 115kHz
-	rtc_disable_interrupt(&AVR32_RTC);
-	rtc_set_top_value(&AVR32_RTC, RTC_COUNTER_MAX);	// Counter reset once per 10 seconds
-	rtc_enable(&AVR32_RTC);
-
-	// Set CPU and PBA clock
-	if( PM_FREQ_STATUS_FAIL==pm_configure_clocks(&pm_freq_param) )
-		return 42;
-
-	// Initialize features management
-	features_init();
-
-	// Initialize widget management
-	widget_init();
+  // Initialize widget management - void function now
+  widget_init();
 
 
-//	if ( FEATURE_BOARD_WIDGET ) {
-//		gpio_clr_gpio_pin(AK5394_RSTN);	// put AK5394A in reset
-//	}
+  //gpio_enable_pin_pull_up(GPIO_PTT_INPUT);
 
-	if (FEATURE_ADC_AK5394A){
-		int counter;
-		// Set up AK5394A
-		gpio_clr_gpio_pin(AK5394_RSTN);		// put AK5394A in reset
-		gpio_clr_gpio_pin(AK5394_DFS0);		// L H -> 96khz   L L  -> 48khz
-		gpio_clr_gpio_pin(AK5394_DFS1);
-		gpio_set_gpio_pin(AK5394_HPFE);		// enable HP filter
-		gpio_clr_gpio_pin(AK5394_ZCAL);		// use VCOML and VCOMR to cal
-		gpio_set_gpio_pin(AK5394_SMODE1);	// SMODE1 = H for Master i2s
-		gpio_set_gpio_pin(AK5394_SMODE2);	// SMODE2 = H for Master/Slave i2s
+  // Initialize interrupt controller
+  INTC_init_interrupts();
 
-		gpio_set_gpio_pin(AK5394_RSTN);		// start AK5394A
-		counter = 0;
-		while (gpio_get_pin_value(AK5394_CAL) && (counter < COUNTER_TIME_OUT)) counter++;
-		// wait till CAL goes low or time out
-		// if time out then change feature adc to none
-		if (counter >= COUNTER_TIME_OUT) features[feature_adc_index] = feature_adc_none;
-	}
+  // Initialize usart comm
+  init_dbg_rs232(pm_freq_param.pba_f);
 
-	gpio_enable_pin_pull_up(GPIO_PTT_INPUT);
+  // [Martin] Just let know, that UART works
+  print(DBG_USART, "\n\n--------\n\n[Sonochan mkII] based on SDR widget\n");
 
-	// Initialize interrupt controller
-	INTC_init_interrupts();
+  // Initialize USB clock (on PLL1)
+  pm_configure_usb_clock();
 
-	// Initialize usart comm
-	init_dbg_rs232(pm_freq_param.pba_f);
+  char tmp[50];
+  // Init CS2200 TWI
+  sprintf(&tmp[0],"TWI init: %d\n", cs2200_init());
+  print(DBG_USART, &tmp[0]);
 
-	// Initialize USB clock (on PLL1)
-	pm_configure_usb_clock();
 
-	// boot the image
-	image_boot();
+  //sprintf(&tmp[0], "TWI set status: %d\n", cs2200_set_PLL_freq(11289600UL));
+  sprintf(&tmp[0], "TWI set status: %d\n", cs2200_set_PLL_freq(12288000UL));
 
-	// initialize the image
-	image_init();
+  //sprintf(&tmp[0], "TWI set status: %d\n", cs2200_set_PLL_freq(16000000UL));
+  print(DBG_USART, &tmp[0]);
+  uint32_t i_freq;
 
-	// Start the image tasks
-	image_task_init();
+  cs2200_get_ratio(&i_freq);
+  sprintf(&tmp[0], "Ratio: %lu\n", i_freq);
+  print(DBG_USART, &tmp[0]);
 
-	// Start OS scheduler
-	vTaskStartScheduler();
-	portDBG_TRACE("FreeRTOS returned.");
-	return 42;
+  cs2200_get_PLL_freq(&i_freq);
+  sprintf(&tmp[0], "MCLK: %lu\n", i_freq);
+  print(DBG_USART, &tmp[0]);
+
+  // boot the image
+  image_boot();
+
+  // initialize the image
+  image_init();
+
+  // Start the image tasks
+  image_task_init();
+
+  // Start OS scheduler
+  vTaskStartScheduler();
+  portDBG_TRACE("FreeRTOS returned.");
+
+  return 42;
 }
