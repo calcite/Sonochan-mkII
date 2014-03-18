@@ -230,15 +230,7 @@ extern const features_t features_default;
 #define FEATURE_OUT_DEFAULT        feature_out_normal
 #endif
 #ifndef FEATURE_ADC_DEFAULT
-#if FEATURE_BOARD_DEFAULT == feature_board_widget
 #define FEATURE_ADC_DEFAULT        feature_adc_ak5394a
-
-//[Martin]
-#elif FEATURE_BOARD_DEFAULT == feature_board_usbi2s
-#define FEATURE_ADC_DEFAULT        feature_adc_ak5394a
-#else
-#define FEATURE_ADC_DEFAULT        feature_adc_none
-#endif
 #endif
 #ifndef FEATURE_DAC_DEFAULT
 #define FEATURE_DAC_DEFAULT        feature_dac_cs4344

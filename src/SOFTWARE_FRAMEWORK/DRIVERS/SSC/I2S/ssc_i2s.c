@@ -238,7 +238,7 @@ int ssc_i2s_init(volatile avr32_ssc_t *ssc,
                 (1 - 1)                                            << AVR32_SSC_TFMR_DATNB_OFFSET                               |
                 (((frame_bit_res - 1)                              << AVR32_SSC_TFMR_FSLEN_OFFSET) & AVR32_SSC_TFMR_FSLEN_MASK) |
                 AVR32_SSC_TFMR_FSOS_NEG_PULSE                      << AVR32_SSC_TFMR_FSOS_OFFSET                                |
-                0                                                  << AVR32_SSC_TFMR_FSDEN_OFFSET                               |
+                1                                                  << AVR32_SSC_TFMR_FSDEN_OFFSET                               |       //[Martin] Orignal: 0
                 1                                                  << AVR32_SSC_TFMR_FSEDGE_OFFSET                              |
                 ((frame_bit_res - 1) >> AVR32_SSC_TFMR_FSLEN_SIZE) << AVR32_SSC_TFMR_FSLENHI_OFFSET;
 #endif
@@ -258,12 +258,14 @@ int ssc_i2s_init(volatile avr32_ssc_t *ssc,
 	       */
 
 	  ssc->rcmr = (AVR32_SSC_RCMR_CKS_RK_PIN << AVR32_SSC_RCMR_CKS_OFFSET) |
-	                (1                             << AVR32_SSC_RCMR_CKI_OFFSET)|
+	                (0                             << AVR32_SSC_RCMR_CKI_OFFSET)|   //[Martin] original: 1
 	                (AVR32_SSC_RCMR_CKO_INPUT_ONLY << AVR32_SSC_RCMR_CKO_OFFSET) |
 //  I2S specs says data starts one SCLK after LRCK edge.  However testing shows that
-//  AK data starts showing up immediately
-//	                (1                         << AVR32_SSC_RCMR_STTDLY_OFFSET ) |
-	    	        (0                        << AVR32_SSC_RCMR_STTDLY_OFFSET ) |
+//  AK data starts showing up immediately.
+//[Martin] However, when using different codec, there is problem. So it is set
+//         back to 1 (delay 1)
+	                (1                         << AVR32_SSC_RCMR_STTDLY_OFFSET ) |
+//	    	        (0                        << AVR32_SSC_RCMR_STTDLY_OFFSET ) |
 //	                (AVR32_SSC_RCMR_START_DETECT_FALLING_RF << AVR32_SSC_RCMR_START_OFFSET);
 					(AVR32_SSC_DETECT_LEVEL_CHANGE_RF << AVR32_SSC_RCMR_START_OFFSET);
 //	                (AVR32_SSC_RCMR_START_DETECT_RISING_RF << AVR32_SSC_RCMR_START_OFFSET);
