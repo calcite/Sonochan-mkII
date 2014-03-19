@@ -198,11 +198,12 @@ int ssc_i2s_init(volatile avr32_ssc_t *ssc,
 
   else if (mode == SSC_I2S_MODE_STEREO_OUT_STEREO_IN)
   {
+    // Using clock from BCLK pin
       ssc->cmr = AVR32_SSC_CMR_DIV_NOT_ACTIVE << AVR32_SSC_CMR_DIV_OFFSET;
       /* Set transmit clock mode:
        *   CKS - use TK pin.  Signal from GCLK1
        *   CKO - no output on TK.  Input only.
-       *   CKI - shift data on falling clock
+       *   CKI - shift data on falling clock (so on rise edge they will be ready)
        *   CKG - transmit continuous clock on TK (CKG_NONE)
        *   START - on any TF(WS) edge
        *   STTDLY - TF toggles before last bit of last word, not before
@@ -235,7 +236,11 @@ int ssc_i2s_init(volatile avr32_ssc_t *ssc,
                 1                                                  << AVR32_SSC_TFMR_MSBF_OFFSET                                |
                 (1 - 1)                                            << AVR32_SSC_TFMR_DATNB_OFFSET                               |
                 (((frame_bit_res - 1)                              << AVR32_SSC_TFMR_FSLEN_OFFSET) & AVR32_SSC_TFMR_FSLEN_MASK) |
+#if SSC_MASTER_ENABLE == 0
                 AVR32_SSC_TFMR_FSOS_INPUT_ONLY                      << AVR32_SSC_TFMR_FSOS_OFFSET                                |
+#else
+                AVR32_SSC_TFMR_FSOS_NEG_PULSE                       << AVR32_SSC_TFMR_FSOS_OFFSET                               |
+#endif
                 0                                                  << AVR32_SSC_TFMR_FSDEN_OFFSET                               |
                 1                                                  << AVR32_SSC_TFMR_FSEDGE_OFFSET;
 #else
@@ -244,7 +249,11 @@ int ssc_i2s_init(volatile avr32_ssc_t *ssc,
                1                                                  << AVR32_SSC_TFMR_MSBF_OFFSET                                |
                (1 - 1)                                            << AVR32_SSC_TFMR_DATNB_OFFSET                               |
                (((frame_bit_res - 1)                              << AVR32_SSC_TFMR_FSLEN_OFFSET) & AVR32_SSC_TFMR_FSLEN_MASK) |
-               AVR32_SSC_TFMR_FSOS_INPUT_ONLY                      << AVR32_SSC_TFMR_FSOS_OFFSET                                |
+#if SSC_MASTER_ENABLE == 0
+                AVR32_SSC_TFMR_FSOS_INPUT_ONLY                      << AVR32_SSC_TFMR_FSOS_OFFSET                                |
+#else
+                AVR32_SSC_TFMR_FSOS_NEG_PULSE                       << AVR32_SSC_TFMR_FSOS_OFFSET                               |
+#endif
                1                                                  << AVR32_SSC_TFMR_FSDEN_OFFSET                               |//[Martin] default: 0
                1                                                  << AVR32_SSC_TFMR_FSEDGE_OFFSET                              |
                ((frame_bit_res - 1) >> AVR32_SSC_TFMR_FSLEN_SIZE) << AVR32_SSC_TFMR_FSLENHI_OFFSET;
@@ -254,7 +263,7 @@ int ssc_i2s_init(volatile avr32_ssc_t *ssc,
 
 	     /* Set receive clock mode:
 	       *  CKS - use RK pin
-	       *  CKO - No clock output,
+	       *  CKO - No clock output, just read from bus
 	       *  CKI - shift data on rising edge,
 	       *  CKG - No clock output,
 	       *  START -  v76 On rising edge of the FRAME_SYNC input which is connected to FSYNC

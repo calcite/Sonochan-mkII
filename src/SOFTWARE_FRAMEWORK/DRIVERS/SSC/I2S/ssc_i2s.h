@@ -69,6 +69,19 @@
 #ifndef _SSC_I2S_H_
 #define _SSC_I2S_H_
 
+//[Martin]
+/**
+ * \brief This switch allow set SSC to master or slave mode when\n
+ * SSC_I2S_MODE_STEREO_OUT_STEREO_IN mode is used.\n
+ * When master, then BCLK is token from GCLK1 pin (need to be wired on board),\n
+ * FRAME_SYNC is generated.\n
+ * In slave mode BCLK and FAME_SYNC must be given.\n
+ * Options: 1 (Matser), 0 (slave)
+ */
+#define SSC_MASTER_ENABLE       1
+
+
+
 #include <avr32/io.h>
 
 
@@ -86,12 +99,12 @@
 //! Error codes used by SSC I2S driver.
 enum
 {
-  SSC_I2S_ERROR = -1,
-  SSC_I2S_OK = 0,
-  SSC_I2S_TIMEOUT = 1,
-  SSC_I2S_ERROR_ARGUMENT,
-  SSC_I2S_ERROR_RX,
-  SSC_I2S_ERROR_TX
+  SSC_I2S_ERROR = -1,    //!< SSC_I2S_ERROR
+  SSC_I2S_OK = 0,        //!< SSC_I2S_OK
+  SSC_I2S_TIMEOUT = 1,   //!< SSC_I2S_TIMEOUT
+  SSC_I2S_ERROR_ARGUMENT,//!< SSC_I2S_ERROR_ARGUMENT
+  SSC_I2S_ERROR_RX,      //!< SSC_I2S_ERROR_RX
+  SSC_I2S_ERROR_TX       //!< SSC_I2S_ERROR_TX
 };
 
 //! SSC I2S modes.
