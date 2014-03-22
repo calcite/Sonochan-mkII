@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 17.03.2014
+ * Modified: 22.03.2014
  *
- * \version 0.2
+ * \version 0.3
  * \author Martin Stejskal
  */
 
@@ -418,6 +418,10 @@ GD_RES_CODE cs2200_init(void);
 GD_RES_CODE cs2200_set_PLL_freq(uint32_t i_freq);
 
 GD_RES_CODE cs2200_get_PLL_freq(uint32_t *p_i_freq);
+
+GD_RES_CODE cs2200_inc_PLL_freq(void);
+
+GD_RES_CODE cs2200_dec_PLL_freq(void);
 
 GD_RES_CODE cs2200_set_out_divider_multiplier(cs2200_r_mod_t e_out_div_mul);
 

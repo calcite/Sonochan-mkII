@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 17.03.2014
+ * Modified: 22.03.2014
  *
- * \version 0.2
+ * \version 0.3
  * \author Martin Stejskal
  */
 
@@ -272,6 +272,40 @@ inline GD_RES_CODE cs2200_get_PLL_freq(uint32_t *p_i_freq)
   *p_i_freq = s_virtual_reg_img.i_real_freq.i_32bit;
 
   return GD_SUCCESS;
+}
+
+
+
+/**
+ * \brief Increase PLL frequency by 1 LSB in ratio
+ *
+ * Increase PLL output frequency approximately by 10 ppm
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_inc_PLL_freq(void)
+{
+  /* Try to set new ratio value. Function cs2200_set_ratio() do all checks and
+   * if there is no problem, then update ratio and frequency value.
+   */
+  return cs2200_set_ratio(
+      s_register_img.Ratio.i_32bit +1);
+}
+
+
+
+/**
+ * \brief Decrease PLL frequency by 1 LSB in ratio
+ *
+ * Decrease PLL output frequency approximately by 10 ppm
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_dec_PLL_freq(void)
+{
+  /* Try to set new ratio value. Function cs2200_set_ratio() do all checks and
+   * if there is no problem, then update ratio and frequency value.
+   */
+  return cs2200_set_ratio(
+      s_register_img.Ratio.i_32bit -1);
 }
 
 
