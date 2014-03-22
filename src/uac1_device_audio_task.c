@@ -228,11 +228,13 @@ void uac1_device_audio_task(void *pvParameters)
         num_samples = 44;
         break;
       default:
-        // This should not happen
+        /* Unknown sampling frequency. This may happen when current_freq was
+         * not initialized yet. So set to default (48 kHz)
+         */
         print(DBG_USART,
             "uac1_device_audio_task() Unknown frequency in current_freq."
             "frequency.\n\n");
-        num_samples = 1;
+        num_samples = 48;
       }
 
 

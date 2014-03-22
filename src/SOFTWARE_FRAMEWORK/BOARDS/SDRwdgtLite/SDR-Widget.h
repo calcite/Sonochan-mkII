@@ -28,7 +28,7 @@
 
 /*! \name Peripherals to include at compile time. */
 //! @{
-#define I2C                 1	// I2C driver
+#define I2C                 0	// I2C driver
 #define LCD_DISPLAY         1   // 20x4 Liquid Crystal Display (LCD)//[Martin] When removed, USB not work (why?)
 //#define SHAFT_ENCODER       1   // Shaft Encoder VFO function
 #define Si570               0   // Si570 VXO control funcs (needs I2C driver)
@@ -37,7 +37,7 @@
 #define TMP100              0   // Temperature measurement device  (needs I2C driver)
 #define AD7991              0   //  (needs I2C driver)
 #define AD5301              0   //  (needs I2C driver)
-#define PCF8574             1   // port expander control of TX/RX and Band Pass filters  (needs I2C driver)
+#define PCF8574             0   // port expander control of TX/RX and Band Pass filters  (needs I2C driver)
 
 #define DEBUG232            1   // Use the UART debug port
 #define USB                 1   // Although it may look odd there may be a free standing mode.
@@ -55,22 +55,22 @@
 // None, or only one of the two, CALC_FREQ_MUL_ADD or CALC_BAND_MUL_ADD should be selected
 #define CALC_FREQ_MUL_ADD	0	// Frequency Subtract and Multiply Routines (for smart VFO)
 								// normally not needed with Mobo 4.3.   *OR*
-#define CALC_BAND_MUL_ADD	1	// Band dependent Frequency Subtract and Multiply Routines
+#define CALC_BAND_MUL_ADD	0	// Band dependent Frequency Subtract and Multiply Routines
 								// (for smart VFO) normally not needed with Mobo 4.3.
 
-#define BPF_LPF_Module		1	// Band Pass and Low Pass filter switcing
+#define BPF_LPF_Module		0	// Band Pass and Low Pass filter switcing
 
-#define SCRAMBLED_FILTERS	1	// Enable a non contiguous order of filters
+#define SCRAMBLED_FILTERS	0	// Enable a non contiguous order of filters
 
 // Low Pass Filters for Transmit ----------------------------------------------------------
-#define TX_FILTERS			1	// Enable TX filter selection, including one of the four options below
+#define TX_FILTERS			0	// Enable TX filter selection, including one of the four options below
 // Only one of the four below should be selected, if TX_FILTERS is selected
-#define	PCF_LPF				1	// External Port Expander Control of Low Pass filters
+#define	PCF_LPF				0	// External Port Expander Control of Low Pass filters
 #define	PCF_16LPF			0	// External Port Expander Control of 16 Low Pass filters
 #define PCF_FILTER_IO		0	// 8x BCD control for LPF switching, switches P1 pins 4-6
 #define M0RZF_FILTER_IO		0	// M0RZF 20W amplifier LPF switching, switches P1 pins 4-6
 
-#define FRQ_CGH_DURING_TX	1	// Allow Si570 Frequency change during TX
+#define FRQ_CGH_DURING_TX	0	// Allow Si570 Frequency change during TX
 #define FLTR_CGH_DURING_TX	0	// Allow Filter changes when frequency is changed during TX
 
 // Transmit specific features --------------------------------------------------------------
