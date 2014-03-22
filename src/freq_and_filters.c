@@ -119,7 +119,7 @@ void SetFilter(uint32_t freq)
 
 		selectedFilters[0] = cdata.FilterNumber[i];	// Used for LCD Print indication
 		#else
-		data = i;
+		uint8_t data = i;
 		selectedFilters[0] = i;						// Used for LCD Print indication
 		#endif
 		// Manipulate 2 bit binary output to set the 4 BPF

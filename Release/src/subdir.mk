@@ -6,6 +6,7 @@
 C_SRCS += \
 ../src/cs2200_HAL_AVR32_UC3A3_HW_interface.c \
 ../src/cs2200.c \
+../src/sync_control.c \
 ../src/AD5301.c \
 ../src/AD7991.c \
 ../src/DG8SAQ_cmd.c \
@@ -54,6 +55,7 @@ C_SRCS += \
 OBJS += \
 ./src/cs2200_HAL_AVR32_UC3A3_HW_interface.o \
 ./src/cs2200.o \
+./src/sync_control.o \
 ./src/AD5301.o \
 ./src/AD7991.o \
 ./src/DG8SAQ_cmd.o \
@@ -103,6 +105,7 @@ OBJS += \
 C_DEPS += \
 ./src/cs2200_HAL_AVR32_UC3A3_HW_interface.d \
 ./src/cs2200.d \
+./src/sync_control.d \
 ./src/AD5301.d \
 ./src/AD7991.d \
 ./src/DG8SAQ_cmd.d \

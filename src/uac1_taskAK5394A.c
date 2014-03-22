@@ -110,8 +110,10 @@ void uac1_AK5394A_task(void *pvParameters) {
 			pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
 			pdca_disable(PDCA_CHANNEL_SSC_RX);
 			// L L  -> 48khz   L H  -> 96khz
+			/*[Martin] Actually do not needed
 			gpio_clr_gpio_pin(AK5394_DFS0);
 			gpio_clr_gpio_pin(AK5394_DFS1);
+			*/
 
 			if (FEATURE_ADC_AK5394A) {
 				// re-sync SSC to LRCK

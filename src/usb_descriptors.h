@@ -152,19 +152,22 @@
 
 #define LANG_ID               0x00
 
-#define USB_MN_LENGTH         10
+#define USB_MN_LENGTH         13
 #define USB_MANUFACTURER_NAME \
 {\
   Usb_unicode('S'),\
-  Usb_unicode('D'),\
-  Usb_unicode('R'),\
-  Usb_unicode('-'),\
-  Usb_unicode('W'),\
-  Usb_unicode('i'),\
-  Usb_unicode('d'),\
-  Usb_unicode('g'),\
-  Usb_unicode('e'),\
-  Usb_unicode('t'),\
+  Usb_unicode('o'),\
+  Usb_unicode('n'),\
+  Usb_unicode('o'),\
+  Usb_unicode('c'),\
+  Usb_unicode('h'),\
+  Usb_unicode('a'),\
+  Usb_unicode('n'),\
+  Usb_unicode(' '),\
+  Usb_unicode('m'),\
+  Usb_unicode('k'),\
+  Usb_unicode('I'),\
+  Usb_unicode('I'),\
 }
 
 #define USB_PN_LENGTH         19
@@ -193,8 +196,6 @@
 #define USB_SN_LENGTH         13
 #define USB_SERIAL_NUMBER \
 {\
-  Usb_unicode('1'),\
-  Usb_unicode('.'),\
   Usb_unicode('0'),\
   Usb_unicode('.'),\
   Usb_unicode('0'),\
@@ -205,7 +206,9 @@
   Usb_unicode('.'),\
   Usb_unicode('0'),\
   Usb_unicode('.'),\
-  Usb_unicode('0') \
+  Usb_unicode('0'),\
+  Usb_unicode('.'),\
+  Usb_unicode('1') \
 }
 
 #define USB_CS1_LENGTH         7
