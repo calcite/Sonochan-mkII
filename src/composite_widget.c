@@ -180,7 +180,6 @@
 ///\TODO REMOVE
 #include "cs2200.h"
 #include <stdio.h>
-#include <string.h>
 /*
  *  A few global variables.
  */

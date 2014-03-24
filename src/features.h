@@ -93,8 +93,6 @@ typedef enum {
   feature_dac_es9022,
   feature_end_dac,
   feature_lcd_none,      // lcd
-  feature_lcd_hd44780,    /* normal hd44780 lcd controller */
-  feature_lcd_ks0073,      /* ks0073 almost hd44780 compatible */
   feature_end_lcd,
   feature_log_none,      // log
   feature_log_250ms,
@@ -134,8 +132,6 @@ typedef enum {
     "es9022",                            \
     "end",                              \
     "none",                              \
-    "hd44780",                            \
-    "ks0073",                            \
     "end",                              \
     "none",                              \
     "250ms",                            \
@@ -191,8 +187,6 @@ extern const features_t features_default;
 #define FEATURE_DAC_ES9022        (features[feature_dac_index] == (uint8_t)feature_dac_es9022)
 
 #define FEATURE_LCD_NONE        (features[feature_lcd_index] == (uint8_t)feature_lcd_none)
-#define FEATURE_LCD_HD44780        (features[feature_lcd_index] == (uint8_t)feature_lcd_hd44780)
-#define FEATURE_LCD_KS0073        (features[feature_lcd_index] == (uint8_t)feature_lcd_ks0073)
 
 #define FEATURE_LOG_NONE        (features[feature_log_index] == (uint8_t)feature_log_none)
 #define FEATURE_LOG_250MS        (features[feature_log_index] == (uint8_t)feature_log_250ms)

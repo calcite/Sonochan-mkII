@@ -68,88 +68,98 @@ void uac1_AK5394A_task(void*);
 //! required for device CDC task.
 //!
 void uac1_AK5394A_task_init(void) {
-	AK5394A_task_init(TRUE);
-	xTaskCreate(uac1_AK5394A_task,
-				configTSK_AK5394A_NAME,
-				configTSK_AK5394A_STACK_SIZE,
-				NULL,
-				UAC1_configTSK_AK5394A_PRIORITY,
-				NULL);
+  AK5394A_task_init(TRUE);
+  xTaskCreate(uac1_AK5394A_task,
+        configTSK_AK5394A_NAME,
+        configTSK_AK5394A_STACK_SIZE,
+        NULL,
+        UAC1_configTSK_AK5394A_PRIORITY,
+        NULL);
 }
 
 //!
 //! @brief Entry point of the AK5394A task management
 //!
 void uac1_AK5394A_task(void *pvParameters) {
-	portTickType xLastWakeTime;
-	xLastWakeTime = xTaskGetTickCount();
+  portTickType xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
 
-	int i;
+  int i;
 
-	while (TRUE) {
-		// All the hardwork is done by the pdca and the interrupt handler.
-		// Just check whether alternate setting is changed, to do rate change etc.
+  while (TRUE) {
+    // All the hardwork is done by the pdca and the interrupt handler.
+    // Just check whether alternate setting is changed, to do rate change etc.
 
-		vTaskDelayUntil(&xLastWakeTime, UAC1_configTSK_AK5394A_PERIOD);
+    vTaskDelayUntil(&xLastWakeTime, UAC1_configTSK_AK5394A_PERIOD);
 
-		if (freq_changed) {
-			spk_mute = TRUE;
-			if (current_freq.frequency == 48000)
-			{
-				FB_rate = 48 << 14;
-			}
-			else
-			{
-				FB_rate = (44 << 14) + (1 << 14)/10 ;
-			}
-			spk_mute = FALSE;
-			freq_changed = FALSE;
-		}
-		if (usb_alternate_setting_changed) {
+    if (freq_changed) {
+      spk_mute = TRUE;
+      switch(current_freq.frequency)
+      {
+        case 48000:
+          FB_rate = 48 << 14;
+          break;
+        case 44100:
+          FB_rate = (44 << 14) + (1 << 14)/10;
+          break;
+        case 32000:
+          FB_rate = (32 << 14);
+          break;
+        case 16000:
+          FB_rate = (16 << 14);
+          break;
+        case 8000:
+          FB_rate = (44 << 14);
+          break;
+      }
+      spk_mute = FALSE;
+      freq_changed = FALSE;
+    }
+    if (usb_alternate_setting_changed) {
 
-			pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-			pdca_disable(PDCA_CHANNEL_SSC_RX);
-			// L L  -> 48khz   L H  -> 96khz
-			/*[Martin] Actually do not needed
-			gpio_clr_gpio_pin(AK5394_DFS0);
-			gpio_clr_gpio_pin(AK5394_DFS1);
-			*/
+      pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+      pdca_disable(PDCA_CHANNEL_SSC_RX);
+      // L L  -> 48khz   L H  -> 96khz
+      /*[Martin] Actually do not needed
+      gpio_clr_gpio_pin(AK5394_DFS0);
+      gpio_clr_gpio_pin(AK5394_DFS1);
+      */
 
-			if (FEATURE_ADC_AK5394A) {
-				// re-sync SSC to LRCK
-				// Wait for the next frame synchronization event
-				// to avoid channel inversion.  Start with left channel - FS goes low
-				while (!gpio_get_pin_value(AK5394_LRCK));
-				while (gpio_get_pin_value(AK5394_LRCK));
+      if (FEATURE_ADC_AK5394A) {
+        // re-sync SSC to LRCK
+        // Wait for the next frame synchronization event
+        // to avoid channel inversion.  Start with left channel - FS goes low
+        while (!gpio_get_pin_value(AK5394_LRCK));
+        while (gpio_get_pin_value(AK5394_LRCK));
 
-				// Enable now the transfer.
-				pdca_enable(PDCA_CHANNEL_SSC_RX);
+        // Enable now the transfer.
+        pdca_enable(PDCA_CHANNEL_SSC_RX);
 
-				// Init PDCA channel with the pdca_options.
-				AK5394A_pdca_enable();
-			}
-			// reset usb_alternate_setting_changed flag
-			usb_alternate_setting_changed = FALSE;
-		}
+        // Init PDCA channel with the pdca_options.
+        AK5394A_pdca_enable();
+      }
+      // reset usb_alternate_setting_changed flag
+      usb_alternate_setting_changed = FALSE;
+    }
 
-		if (usb_alternate_setting_out_changed){
-			if (usb_alternate_setting_out != 1){
-				spk_mute = TRUE;
-				for (i = 0; i < SPK_BUFFER_SIZE; i++){
-					spk_buffer_0[i] = 0;
-					spk_buffer_1[i] = 0;
-				}
-				spk_mute = FALSE;
-			}
-			usb_alternate_setting_out_changed = FALSE;
-		}
+    if (usb_alternate_setting_out_changed){
+      if (usb_alternate_setting_out != 1){
+        spk_mute = TRUE;
+        for (i = 0; i < SPK_BUFFER_SIZE; i++){
+          spk_buffer_0[i] = 0;
+          spk_buffer_1[i] = 0;
+        }
+        spk_mute = FALSE;
+      }
+      usb_alternate_setting_out_changed = FALSE;
+    }
 
-		if (FEATURE_IMAGE_UAC1_DG8SAQ) {
-			spk_mute = TX_state ? FALSE : TRUE;
-			mute = TX_state ? TRUE : FALSE;
-		}
+    if (FEATURE_IMAGE_UAC1_DG8SAQ) {
+      spk_mute = TX_state ? FALSE : TRUE;
+      mute = TX_state ? TRUE : FALSE;
+    }
 
-	} // end while (TRUE)
+  } // end while (TRUE)
 }
 
 

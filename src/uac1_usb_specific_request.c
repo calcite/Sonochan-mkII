@@ -90,6 +90,8 @@
 //[Martin]
 ///\TODO Remove to sync_control.*
 #include "cs2200.h"
+#include "print_funcs.h"
+#include <stdio.h>
 
 //_____ M A C R O S ________________________________________________________
 
@@ -558,32 +560,42 @@ void audio_set_cur(void)
    Usb_reset_endpoint_fifo_access(EP_CONTROL);
 
    if ((usb_type == USB_SETUP_SET_CLASS_ENDPOINT) && (wValue_msb == UAC_EP_CS_ATTR_SAMPLE_RATE)){
-    if (Usb_read_endpoint_data(EP_CONTROL, 8) == 0x44) speed = 0;
-    else speed = 1;
+     // Read speed (frequency)
+     current_freq.frequency = (U32)usb_format_usb_to_mcu_data(16, Usb_read_endpoint_data(EP_CONTROL, 16));
+
 
     freq_changed = TRUE;
-    if (speed == 0){    // 44.1khz
-      current_freq.frequency = 44100;
-      if (FEATURE_BOARD_USBI2S)
-      {
-        cs2200_set_PLL_freq(11289600UL);
-        gpio_clr_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 22.5792MHz/2 for AB-1
-      }
-      else if (FEATURE_BOARD_USBDAC)
-      {
-        gpio_clr_gpio_pin(AVR32_PIN_PX51);
-      }
-      }
-    else {          // 48khz
-      current_freq.frequency = 48000;
-      if (FEATURE_BOARD_USBI2S)
-      {
-        cs2200_set_PLL_freq(12288000UL);
-        gpio_set_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 24.576MHz/2 for AB-1
-      }
-      else if (FEATURE_BOARD_USBDAC)
-        gpio_set_gpio_pin(AVR32_PIN_PX51);
+
+    char c_tmp[30];
+    sprintf(&c_tmp[0], "SET CUR: %lu\n", current_freq.frequency);
+    print(DBG_USART, &c_tmp[0]);
+
+    switch(current_freq.frequency)
+    {
+    case 48000:
+      cs2200_set_PLL_freq(12288000UL);
+      gpio_set_gpio_pin(AVR32_PIN_PX16);
+      break;
+    case 44100:
+      cs2200_set_PLL_freq(11289600UL);
+      gpio_clr_gpio_pin(AVR32_PIN_PX16);
+      break;
+    case 32000:
+      cs2200_set_PLL_freq(8192000UL);
+      break;
+    case 16000:
+      ///\todo Martin Set precaller and PLL
+      break;
+    case 8000:
+      ///\todo Martin Set precaller and PLL
+      break;
+    default:
+      // Should not happen, but just for case
+      ///\todo Martin - Change freq back to 12.288 MHz
+      cs2200_set_PLL_freq(16288000UL);
+      gpio_set_gpio_pin(AVR32_PIN_PX16);
     }
+
   }
 
    else if( i_unit==MIC_FEATURE_UNIT_ID )

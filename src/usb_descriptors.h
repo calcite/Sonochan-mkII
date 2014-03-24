@@ -120,27 +120,27 @@
 #define DEVICE_SUB_CLASS      0x02          //!
 #define DEVICE_PROTOCOL       0x01          //! IAD Device
 #define EP_CONTROL_LENGTH     64
-#define DG8SAQ_VENDOR_ID	  0x16c0		//!  DG8SAQ device
+#define DG8SAQ_VENDOR_ID    0x16c0    //!  DG8SAQ device
 #define DG8SAQ_PRODUCT_ID     0x05dc
-#define AUDIO_VENDOR_ID		  0x16d0		//!  Audio device
-#define AUDIO_PRODUCT_ID_1	  0x0761		//!  UAC1 PID
-#define AUDIO_PRODUCT_ID_2    0x0762		//!  UAC2 PID
-#define HPSDR_VENDOR_ID       0xfffe		//! Ozy Device
+#define AUDIO_VENDOR_ID      0x16d0    //!  Audio device
+#define AUDIO_PRODUCT_ID_1    0x0761    //!  UAC1 PID
+#define AUDIO_PRODUCT_ID_2    0x0762    //!  UAC2 PID
+#define HPSDR_VENDOR_ID       0xfffe    //! Ozy Device
 #define HPSDR_PRODUCT_ID      0x0007
 #define RELEASE_NUMBER        0x1000
 #define MAN_INDEX             0x01
 #define PROD_INDEX            0x02
 #define SN_INDEX              0x03
-#define CLOCK_SOURCE_1_INDEX	  	0x04
-#define CLOCK_SOURCE_2_INDEX		0x05
-#define CLOCK_SELECTOR_INDEX		0x06
+#define CLOCK_SOURCE_1_INDEX      0x04
+#define CLOCK_SOURCE_2_INDEX    0x05
+#define CLOCK_SELECTOR_INDEX    0x06
 
 
-#define WL_INDEX		0x07
-#define AIT_INDEX		0x08
-#define AOT_INDEX		0x09
-#define AIN_INDEX		0x0A
-#define AIA_INDEX		0x0B
+#define WL_INDEX    0x07
+#define AIT_INDEX    0x08
+#define AOT_INDEX    0x09
+#define AIN_INDEX    0x0A
+#define AIA_INDEX    0x0B
 
 
 #define NB_CONFIGURATION      1
@@ -578,14 +578,14 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8 bLength;						// Size of this Descriptor in BYTEs
-	U8 bDescriptorType;				// INTERFACE_ASSOCIATION Descriptor Type (0x0B)
-	U8 bFirstInterface;				// Interface number of the first one associated with this function
-	U8 bInterfaceCount;				// Number of contiguous interface associated with this function
-	U8 bFunctionClass;				// The class triad of this interface,
-	U8 bFunctionSubClass;			//   usually same as the triad of the first interface
-	U8 bFunctionProcotol;
-	U8 iInterface;					// Index of String Desc for this function
+  U8 bLength;            // Size of this Descriptor in BYTEs
+  U8 bDescriptorType;        // INTERFACE_ASSOCIATION Descriptor Type (0x0B)
+  U8 bFirstInterface;        // Interface number of the first one associated with this function
+  U8 bInterfaceCount;        // Number of contiguous interface associated with this function
+  U8 bFunctionClass;        // The class triad of this interface,
+  U8 bFunctionSubClass;      //   usually same as the triad of the first interface
+  U8 bFunctionProcotol;
+  U8 iInterface;          // Index of String Desc for this function
 }
 #if (defined __ICCAVR32__)
 #pragma pack()
@@ -608,10 +608,10 @@ struct
 __attribute__((__packed__))
 #endif
 {
-    U8 bLength;						// Size of this Descriptor in BYTEs
-    U8 bDescriptorType;				// CS_INTERFACE Descriptor Type
-    U8 bDescriptorSubtype;			// CS_CDC_HEADER subtype
-    U16 bcdCDC;						// bcdCDC (CDC spec release number, 1.1
+    U8 bLength;            // Size of this Descriptor in BYTEs
+    U8 bDescriptorType;        // CS_INTERFACE Descriptor Type
+    U8 bDescriptorSubtype;      // CS_CDC_HEADER subtype
+    U16 bcdCDC;            // bcdCDC (CDC spec release number, 1.1
 }
 #if (defined __ICCAVR32__)
 #pragma pack()
@@ -630,11 +630,11 @@ struct
 __attribute__((__packed__))
 #endif
 {
-    U8 bLength;						// Size of this Descriptor in BYTEs
-    U8 bDescriptorType;				// CS_INTERFACE Descriptor Type
-    U8 bDescriptorSubtype;			// CS_CDC_CALL_MAN subtype
-    U8 bmCapabilities;				// Capabilities bitmap
-    U8 bDataInterface;				// Interface number
+    U8 bLength;            // Size of this Descriptor in BYTEs
+    U8 bDescriptorType;        // CS_INTERFACE Descriptor Type
+    U8 bDescriptorSubtype;      // CS_CDC_CALL_MAN subtype
+    U8 bmCapabilities;        // Capabilities bitmap
+    U8 bDataInterface;        // Interface number
 }
 #if (defined __ICCAVR32__)
 #pragma pack()
@@ -653,10 +653,10 @@ struct
 __attribute__((__packed__))
 #endif
 {
-    U8 bLength;						// Size of this Descriptor in BYTEs
-    U8 bDescriptorType;				// CS_INTERFACE Descriptor Type
-    U8 bDescriptorSubtype;			// CS_CDC_ABST_CNTRL subtype
-    U8 bmCapabilities;				// Capabilities bitmap
+    U8 bLength;            // Size of this Descriptor in BYTEs
+    U8 bDescriptorType;        // CS_INTERFACE Descriptor Type
+    U8 bDescriptorSubtype;      // CS_CDC_ABST_CNTRL subtype
+    U8 bmCapabilities;        // Capabilities bitmap
 }
 #if (defined __ICCAVR32__)
 #pragma pack()
@@ -675,11 +675,11 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8 bLength;						// Size of this Descriptor in BYTEs
-	U8 bDescriptorType;				// CS_INTERFACE Descriptor Typ
-	U8 bDescriptorSubtype;			// CS_CDC_UNION_FUNC subtype
-	U8 bMasterInterface;			// Interface number master
-	U8 bSlaveInterface0;			// Interface number slave
+  U8 bLength;            // Size of this Descriptor in BYTEs
+  U8 bDescriptorType;        // CS_INTERFACE Descriptor Typ
+  U8 bDescriptorSubtype;      // CS_CDC_UNION_FUNC subtype
+  U8 bMasterInterface;      // Interface number master
+  U8 bSlaveInterface0;      // Interface number slave
 }
 #if (defined __ICCAVR32__)
 #pragma pack()
@@ -904,11 +904,11 @@ __attribute__((__packed__))
   U8  bLength;               /* Size of this descriptor in bytes */
   U8  bDescriptorType;       /* CS interface*/
   U8  bDescritorSubtype;     /* HEADER Subtype */
-  U16 bcdADC;          		  /* Revision of class spec */
-  U16 wTotalLength;       	  /* Total size of class specific descriptor */
+  U16 bcdADC;                /* Revision of class spec */
+  U16 wTotalLength;           /* Total size of class specific descriptor */
   U8  bInCollection;         /* Number of streaming interface */
-  U8  baInterfaceNr0;		     /* Streaming interface number 0*/
-  U8  baInterfaceNr1;		// Streaming interface number 1
+  U8  baInterfaceNr0;         /* Streaming interface number 0*/
+  U8  baInterfaceNr1;    // Streaming interface number 1
 } S_usb_ac_interface_descriptor_1;
 
 //! USB INPUT Terminal Descriptor
@@ -921,16 +921,16 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLenght;
-	U8 	bDescriptorType;
-	U8 	bDescriptorSubType;
-	U8		bTerminalID;
-	U16	wTerminalType;
-	U8		bAssocTerminal;
-	U8		bNrChannels;
-	U16	wChannelConfig;
-	U8		iChannelNames;
-	U8		iTerminal;
+  U8    bLenght;
+  U8   bDescriptorType;
+  U8   bDescriptorSubType;
+  U8    bTerminalID;
+  U16  wTerminalType;
+  U8    bAssocTerminal;
+  U8    bNrChannels;
+  U16  wChannelConfig;
+  U8    iChannelNames;
+  U8    iTerminal;
 } S_usb_in_ter_descriptor_1;
 
 
@@ -944,16 +944,16 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLenght;
-	U8 	bDescriptorType;
-	U8 	bDescriptorSubType;
-	U8		bUnitID;
-	U8    bSourceID;
-	U8		bControSize;
-	U16	bmaControls_0;
-	U16	bmaControls_1;
-	U16	bmsCnotrols_2;
-	U8	iTerminal;
+  U8    bLenght;
+  U8   bDescriptorType;
+  U8   bDescriptorSubType;
+  U8    bUnitID;
+  U8    bSourceID;
+  U8    bControSize;
+  U16  bmaControls_0;
+  U16  bmaControls_1;
+  U16  bmsCnotrols_2;
+  U8  iTerminal;
 } S_usb_feature_unit_descriptor_1;
 
 //! USB OUTPUT Terminal Descriptor
@@ -966,14 +966,14 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLenght;
-	U8 	bDescriptorType;
-	U8 	bDescriptorSubType;
-	U8		bTerminalID;
-	U16	wTerminalType;
-	U8		bAssocTerminal;
-	U8		bSourceID;
-	U8		iTerminal;
+  U8    bLenght;
+  U8   bDescriptorType;
+  U8   bDescriptorSubType;
+  U8    bTerminalID;
+  U16  wTerminalType;
+  U8    bAssocTerminal;
+  U8    bSourceID;
+  U8    iTerminal;
 } S_usb_out_ter_descriptor_1;
 
 
@@ -988,15 +988,15 @@ __attribute__((__packed__))
 // __attribute__((__packed__))
 // #endif
 // {
-// 	U8		bLenght;
-// 	U8 	bDescriptorType;
-// 	U8		bInterfaceNumber;
-// 	U8		bAlternateSetting;
-// 	U8		bNumEndpoints;
-// 	U8		bInterfaceClass;
-// 	U8		bInterfaceSubclass;
-// 	U8		bInterfaceProtocol;
-// 	U8		iInterface;
+//   U8    bLenght;
+//   U8   bDescriptorType;
+//   U8    bInterfaceNumber;
+//   U8    bAlternateSetting;
+//   U8    bNumEndpoints;
+//   U8    bInterfaceClass;
+//   U8    bInterfaceSubclass;
+//   U8    bInterfaceProtocol;
+//   U8    iInterface;
 // } S_usb_as_interface_descriptor_1;
 
 
@@ -1010,12 +1010,12 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLenght;
-	U8 	bDescriptorType;
-	U8 	bDescriptorSubType;
-	U8		bTerminalLink;
-	U8    bDelay;
-	U16	wFormatTag;
+  U8    bLenght;
+  U8   bDescriptorType;
+  U8   bDescriptorSubType;
+  U8    bTerminalLink;
+  U8    bDelay;
+  U16  wFormatTag;
 } S_usb_as_g_interface_descriptor_1;
 
 
@@ -1029,18 +1029,24 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLenght;
-	U8 	bDescriptorType;
-	U8 	bDescriptorSubType;
-	U8		bFormatType;
-	U8		bNrChannels;
-	U8		bSubFrameSize;
-	U8		bBitResolution;
-	U8		bSampleFreqType;
-	U16	wLsbyteiSamFreq_1;
-	U8		bMsbyteiSamFreq_1;
-	U16	wLsbyteiSamFreq_2;
-	U8		bMsbyteiSamFreq_2;
+  U8    bLenght;
+  U8   bDescriptorType;
+  U8   bDescriptorSubType;
+  U8    bFormatType;
+  U8    bNrChannels;
+  U8    bSubFrameSize;
+  U8    bBitResolution;
+  U8    bSampleFreqType;
+  U16  wLsbyteiSamFreq_1;
+  U8    bMsbyteiSamFreq_1;
+  U16  wLsbyteiSamFreq_2;
+  U8    bMsbyteiSamFreq_2;
+  U16  wLsbyteiSamFreq_3;
+  U8    bMsbyteiSamFreq_3;
+  U16  wLsbyteiSamFreq_4;
+  U8    bMsbyteiSamFreq_4;
+  U16  wLsbyteiSamFreq_5;
+  U8    bMsbyteiSamFreq_5;
 } S_usb_format_type_1;
 
 //! Audio Format Type descriptor
@@ -1053,16 +1059,16 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLenght;
-	U8 	bDescriptorType;
-	U8 	bDescriptorSubType;
-	U8		bFormatType;
-	U8		bNrChannels;
-	U8		bSubFrameSize;
-	U8		bBitResolution;
-	U8		bSampleFreqType;
-	U16	wLsbyteiSamFreq_1;
-	U8		bMsbyteiSamFreq_1;
+  U8    bLenght;
+  U8   bDescriptorType;
+  U8   bDescriptorSubType;
+  U8    bFormatType;
+  U8    bNrChannels;
+  U8    bSubFrameSize;
+  U8    bBitResolution;
+  U8    bSampleFreqType;
+  U16  wLsbyteiSamFreq_1;
+  U8    bMsbyteiSamFreq_1;
 } S_usb_format_type_1_one_freq;
 
 //! Endpoint AUDIO Specific descriptor
@@ -1075,12 +1081,12 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLenght;
-	U8 	bDescriptorType;
-	U8 	bDescriptorSubType;
-	U8		bmAttributes;
-	U8    bLockDelayUnits;
-	U16	wLockDelay;
+  U8    bLenght;
+  U8   bDescriptorType;
+  U8   bDescriptorSubType;
+  U8    bmAttributes;
+  U8    bLockDelayUnits;
+  U16  wLockDelay;
 }S_usb_endpoint_audio_specific_1;
 
 //! Usb Audio Endpoint Descriptor
@@ -1099,8 +1105,8 @@ __attribute__((__packed__))
    U8      bmAttributes;          //!< Endpoint's attributes
    U16     wMaxPacketSize;        //!< Maximum packet size for this EP
    U8      bInterval;             //!< Interval for polling EP in ms
-	U8		  bRefresh;
-	U8		  bSynAddress;
+  U8      bRefresh;
+  U8      bSynAddress;
 } S_usb_endpoint_audio_descriptor_1;
 
 
@@ -1118,10 +1124,10 @@ __attribute__((__packed__))
   U8  bLength;               /* Size of this descriptor in bytes */
   U8  bDescriptorType;       /* CS_INTERFACE descriptor type */
   U8  bDescritorSubtype;     /* HEADER subtype */
-  U16 bcdADC;          		  /* Revision of class spec */
-  U8  bCategory;				/* Primary use of this function */
-  U16 wTotalLength;       	  /* Total size of class specific descriptor */
-  U8  bmControls;		     /* Latency Control Bitmap */
+  U16 bcdADC;                /* Revision of class spec */
+  U8  bCategory;        /* Primary use of this function */
+  U16 wTotalLength;           /* Total size of class specific descriptor */
+  U8  bmControls;         /* Latency Control Bitmap */
 } S_usb_ac_interface_descriptor_2;
 
 
@@ -1137,12 +1143,12 @@ __attribute__((__packed__))
 {
   U8  bLength;               /* Size of this descriptor in bytes */
   U8  bDescriptorType;       /* CS_INTERFACE descriptor type */
-  U8 	bDescritorSubtype;     /* CLOCK_SOURCE subtype */
-  U8  bClockID;       	  /* Clock Source ID */
-  U8  bmAttributes;		     /* Clock Type Bitmap */
-  U8  bmControls;			/* Clock control bitmap */
-  U8  bAssocTerminal;		/* Terminal ID associated with this source */
-  U8  iClockSource;			/* String descriptor of this clock source */
+  U8   bDescritorSubtype;     /* CLOCK_SOURCE subtype */
+  U8  bClockID;           /* Clock Source ID */
+  U8  bmAttributes;         /* Clock Type Bitmap */
+  U8  bmControls;      /* Clock control bitmap */
+  U8  bAssocTerminal;    /* Terminal ID associated with this source */
+  U8  iClockSource;      /* String descriptor of this clock source */
 } S_usb_clock_source_descriptor;
 
 
@@ -1158,13 +1164,13 @@ __attribute__((__packed__))
 {
   U8  bLength;               /* Size of this descriptor in bytes */
   U8  bDescriptorType;       /* CS_INTERFACE descriptor type */
-  U8 	bDescritorSubtype;     /* CLOCK_SELECTOR subtype */
-  U8  bClockID;       	  /* Clock Selector ID */
-  U8  bNrInPins;		     /* Number of Input Pins */
-  U8  baCSourceID1;			/* variable length */
+  U8   bDescritorSubtype;     /* CLOCK_SELECTOR subtype */
+  U8  bClockID;           /* Clock Selector ID */
+  U8  bNrInPins;         /* Number of Input Pins */
+  U8  baCSourceID1;      /* variable length */
   U8  baCSourceID2;
-  U8  bmControls;			/* Clock selector control bitmap  */
-  U8  iClockSelector;			/* String descriptor of this clock selector */
+  U8  bmControls;      /* Clock selector control bitmap  */
+  U8  iClockSelector;      /* String descriptor of this clock selector */
 } S_usb_clock_selector_descriptor;
 
 
@@ -1180,11 +1186,11 @@ __attribute__((__packed__))
 {
   U8  bLength;               /* Size of this descriptor in bytes */
   U8  bDescriptorType;       /* CS_INTERFACE descriptor type */
-  U8 	bDescritorSubtype;     /* CLOCK_MULTIPLIER subtype */
-  U8  bClockID;       	  /* Clock Multiplier ID */
-  U8  bCSourceID;		/* ID of clock entity */
-  U8  bmControls;			/* Clock Multiplier control bitmap */
-  U8  iClockMultiplier;			/* String descriptor of this clock multiplier */
+  U8   bDescritorSubtype;     /* CLOCK_MULTIPLIER subtype */
+  U8  bClockID;           /* Clock Multiplier ID */
+  U8  bCSourceID;    /* ID of clock entity */
+  U8  bmControls;      /* Clock Multiplier control bitmap */
+  U8  iClockMultiplier;      /* String descriptor of this clock multiplier */
 } S_usb_clock_multiplier_descriptor;
 
 
@@ -1198,18 +1204,18 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLength;		/* Size of this descriptor in bytes */
-	U8 	bDescriptorType;	/* CS_INTERFACE descriptor type */
-	U8 	bDescriptorSubType;	/* INPUT_TERMINAL subtype */
-	U8		bTerminalID;	/* Input Terminal ID */
-	U16	wTerminalType;		/* Terminal type */
-	U8		bAssocTerminal;	/* Output terminal this input is associated with */
-	U8		bCSourceID;		/* ID of Clock entity to which this terminal is connected */
-	U8		bNrChannels;	/* Number of Logical output channels */
-	U32	bmChannelConfig;	/* Spatial location of logical channels */
-	U8		iChannelNames;	/* String descriptor of first logical channel */
-	U16  bmControls;		/* Paired Bitmap of controls */
-	U8		iTerminal;		/* String descriptor of this Input Terminal */
+  U8    bLength;    /* Size of this descriptor in bytes */
+  U8   bDescriptorType;  /* CS_INTERFACE descriptor type */
+  U8   bDescriptorSubType;  /* INPUT_TERMINAL subtype */
+  U8    bTerminalID;  /* Input Terminal ID */
+  U16  wTerminalType;    /* Terminal type */
+  U8    bAssocTerminal;  /* Output terminal this input is associated with */
+  U8    bCSourceID;    /* ID of Clock entity to which this terminal is connected */
+  U8    bNrChannels;  /* Number of Logical output channels */
+  U32  bmChannelConfig;  /* Spatial location of logical channels */
+  U8    iChannelNames;  /* String descriptor of first logical channel */
+  U16  bmControls;    /* Paired Bitmap of controls */
+  U8    iTerminal;    /* String descriptor of this Input Terminal */
 } S_usb_in_ter_descriptor_2;
 
 
@@ -1223,16 +1229,16 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLength;		/* Size of this descriptor in bytes */
-	U8 	bDescriptorType;	/* CS_INTERFACE descriptor type */
-	U8 	bDescriptorSubType;	/* OUTPUT_TERMINAL subtype */
-	U8		bTerminalID;	/* Output Terminal ID */
-	U16	wTerminalType;		/* Terminal type */
-	U8		bAssocTerminal;	/* Input Terminal this output is associated with */
-	U8		bSourceID;		/* ID of the Unit or Terminal to which this teminal is connected to */
-	U8      bCSourceID;		/* ID od the Clock Entity to which this terminal is connected */
-	U16  bmControls;		/* Paired Bitmap of controls */
-	U8		iTerminal;		/* String descriptor of this Output Terminal */
+  U8    bLength;    /* Size of this descriptor in bytes */
+  U8   bDescriptorType;  /* CS_INTERFACE descriptor type */
+  U8   bDescriptorSubType;  /* OUTPUT_TERMINAL subtype */
+  U8    bTerminalID;  /* Output Terminal ID */
+  U16  wTerminalType;    /* Terminal type */
+  U8    bAssocTerminal;  /* Input Terminal this output is associated with */
+  U8    bSourceID;    /* ID of the Unit or Terminal to which this teminal is connected to */
+  U8      bCSourceID;    /* ID od the Clock Entity to which this terminal is connected */
+  U16  bmControls;    /* Paired Bitmap of controls */
+  U8    iTerminal;    /* String descriptor of this Output Terminal */
 } S_usb_out_ter_descriptor_2;
 
 //! USB Mixer Unit descriptor pp 4.7.2.6
@@ -1249,15 +1255,15 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLength;			/* Size of this descriptor in bytes */
-	U8 	bDescriptorType;        /* CS_INTERFACE descriptor type */
-	U8 	bDescriptorSubType; 	/* FEATURE_UNIT  subtype */
-	U8		bUnitID;			/* Feature unit ID */
-	U8		bSourceID;			/* ID of the Unit or Terminal to which this teminal is connected to */
-	U32		bmaControls;	/* Master Channel 0*/
-	U32	    bmaControls_1;  // Channel 1
-	U32     bmaControls_2;  // Channel 2
-	U8	iFeature;  /* String Descriptor of this Feature Unit */
+  U8    bLength;      /* Size of this descriptor in bytes */
+  U8   bDescriptorType;        /* CS_INTERFACE descriptor type */
+  U8   bDescriptorSubType;   /* FEATURE_UNIT  subtype */
+  U8    bUnitID;      /* Feature unit ID */
+  U8    bSourceID;      /* ID of the Unit or Terminal to which this teminal is connected to */
+  U32    bmaControls;  /* Master Channel 0*/
+  U32      bmaControls_1;  // Channel 1
+  U32     bmaControls_2;  // Channel 2
+  U8  iFeature;  /* String Descriptor of this Feature Unit */
 } S_usb_feature_unit_descriptor_2;
 
 
@@ -1294,15 +1300,15 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLength;			/* Size of this descriptor in bytes */
-	U8 		bDescriptorType;		/* INTERFACE descriptor type */
-	U8		bInterfaceNumber;	/* Number of the interface (0 based) */
-	U8		bAlternateSetting;
-	U8		bNumEndpoints;		/* Number of endpoints in this interface */
-	U8		bInterfaceClass;	/* AUDIO Interface class code */
-	U8		bInterfaceSubclass;	/* AUDIO_STREAMING Interface subclass code */
-	U8		bInterfaceProtocol;	/* IP_VERSION_02_00 Interface protocol code */
-	U8		iInterface;			/* String descriptor of this Interface */
+  U8    bLength;      /* Size of this descriptor in bytes */
+  U8     bDescriptorType;    /* INTERFACE descriptor type */
+  U8    bInterfaceNumber;  /* Number of the interface (0 based) */
+  U8    bAlternateSetting;
+  U8    bNumEndpoints;    /* Number of endpoints in this interface */
+  U8    bInterfaceClass;  /* AUDIO Interface class code */
+  U8    bInterfaceSubclass;  /* AUDIO_STREAMING Interface subclass code */
+  U8    bInterfaceProtocol;  /* IP_VERSION_02_00 Interface protocol code */
+  U8    iInterface;      /* String descriptor of this Interface */
 } S_usb_as_interface_descriptor;
 
 
@@ -1316,16 +1322,16 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLength;			/* Size of this descriptor in bytes */
-	U8 	bDescriptorType;		/* CS_INTERFACE descriptor type */
-	U8 	bDescriptorSubType;		/* AS_GENERAL subtype */
-	U8		bTerminalLink;		/* Terminal ID to which this interface is connected */
-	U8  	bmControls;			/* Bitmap of controls */
-	U8  bFormatType;			/* Format type the interface is using */
-	U32 bmFormats;				/* Bitmap of Formats this interface supports */
-	U8  bNrChannels;			/* Number of Physical channels in this interface cluster */
-	U32 bmChannelConfig;		/* Bitmap of spatial locations of the physical channels */
-	U8  iChannelNames;			/* String descriptor of the first physical channel */
+  U8    bLength;      /* Size of this descriptor in bytes */
+  U8   bDescriptorType;    /* CS_INTERFACE descriptor type */
+  U8   bDescriptorSubType;    /* AS_GENERAL subtype */
+  U8    bTerminalLink;    /* Terminal ID to which this interface is connected */
+  U8    bmControls;      /* Bitmap of controls */
+  U8  bFormatType;      /* Format type the interface is using */
+  U32 bmFormats;        /* Bitmap of Formats this interface supports */
+  U8  bNrChannels;      /* Number of Physical channels in this interface cluster */
+  U32 bmChannelConfig;    /* Bitmap of spatial locations of the physical channels */
+  U8  iChannelNames;      /* String descriptor of the first physical channel */
 } S_usb_as_g_interface_descriptor_2;
 
 
@@ -1339,12 +1345,12 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLength;			/* Size of this descriptor in bytes */
-	U8 	bDescriptorType;		/* CS_INTERFACE descriptor type */
-	U8 	bDescriptorSubType;		/* FORMAT_TYPE subtype */
-	U8		bFormatType;		/* Format Type this streaming interface is using */
-	U8		bSubslotSize;		/* Number of bytes in one audio subslot */
-	U8		bBitResolution;		/* Number of bits used from the available bits in the subslot */
+  U8    bLength;      /* Size of this descriptor in bytes */
+  U8   bDescriptorType;    /* CS_INTERFACE descriptor type */
+  U8   bDescriptorSubType;    /* FORMAT_TYPE subtype */
+  U8    bFormatType;    /* Format Type this streaming interface is using */
+  U8    bSubslotSize;    /* Number of bytes in one audio subslot */
+  U8    bBitResolution;    /* Number of bits used from the available bits in the subslot */
 } S_usb_format_type_2;
 
 
@@ -1386,13 +1392,13 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLength;			/* Size of this descriptor in bytes */
-	U8 		bDescriptorType;	/* CS_ENDPOINT descriptor type*/
-	U8 		bDescriptorSubType;	/* EP_GENERAL subtype */
-	U8		bmAttributes;		/* Bitmap of attributes 8 */
-	U8      bmControls;			/* Paired bitmap of controls */
-	U8    	bLockDelayUnits;		/* units for wLockDelay */
-	U16		wLockDelay;				/* time to lock endpoint */
+  U8    bLength;      /* Size of this descriptor in bytes */
+  U8    bDescriptorType;  /* CS_ENDPOINT descriptor type*/
+  U8    bDescriptorSubType;  /* EP_GENERAL subtype */
+  U8    bmAttributes;    /* Bitmap of attributes 8 */
+  U8    bmControls;      /* Paired bitmap of controls */
+  U8    bLockDelayUnits;    /* units for wLockDelay */
+  U16   wLockDelay;        /* time to lock endpoint */
 } S_usb_endpoint_audio_specific_2;
 
 //! Usb Standard AS Isochronous Feedback Endpoint Descriptors pp 4.10.2.1
@@ -1405,13 +1411,13 @@ struct
 __attribute__((__packed__))
 #endif
 {
-	U8		bLength;			/* Size of this descriptor in bytes */
-	U8 		bDescriptorType;	/* ENDPOINT descriptor type*/
-	U8      bEndpointAddress;	/* Endpoint Address */
-	U8		bmAttributes;		/* Bitmap of attributes 8 */
-	U8      bmControls;			/* Paired bitmap of controls */
-	U16     wMaxPacketSize;     /* Maximum packet size for this EP */
-	U8      bInterval;          /* Interval for polling EP in ms */
+  U8    bLength;      /* Size of this descriptor in bytes */
+  U8    bDescriptorType;  /* ENDPOINT descriptor type*/
+  U8    bEndpointAddress;  /* Endpoint Address */
+  U8    bmAttributes;    /* Bitmap of attributes 8 */
+  U8    bmControls;      /* Paired bitmap of controls */
+  U16   wMaxPacketSize;     /* Maximum packet size for this EP */
+  U8    bInterval;          /* Interval for polling EP in ms */
 } S_usb_endpoint_audio_feedback;
 
 // task specific structure definitions moved to *_usb_descriptors.h

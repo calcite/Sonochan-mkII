@@ -28,6 +28,12 @@
 
 #include "Mobo_config.h"
 
+
+//[Martin] Just for debug. Remove in release
+///todo REMOVE
+#include "print_funcs.h"
+#include <stdio.h>
+
 //
 // initialization flag
 //

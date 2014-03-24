@@ -166,8 +166,26 @@ void uac1_device_audio_task(void *pvParameters)
   const U8 OUT_RIGHT = FEATURE_OUT_NORMAL ? 1 : 0;
   volatile avr32_pdca_channel_t *pdca_channel = pdca_get_handler(PDCA_CHANNEL_SSC_RX);
   volatile avr32_pdca_channel_t *spk_pdca_channel = pdca_get_handler(PDCA_CHANNEL_SSC_TX);
-  if (current_freq.frequency == 48000) FB_rate = 48 << 14;
-  else FB_rate = (44 << 14) + (1 << 14)/10;
+
+
+  switch(current_freq.frequency)
+  {
+  case 48000:
+    FB_rate = 48 << 14;
+    break;
+  case 44100:
+    FB_rate = (44 << 14) + (1 << 14)/10;
+    break;
+  case 32000:
+    FB_rate = (32 << 14);
+    break;
+  case 16000:
+    FB_rate = (16 << 14);
+    break;
+  case 8000:
+    FB_rate = (44 << 14);
+    break;
+  }
 
   portTickType xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
@@ -226,6 +244,15 @@ void uac1_device_audio_task(void *pvParameters)
         break;
       case 44100:
         num_samples = 44;
+        break;
+      case 32000:
+        num_samples = 32;
+        break;
+      case 16000:
+        num_samples = 16;
+        break;
+      case 8000:
+        num_samples = 8;
         break;
       default:
         /* Unknown sampling frequency. This may happen when current_freq was
@@ -358,8 +385,6 @@ void uac1_device_audio_task(void *pvParameters)
               FB_rate -= FB_RATE_DELTA;
               delta_num--;
 
-              //[Martin]
-              print(DBG_USART, "Out -\n");
               //old_gap = gap;
             }
             else
@@ -369,8 +394,6 @@ void uac1_device_audio_task(void *pvParameters)
                 FB_rate += FB_RATE_DELTA;
                 delta_num++;
 
-                //[Martin]
-                print(DBG_USART, "Out +\n");
                 //old_gap = gap;
               }
           }
