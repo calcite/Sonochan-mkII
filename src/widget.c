@@ -20,7 +20,12 @@
 
 #include "features.h"
 #include "widget.h"
+
+//[Martin] Include only if support is enabled
+#if LCD_DISPLAY
 #include "taskLCD.h"
+#endif
+
 #include "Mobo_config.h"
 
 //
@@ -103,7 +108,10 @@ static char display_contents[4][21];
 
 void widget_display_grab(void) {
 	if ( ! display_grabbed)
+	  //[Martin] Include only if support is enabled
+	  #if LCD_DISPLAY
 		xSemaphoreTake( mutexQueLCD, portMAX_DELAY );
+#endif
 	display_grabbed += 1;
 }
 
@@ -111,14 +119,22 @@ void widget_display_drop(void) {
 	if (display_grabbed) {
 		display_grabbed -= 1;
 		if ( ! display_grabbed )
+		{
+		  //[Martin] Include only if support is enabled
+		  #if LCD_DISPLAY
 			xSemaphoreGive( mutexQueLCD );
+#endif
+                }
 	}
 }
 	
 void widget_display_clear(void) {
 	int i;
 	widget_display_grab();
+	//[Martin] Include only if support is enabled
+	#if LCD_DISPLAY
 	lcd_q_clear();
+#endif
 	display_row = 0;
 	for (i = 0; i < 4; i += 1)
 		memset(&display_contents[i][0], ' ', 20);
@@ -132,14 +148,20 @@ void widget_display_string_and_scroll(char *string) {
 		int row;
 		memmove(&display_contents[0][0], &display_contents[1][0], 3*21);
 		for (row = 0; row < 3; row += 1) {
+		  //[Martin] Include only if support is enabled
+		  #if LCD_DISPLAY
 			lcd_q_goto(row,0);
 			lcd_q_print(&display_contents[row][0]);
+#endif
 		}
 		display_row = 3;
 	}
 	sprintf(&display_contents[display_row][0], "%-20.20s", string);
+	//[Martin] Include only if support is enabled
+	#if LCD_DISPLAY
 	lcd_q_goto(display_row, 0);
 	lcd_q_print(&display_contents[display_row][0]);
+#endif
 	display_row += 1;
 	widget_display_drop();
 }
@@ -290,9 +312,15 @@ void widget_blink(char *dotspace) {
 	while (*dotspace != 0) {
 		// on for dot, off for anything else
 		if (*dotspace == '.') {
+		  //[Martin] Include only if support is enabled
+		  #if LCD_DISPLAY
 			gpio_clr_gpio_pin(PTT_1); gpio_clr_gpio_pin(PTT_2); gpio_clr_gpio_pin(PTT_3);
+#endif
 		} else if (*dotspace == ' ') {
+		  //[Martin] Include only if support is enabled
+		  #if LCD_DISPLAY
 			gpio_set_gpio_pin(PTT_1); gpio_set_gpio_pin(PTT_2); gpio_set_gpio_pin(PTT_3);
+#endif
 		} else {
 			break;
 		}
@@ -301,7 +329,10 @@ void widget_blink(char *dotspace) {
 		// count down the dot clock
 		widget_delay_rtc(us_per_dot);
 	}
+	//[Martin] Include only if support is enabled
+	#if LCD_DISPLAY
 	gpio_set_gpio_pin(PTT_1); gpio_set_gpio_pin(PTT_2); gpio_set_gpio_pin(PTT_3);
+#endif
 }
 
 void widget_blink_morse(char *ascii) {

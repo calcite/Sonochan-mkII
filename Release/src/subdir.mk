@@ -33,7 +33,6 @@ C_SRCS += \
 ../src/rotary_encoder.c \
 ../src/taskAK5394A.c \
 ../src/taskEXERCISE.c \
-../src/taskLCD.c \
 ../src/taskMoboCtrl.c \
 ../src/taskPowerDisplay.c \
 ../src/taskPushButtonMenu.c \
@@ -82,7 +81,6 @@ OBJS += \
 ./src/rotary_encoder.o \
 ./src/taskAK5394A.o \
 ./src/taskEXERCISE.o \
-./src/taskLCD.o \
 ./src/taskMoboCtrl.o \
 ./src/taskPowerDisplay.o \
 ./src/taskPushButtonMenu.o \
@@ -132,7 +130,6 @@ C_DEPS += \
 ./src/rotary_encoder.d \
 ./src/taskAK5394A.d \
 ./src/taskEXERCISE.d \
-./src/taskLCD.d \
 ./src/taskMoboCtrl.d \
 ./src/taskPowerDisplay.d \
 ./src/taskPushButtonMenu.d \

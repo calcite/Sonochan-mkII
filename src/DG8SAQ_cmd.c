@@ -17,7 +17,11 @@
 #include "gpio.h"
 
 #include "DG8SAQ_cmd.h"
+
+//[Martin] Include only if support is enabled
+#if LCD_DISPLAY
 #include "taskLCD.h"
+#endif
 #include "Mobo_config.h"
 #include "Si570.h"
 #include "AD7991.h"
