@@ -82,8 +82,7 @@
 #include "usb_specific_request.h"
 #include "usart.h"
 #include "pm.h"
-#include "features.h"
-#include "Mobo_config.h"
+
 #include "usb_audio.h"
 #include "device_audio_task.h"
 #include "uac2_device_audio_task.h"
@@ -350,10 +349,14 @@ Bool uac2_user_read_request(U8 type, U8 request)
 
 						// give total # of bytes requested
 						for (i = 0; i < (wLength); i++){
-							if (FEATURE_DAC_ES9022)
+							/*[Martin]
+							  if (FEATURE_DAC_ES9022)
 								Usb_write_endpoint_data(EP_CONTROL, 8, Speedx_1[i]);
 							else Usb_write_endpoint_data(EP_CONTROL, 8, Speedx_2[i]);
+							*/
+						  Usb_write_endpoint_data(EP_CONTROL, 8, Speedx_2[i]);
 							}
+
 						Usb_ack_control_in_ready_send();
 
 						while (!Is_usb_control_out_received());

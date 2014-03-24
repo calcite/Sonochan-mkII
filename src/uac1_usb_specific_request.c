@@ -82,7 +82,6 @@
 #include "usb_specific_request.h"
 #include "usart.h"
 #include "pm.h"
-#include "Mobo_config.h"
 #include "usb_audio.h"
 #include "device_audio_task.h"
 #include "uac1_device_audio_task.h"

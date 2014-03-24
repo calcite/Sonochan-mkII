@@ -38,7 +38,7 @@
 //_____ I N C L U D E S ____________________________________________________
 
 #include "conf_usb.h"
-#include "features.h"
+
 
 #if USB_DEVICE_FEATURE == DISABLED
   #error uac1_descriptors.h is #included although USB_DEVICE_FEATURE is disabled
@@ -60,7 +60,7 @@
 #define CONF_NB            1     //! Number of this configuration
 #define CONF_INDEX         0
 #define CONF_ATTRIBUTES    USB_CONFIG_SELFPOWERED
-#define MAX_POWER          250    // 500 mA
+#define MAX_POWER          130    // 260 mA
 
 
 

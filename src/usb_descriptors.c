@@ -70,7 +70,6 @@
 //_____ I N C L U D E S ____________________________________________________
 
 #include "conf_usb.h"
-#include "features.h"
 
 #if USB_DEVICE_FEATURE == ENABLED
 

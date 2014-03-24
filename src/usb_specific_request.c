@@ -82,10 +82,6 @@
 #include "image.h"
 #include "usart.h"
 #include "pm.h"
-#include "Mobo_config.h"
-#include "DG8SAQ_cmd.h"
-// #include "usb_audio.h"
-// #include "device_audio_task.h"
 
 
 //_____ M A C R O S ________________________________________________________
@@ -156,7 +152,8 @@ Bool usb_user_read_request(U8 type, U8 request)
 {
   // Test for Vendor specific request - DG8SAQ type of request
   if ( (type & DRT_MASK) == DRT_VENDOR )
-	  return usb_user_DG8SAQ (type, request);
+	  //[Martin]return usb_user_DG8SAQ (type, request);
+        return 0;
   return image_user_read_request(type, request);
 }
 
@@ -246,64 +243,5 @@ Bool usb_user_get_descriptor(U8 type, U8 string)
   return pbuffer != NULL;
 }
 
-Bool usb_user_DG8SAQ(U8 type, U8 command) {
-
-	U16 wValue, wIndex, wLength;
-	U8 replyLen;
-	int x;
-
-    // Grab the wValue, wIndex / wLength
-	wValue  = usb_format_usb_to_mcu_data(16, Usb_read_endpoint_data(EP_CONTROL, 16));
-	wIndex  = usb_format_usb_to_mcu_data(16, Usb_read_endpoint_data(EP_CONTROL, 16));
-	wLength  = usb_format_usb_to_mcu_data(16, Usb_read_endpoint_data(EP_CONTROL, 16));
-
-	//-------------------------------------------------------------------------------
-	// Process USB Host to Device transmissions.  No result is returned.
-	//-------------------------------------------------------------------------------
-	if (type == (DRD_OUT | DRT_STD | DRT_VENDOR)) {
-		Usb_ack_setup_received_free();
-		while (!Is_usb_control_out_received());
-		Usb_reset_endpoint_fifo_access(EP_CONTROL);
-
-		//for (x = 0; x<wLength;x++)
-		if (wLength>0)
-			for (x = wLength-1; x>=0;x--) {
-				dg8saqBuffer[x] = Usb_read_endpoint_data(EP_CONTROL, 8);
-			}
-		Usb_ack_control_out_received_free();
-		Usb_ack_control_in_ready_send();
-		while (!Is_usb_control_in_ready());
-
-		// This is our all important hook - Do the magic... control Si570 etc...
-		dg8saqFunctionWrite(command, wValue, wIndex, dg8saqBuffer, wLength);
-	}
-	//-------------------------------------------------------------------------------
-	// Process USB query commands and return a result (flexible size data payload)
-	//-------------------------------------------------------------------------------
-	else if (type == (DRD_IN | DRT_STD | DRT_VENDOR)) {
-		// This is our all important hook - Process and execute command, read CW paddle state etc...
-		replyLen = dg8saqFunctionSetup(command, wValue, wIndex, dg8saqBuffer);
-
-		Usb_ack_setup_received_free();
-
-		Usb_reset_endpoint_fifo_access(EP_CONTROL);
-
-		// Write out if packet is larger than zero
-		if (replyLen) {
-			for (x = replyLen-1; x>=0;x--) {
-				Usb_write_endpoint_data(EP_CONTROL, 8, dg8saqBuffer[x]);	// send the reply
-			}
-		}
-
-		Usb_ack_control_in_ready_send();
-		while (!Is_usb_control_in_ready());			// handshake modified by Alex 16 May 2010
-
-		while ( !Is_usb_control_out_received());
-		Usb_ack_control_out_received_free();
-
-	}
-
-	return TRUE;
-}
 
 #endif  // USB_DEVICE_FEATURE == ENABLED

@@ -73,9 +73,6 @@
 #include "usb_specific_request.h"
 #include "device_mouse_hid_task.h"
 
-#if LCD_DISPLAY			// Multi-line LCD display
-#include "taskLCD.h"
-#endif
 //#include "taskEXERCISE.h"
 
 
@@ -163,24 +160,6 @@ void device_mouse_hid_task(void)
 		   if (data_length > 2) data_length = 2;
 		   usb_read_ep_rxpacket(EP_HID_RX, &usb_report[0], data_length, NULL);
 		   Usb_ack_out_received_free(EP_HID_RX);
-#if LCD_DISPLAY			// Multi-line LCD display
-		   xSemaphoreTake( mutexQueLCD, portMAX_DELAY );
-		   lcdQUEDATA.CMD = lcdPOSW;
-	       xStatus = xQueueSendToBack( lcdCMDQUE, &lcdQUEDATA, portMAX_DELAY );
-           lcdQUEDATA.CMD=lcdGOTO;
-           lcdQUEDATA.data.scrnPOS.row = 3;
-           lcdQUEDATA.data.scrnPOS.col = 14;
-           xStatus = xQueueSendToBack( lcdCMDQUE, &lcdQUEDATA, portMAX_DELAY );
-           lcdQUEDATA.CMD=lcdPUTH;
-           lcdQUEDATA.data.aChar=usb_report[0];
-           xStatus = xQueueSendToBack( lcdCMDQUE, &lcdQUEDATA, portMAX_DELAY );
-           lcdQUEDATA.CMD=lcdPUTH;
-           lcdQUEDATA.data.aChar=usb_report[1];
-           xStatus = xQueueSendToBack( lcdCMDQUE, &lcdQUEDATA, portMAX_DELAY );
-           lcdQUEDATA.CMD = lcdPOSR;
-           xStatus = xQueueSendToBack( lcdCMDQUE, &lcdQUEDATA, portMAX_DELAY );
-           xSemaphoreGive( mutexQueLCD );
-#endif
            print_dbg("HID: report received\n");
 
 		   usb_state = 't';

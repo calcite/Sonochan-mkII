@@ -28,25 +28,16 @@
 #include "composite_widget.h"
 #include "taskAK5394A.h"
 #include "uac1_taskAK5394A.h"
-//#include "I2C.h"
 
 /*
  * Task specific headers.
  */
 
-#include "features.h"
 #include "image.h"
 #include "queue.h"
 #include "taskEXERCISE.h"
-#include "taskMoboCtrl.h"
-#include "taskPowerDisplay.h"
-#include "taskPushButtonMenu.h"
 #include "wdt.h"
 
-#if LCD_DISPLAY				// Multi-line LCD display
-#include "taskLCD.h"
-#include "taskStartupLogDisplay.h"
-#endif
 
 /*
 ** Image specific headers
@@ -73,20 +64,10 @@ static void x_image_task_init(void) {
 
   mutexEP_IN = xSemaphoreCreateMutex(); // for co-ordinating multiple tasks using EP IN
 
-#if LCD_DISPLAY						// Multi-line LCD display
-  vStartTaskLCD();
-  vStartTaskPowerDisplay();
-  vStartTaskPushButtonMenu();
-#endif
-  vStartTaskMoboCtrl();
   // vStartTaskEXERCISE( tskIDLE_PRIORITY );
   uac1_AK5394A_task_init();
   device_mouse_hid_task_init(UAC1_EP_HID_RX, UAC1_EP_HID_TX);
   uac1_device_audio_task_init(UAC1_EP_AUDIO_IN, UAC1_EP_AUDIO_OUT, UAC1_EP_AUDIO_OUT_FB);
-#endif
-#if LCD_DISPLAY						// Multi-line LCD display
-	if ( ! FEATURE_LOG_NONE )
-		vStartTaskStartupLogDisplay();
 #endif
 }
 
@@ -104,39 +85,21 @@ static uint16_t x_dg8saq_get_dev_desc_length(void) {
 	return (uint16_t)sizeof(uac1_dg8saq_usb_dev_desc);
 }
 static uint8_t *x_image_get_conf_desc_pointer(void) {
-	if ( FEATURE_BOARD_WIDGET )
-		return (uint8_t *)&uac1_usb_conf_desc_fs_widget;
-	else
 		return (uint8_t *)&uac1_usb_conf_desc_fs;
 }
 static uint16_t x_image_get_conf_desc_length(void) {
-	if ( FEATURE_BOARD_WIDGET )
-		return sizeof(uac1_usb_conf_desc_fs_widget);
-	else
 		return sizeof(uac1_usb_conf_desc_fs);
 }
 static uint8_t *x_image_get_conf_desc_fs_pointer(void) {
-	if ( FEATURE_BOARD_WIDGET )
-		return (uint8_t *)&uac1_usb_conf_desc_fs_widget;
-	else
 		return (uint8_t *)&uac1_usb_conf_desc_fs;
 }
 static uint16_t x_image_get_conf_desc_fs_length(void) {
-	if ( FEATURE_BOARD_WIDGET )
-		return sizeof(uac1_usb_conf_desc_fs_widget);
-	else
 		return sizeof(uac1_usb_conf_desc_fs);
 }
 static uint8_t *x_image_get_conf_desc_hs_pointer(void) {
-	if ( FEATURE_BOARD_WIDGET )
-		return (uint8_t *)&uac1_usb_conf_desc_hs_widget;
-	else
 		return (uint8_t *)&uac1_usb_conf_desc_hs;
 }
 static uint16_t x_image_get_conf_desc_hs_length(void) {
-	if ( FEATURE_BOARD_WIDGET )
-		return sizeof(uac1_usb_conf_desc_hs_widget);
-	else
 		return sizeof(uac1_usb_conf_desc_hs);
 }
 static uint8_t *x_image_get_qualifier_desc_pointer(void) {

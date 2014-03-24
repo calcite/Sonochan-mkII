@@ -62,7 +62,7 @@
 #if USB_DEVICE_FEATURE == ENABLED
 
 #include "board.h"
-#include "features.h"
+
 #ifdef FREERTOS_USED
 #include "FreeRTOS.h"
 #include "task.h"
@@ -78,9 +78,6 @@
 #include "device_audio_task.h"
 #include "uac2_device_audio_task.h"
 
-#if LCD_DISPLAY				// Multi-line LCD display
-#include "taskLCD.h"
-#endif
 
 #include "composite_widget.h"
 #include "taskAK5394A.h"
@@ -147,10 +144,10 @@ void uac2_device_audio_task(void *pvParameters)
 	const U8 EP_AUDIO_IN = ep_audio_in;
 	const U8 EP_AUDIO_OUT = ep_audio_out;
 	const U8 EP_AUDIO_OUT_FB = ep_audio_out_fb;
-	const U8 IN_LEFT = FEATURE_IN_NORMAL ? 0 : 1;
-	const U8 IN_RIGHT = FEATURE_IN_NORMAL ? 1 : 0;
-	const U8 OUT_LEFT = FEATURE_OUT_NORMAL ? 0 : 1;
-	const U8 OUT_RIGHT = FEATURE_OUT_NORMAL ? 1 : 0;
+	const U8 IN_LEFT = 0;
+	const U8 IN_RIGHT = 1;
+	const U8 OUT_LEFT = 0;
+	const U8 OUT_RIGHT = 1;
 	volatile avr32_pdca_channel_t *pdca_channel = pdca_get_handler(PDCA_CHANNEL_SSC_RX);
 	volatile avr32_pdca_channel_t *spk_pdca_channel = pdca_get_handler(PDCA_CHANNEL_SSC_TX);
 
@@ -188,15 +185,15 @@ void uac2_device_audio_task(void *pvParameters)
 				spk_buffer_out = 0;
 				index = 0;
 
-				if (!FEATURE_ADC_NONE){
-					// Wait for the next frame synchronization event
-					// to avoid channel inversion.  Start with left channel - FS goes low
-					while (!gpio_get_pin_value(AK5394_LRCK));
-					while (gpio_get_pin_value(AK5394_LRCK));
-					// Enable now the transfer.
-					pdca_enable(PDCA_CHANNEL_SSC_RX);
-					pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-				}
+
+				// Wait for the next frame synchronization event
+				// to avoid channel inversion.  Start with left channel - FS goes low
+				while (!gpio_get_pin_value(AK5394_LRCK));
+				while (gpio_get_pin_value(AK5394_LRCK));
+				// Enable now the transfer.
+				pdca_enable(PDCA_CHANNEL_SSC_RX);
+				pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+
 
 				freq_changed = 1;						// force a freq change reset
 			}
@@ -208,7 +205,7 @@ void uac2_device_audio_task(void *pvParameters)
 				else if (current_freq.frequency == 48000) num_samples = 12;
 				else num_samples = 48;	// freq 192khz
 
-				if (!FEATURE_ADC_NONE){
+
 					if (Is_usb_in_ready(EP_AUDIO_IN)) {	// Endpoint ready for data transfer?
 
 						Usb_ack_in_ready(EP_AUDIO_IN);	// acknowledge in ready
@@ -288,7 +285,7 @@ void uac2_device_audio_task(void *pvParameters)
 							}
 						Usb_send_in(EP_AUDIO_IN);		// send the current bank
 					}
-				} // end FEATURE_ADC
+
 		} // end alt setting 1
 
 		if (usb_alternate_setting_out == 1){

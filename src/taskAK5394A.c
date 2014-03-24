@@ -46,7 +46,7 @@
 #include "pm.h"
 #include "pdca.h"
 #include "usb_standard_request.h"
-#include "features.h"
+
 #include "device_audio_task.h"
 #include "taskAK5394A.h"
 
@@ -228,10 +228,10 @@ void AK5394A_task_init(const Bool uac1) {
 	pdca_set_irq();
 
 	// Init PDCA channel with the pdca_options.
-	if (!FEATURE_ADC_NONE){
-		pdca_init_channel(PDCA_CHANNEL_SSC_RX, &PDCA_OPTIONS); // init PDCA channel with options.
-		pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-	}
+
+	pdca_init_channel(PDCA_CHANNEL_SSC_RX, &PDCA_OPTIONS); // init PDCA channel with options.
+	pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+
 	pdca_init_channel(PDCA_CHANNEL_SSC_TX, &SPK_PDCA_OPTIONS); // init PDCA channel with options.
 	pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX);
 

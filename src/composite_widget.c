@@ -172,8 +172,6 @@
 
 #include "FreeRTOS.h"
 
-#include "features.h"
-#include "widget.h"
 #include "image.h"
 #include "composite_widget.h"
 
@@ -220,12 +218,6 @@ int main(void)
   {
     return 42;
   }
-
-  // Initialize features management
-  features_init();
-
-  // Initialize widget management - void function now
-  widget_init();
 
 
   //gpio_enable_pin_pull_up(GPIO_PTT_INPUT);
