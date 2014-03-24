@@ -570,29 +570,70 @@ void audio_set_cur(void)
     sprintf(&c_tmp[0], "SET CUR: %lu\n", current_freq.frequency);
     print(DBG_USART, &c_tmp[0]);
 
+    // When need write to PM registers
+    volatile avr32_pm_t *pm = &AVR32_PM;
+
     switch(current_freq.frequency)
     {
     case 48000:
       cs2200_set_PLL_freq(12288000UL);
+      // Turn off divider on GLCK0
+      pm->GCCTRL[0].diven = 0;
+
+      // Set GLCK1 to 1/4 of PLL OUT
+      pm->GCCTRL[1].div = 1;
+      pm->GCCTRL[1].diven = 1;
       gpio_set_gpio_pin(AVR32_PIN_PX16);
       break;
     case 44100:
       cs2200_set_PLL_freq(11289600UL);
+      // Turn off divider on GLCK0
+      pm->GCCTRL[0].diven = 0;
+
+      // Set GLCK1 to 1/4 of PLL OUT
+      pm->GCCTRL[1].div = 1;
+      pm->GCCTRL[1].diven = 1;
       gpio_clr_gpio_pin(AVR32_PIN_PX16);
       break;
     case 32000:
       cs2200_set_PLL_freq(8192000UL);
+      // Turn off divider on GLCK0
+      pm->GCCTRL[0].diven = 0;
+
+      // Set GLCK1 to 1/4 of PLL OUT
+      pm->GCCTRL[1].div = 1;
+      pm->GCCTRL[1].diven = 1;
       break;
     case 16000:
-      ///\todo Martin Set precaller and PLL
+      // Need 4096000 MCLK, BLCK @ 1024000
+      // PLL can not set lower freq. than 6 MHz -> use GCLK0 divider
+      cs2200_set_PLL_freq(8192000UL);
+      // On GCLK0 set divider to 2 ( 2*(0+1))
+      pm->GCCTRL[0].div = 0;
+      pm->GCCTRL[0].diven = 1;
+
+      // Also set BCLK divider (GLCK1) to get 1/4 MCLK
+      pm->GCCTRL[1].div = 3;
+      pm->GCCTRL[1].diven = 1;
       break;
     case 8000:
-      ///\todo Martin Set precaller and PLL
+      // Need 2048000 MCLK @ BCLK @ 512000
+      // PLL can not set lower freq. than 6 MHz -> use GCLK0 divider
+      cs2200_set_PLL_freq(8192000UL);
+      // On GCLK0 set divider to 4 ( 2*(1+1))
+      pm->GCCTRL[0].div = 1;
+      pm->GCCTRL[0].diven = 1;
+
+      // Also set BCLK divider (GLCK1) to get 1/4 MCLK
+      pm->GCCTRL[1].div = 7;
+      pm->GCCTRL[1].diven = 1;
       break;
     default:
-      // Should not happen, but just for case
-      ///\todo Martin - Change freq back to 12.288 MHz
-      cs2200_set_PLL_freq(16288000UL);
+      /* Should not happen, but just for case. Set frequency to unused
+       * frequency, so for user/developer it will be obvious error, which will
+       * be easy to track ;)
+       */
+      cs2200_set_PLL_freq(20000000UL);
       gpio_set_gpio_pin(AVR32_PIN_PX16);
     }
 

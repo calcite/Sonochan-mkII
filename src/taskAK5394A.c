@@ -177,6 +177,22 @@ void AK5394A_task_init(const Bool uac1) {
 	// from AK5394A Xtal Oscillator
 	pm_enable_clk1(&AVR32_PM, OSC1_STARTUP);
 
+	/*[Martin] Use GCLK0 as master clock because PLL can not produce
+	 * frequency lower than 6 MHz. So we can use divider. In default we use
+	 * 48 kHz sampling rate, so divider will be disabled. So far support is
+	 * only for UAC1
+	 */
+	gpio_enable_module_pin(GCLK0, GCLK0_FUNCTION);
+	if(uac1){
+	  pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK0,   // GCLK0
+	      0,        // OSC source
+	      1,        // OSC1
+	      0,        // Divider disabled
+	      0);       // Divider ratio -> Fout = Fin/( 2*(DIV+1) )
+	}
+	pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK0);
+	// Do need enable clk1 again
+
 
 	// Assign GPIO to SSC.
 	gpio_enable_module(SSC_GPIO_MAP, sizeof(SSC_GPIO_MAP) / sizeof(SSC_GPIO_MAP[0]));
