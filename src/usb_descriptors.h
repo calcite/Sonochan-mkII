@@ -120,13 +120,11 @@
 #define DEVICE_SUB_CLASS      0x02          //!
 #define DEVICE_PROTOCOL       0x01          //! IAD Device
 #define EP_CONTROL_LENGTH     64
-#define DG8SAQ_VENDOR_ID    0x16c0    //!  DG8SAQ device
-#define DG8SAQ_PRODUCT_ID     0x05dc
+
 #define AUDIO_VENDOR_ID      0x16d0    //!  Audio device
 #define AUDIO_PRODUCT_ID_1    0x0761    //!  UAC1 PID
 #define AUDIO_PRODUCT_ID_2    0x0762    //!  UAC2 PID
-#define HPSDR_VENDOR_ID       0xfffe    //! Ozy Device
-#define HPSDR_PRODUCT_ID      0x0007
+
 #define RELEASE_NUMBER        0x1000
 #define MAN_INDEX             0x01
 #define PROD_INDEX            0x02
@@ -152,46 +150,22 @@
 
 #define LANG_ID               0x00
 
-#define USB_MN_LENGTH         13
+#define USB_MN_LENGTH         4
 #define USB_MANUFACTURER_NAME \
 {\
-  Usb_unicode('S'),\
-  Usb_unicode('o'),\
-  Usb_unicode('n'),\
-  Usb_unicode('o'),\
-  Usb_unicode('c'),\
-  Usb_unicode('h'),\
-  Usb_unicode('a'),\
-  Usb_unicode('n'),\
-  Usb_unicode(' '),\
-  Usb_unicode('m'),\
-  Usb_unicode('k'),\
-  Usb_unicode('I'),\
-  Usb_unicode('I'),\
-}
-
-#define USB_PN_LENGTH         19
-#define USB_PRODUCT_NAME {\
-  Usb_unicode('Y'), Usb_unicode('o'), Usb_unicode('y'), Usb_unicode('o'), Usb_unicode('d'),\
-  Usb_unicode('y'), Usb_unicode('n'), Usb_unicode('e'), Usb_unicode(' '), \
-  Usb_unicode('S'), Usb_unicode('D'), Usb_unicode('R'), Usb_unicode('-'), Usb_unicode('W'),\
-  Usb_unicode('i'), Usb_unicode('d'), Usb_unicode('g'), Usb_unicode('e'), Usb_unicode('t')\
-}
-
-
-#define HPSDR_USB_PN_LENGTH         9
-#define HPSDR_USB_PRODUCT_NAME \
-{\
-  Usb_unicode('O'),\
-  Usb_unicode('Z'),\
-  Usb_unicode('Y'),\
-  Usb_unicode(' '),\
-  Usb_unicode('C'),\
+  Usb_unicode('A'),\
   Usb_unicode('L'),\
-  Usb_unicode('O'),\
-  Usb_unicode('N'),\
-  Usb_unicode('E')\
+  Usb_unicode('C'),\
+  Usb_unicode('Z')\
 }
+
+#define USB_PN_LENGTH         13
+#define USB_PRODUCT_NAME {\
+  Usb_unicode('S'), Usb_unicode('o'), Usb_unicode('n'), Usb_unicode('o'), Usb_unicode('c'),\
+  Usb_unicode('h'), Usb_unicode('a'), Usb_unicode('n'), Usb_unicode(' '), \
+  Usb_unicode('m'), Usb_unicode('k'), Usb_unicode('I'), Usb_unicode('I')\
+}
+
 
 #define USB_SN_LENGTH         13
 #define USB_SERIAL_NUMBER \

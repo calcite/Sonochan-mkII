@@ -38,25 +38,6 @@
 //_____ D E F I N I T I O N S ______________________________________________
 
 
-// usb_user_device_descriptor
-const S_usb_device_descriptor uac2_dg8saq_usb_dev_desc =
-{
-  sizeof(S_usb_device_descriptor),
-  DEVICE_DESCRIPTOR,
-  Usb_format_mcu_to_usb_data(16, USB_SPECIFICATION),
-  DEVICE_CLASS,
-  DEVICE_SUB_CLASS,
-  DEVICE_PROTOCOL,
-  EP_CONTROL_LENGTH,
-  Usb_format_mcu_to_usb_data(16, DG8SAQ_VENDOR_ID),
-  Usb_format_mcu_to_usb_data(16, DG8SAQ_PRODUCT_ID),
-  Usb_format_mcu_to_usb_data(16, RELEASE_NUMBER),
-  MAN_INDEX,
-  PROD_INDEX,
-  SN_INDEX,
-  NB_CONFIGURATION
-};
-
 const S_usb_device_descriptor uac2_audio_usb_dev_desc =
 {
   sizeof(S_usb_device_descriptor),

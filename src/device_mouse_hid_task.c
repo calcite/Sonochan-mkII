@@ -73,7 +73,6 @@
 #include "usb_specific_request.h"
 #include "device_mouse_hid_task.h"
 
-//#include "taskEXERCISE.h"
 
 
 //_____ M A C R O S ________________________________________________________
@@ -174,10 +173,17 @@ void device_mouse_hid_task(void)
           Usb_reset_endpoint_fifo_access(EP_HID_TX);
           
           //! Write report
+
+          //[Martin] For example just change values
+          usb_report[0] = usb_report[0] +33;
+          usb_report[1] = usb_report[1] -15;
+
           Usb_write_endpoint_data(EP_HID_TX, 8, usb_report[0]);
           Usb_write_endpoint_data(EP_HID_TX, 8, usb_report[1]);
           Usb_ack_in_ready_send(EP_HID_TX);
           usb_state = 'r';
+
+          print_dbg("HID: send report\n");
        }
        break;
        }

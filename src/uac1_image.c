@@ -78,12 +78,7 @@ static uint8_t *x_audio_get_dev_desc_pointer(void) {
 static uint16_t x_audio_get_dev_desc_length(void) {
 	return (uint16_t)sizeof(uac1_audio_usb_dev_desc);
 }
-static uint8_t *x_dg8saq_get_dev_desc_pointer(void) {
-	return (uint8_t *)&uac1_dg8saq_usb_dev_desc;
-}
-static uint16_t x_dg8saq_get_dev_desc_length(void) {
-	return (uint16_t)sizeof(uac1_dg8saq_usb_dev_desc);
-}
+
 static uint8_t *x_image_get_conf_desc_pointer(void) {
 		return (uint8_t *)&uac1_usb_conf_desc_fs;
 }
@@ -127,25 +122,6 @@ const image_t uac1_audio_image = {
 	x_image_task_init,
 	x_audio_get_dev_desc_pointer,
 	x_audio_get_dev_desc_length,
-	x_image_get_conf_desc_pointer,
-	x_image_get_conf_desc_length,
-	x_image_get_conf_desc_fs_pointer,
-	x_image_get_conf_desc_fs_length,
-	x_image_get_conf_desc_hs_pointer,
-	x_image_get_conf_desc_hs_length,
-	x_image_get_qualifier_desc_pointer,
-	x_image_get_qualifier_desc_length,
-	x_image_user_endpoint_init,
-	x_image_user_read_request,
-	x_image_user_set_interface
-};
-
-const image_t uac1_dg8saq_image = {
-	x_image_boot,
-	x_image_init,
-	x_image_task_init,
-	x_dg8saq_get_dev_desc_pointer,
-	x_dg8saq_get_dev_desc_length,
 	x_image_get_conf_desc_pointer,
 	x_image_get_conf_desc_length,
 	x_image_get_conf_desc_fs_pointer,

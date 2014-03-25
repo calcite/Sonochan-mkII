@@ -56,7 +56,7 @@
 
 
 // CONFIGURATION
-#define NB_INTERFACE     4  //!  DG8SAQ, Audio (3)
+#define NB_INTERFACE     4  //!  Audio (3) and HID
 #define CONF_NB            1     //! Number of this configuration
 #define CONF_INDEX         0
 #define CONF_ATTRIBUTES    USB_CONFIG_SELFPOWERED
@@ -72,28 +72,18 @@
 #define STD_AS_INTERFACE_OUT      0x02
 #define STD_AS_INTERFACE_IN        0x03
 
-// USB DG8SAQ Interface descriptor
+
+//[Martin] commented HID
+// USB HID Interface descriptor
 #define INTERFACE_NB0          0
 #define ALTERNATE_NB0              0                  //! The alt setting nb of this interface
-#define NB_ENDPOINT0          0                  //! The number of endpoints this interface has
-#define INTERFACE_CLASS0        NO_CLASS          //! No Class
+#define NB_ENDPOINT0          2                  //! The number of endpoints this interface has
+#define INTERFACE_CLASS0        HID_CLASS          //! HID Class
 #define INTERFACE_SUB_CLASS0        NO_SUBCLASS        //! No Subclass
 #define INTERFACE_PROTOCOL0        NO_PROTOCOL       //! No Protocol
 #define INTERFACE_INDEX0           0
 
-#define DSC_INTERFACE_DG8SAQ    INTERFACE_NB0
-
-/*
-// USB HID Interface descriptor
-#define INTERFACE_NB1          1
-#define ALTERNATE_NB1              0                  //! The alt setting nb of this interface
-#define NB_ENDPOINT1          2                  //! The number of endpoints this interface has
-#define INTERFACE_CLASS1        HID_CLASS          //! HID Class
-#define INTERFACE_SUB_CLASS1        NO_SUBCLASS        //! No Subclass
-#define INTERFACE_PROTOCOL1        NO_PROTOCOL       //! No Protocol
-#define INTERFACE_INDEX1           0
-
-#define DSC_INTERFACE_HID      INTERFACE_NB1
+#define DSC_INTERFACE_HID      INTERFACE_NB0
 
 // HID descriptor
 #define HID_VERSION                 0x0111  //! HID Class Specification release number
@@ -118,7 +108,7 @@
 #define EP_SIZE_2_HS            EP_OUT_LENGTH_2_HS
 #define EP_INTERVAL_2           5               //! Interrupt polling interval from host
 
-*/
+//[/Martin] Comment end*/
 
 // Standard Audio Control (AC) interface descriptor
 #define INTERFACE_NB2       1
@@ -280,12 +270,12 @@ __attribute__((__packed__))
 {
     S_usb_configuration_descriptor cfg;
     S_usb_interface_descriptor   ifc0;
-/*
-    S_usb_interface_descriptor  ifc1;
+
+    //[Martin] HID commented
     S_usb_hid_descriptor           hid;
     S_usb_endpoint_descriptor      ep1;
     S_usb_endpoint_descriptor     ep2;
-*/
+
     S_usb_interface_association_descriptor iad1;
     S_usb_interface_descriptor       ifc2;
     S_usb_ac_interface_descriptor_1    audioac;
@@ -325,12 +315,12 @@ __attribute__((__packed__))
 {
     S_usb_configuration_descriptor cfg;
     S_usb_interface_descriptor   ifc0;
-/*
-    S_usb_interface_descriptor  ifc1;
+
+    //[Martin] HID commented
     S_usb_hid_descriptor           hid;
     S_usb_endpoint_descriptor      ep1;
     S_usb_endpoint_descriptor     ep2;
-*/
+
     S_usb_interface_association_descriptor iad1;
     S_usb_interface_descriptor       ifc2;
     S_usb_ac_interface_descriptor_1    audioac;
@@ -360,12 +350,9 @@ __attribute__((__packed__))
 S_usb_user_configuration_descriptor_one_freq;
 
 extern const S_usb_device_descriptor uac1_audio_usb_dev_desc;
-extern const S_usb_device_descriptor uac1_dg8saq_usb_dev_desc;
 extern const S_usb_device_qualifier_descriptor uac1_usb_qualifier_desc;
 extern const S_usb_user_configuration_descriptor uac1_usb_conf_desc_fs;
-extern const S_usb_user_configuration_descriptor_one_freq uac1_usb_conf_desc_fs_widget;
 extern const S_usb_user_configuration_descriptor uac1_usb_conf_desc_hs;
-extern const S_usb_user_configuration_descriptor_one_freq uac1_usb_conf_desc_hs_widget;
 extern const S_usb_device_qualifier_descriptor uac1_usb_qualifier_desc;
 
 #endif  // _UAC1_USB_DESCRIPTORS_H_
