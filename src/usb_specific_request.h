@@ -88,8 +88,8 @@
 extern U8 clock_selected;
 extern Bool clock_changed;
 
-extern U8 usb_feature_report[3];
-extern U8 usb_report[3];
+extern U8 usb_feature_report[9];
+extern U8 usb_report[9];
 
 extern U8 g_u8_report_rate;
 

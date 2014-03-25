@@ -203,7 +203,7 @@ const U8 usb_hid_report_descriptor[USB_HID_REPORT_DESC] =
         0x15, 0x00,     	// Logical Minimum (0)
         0x26, 0xFF, 0x00,   // Logical Maximum (255)
         0x75, 0x08,     	// Report Size (8 bits)
-        0x95, 0x02,     	// Report Count (2 fields)
+        0x95, 0x08,     	// Report Count (8 fields)
         0x81, 0x02,     	// Input (Data, Variable, Absolute)
 
 		// The Output report
@@ -211,7 +211,7 @@ const U8 usb_hid_report_descriptor[USB_HID_REPORT_DESC] =
         0x15, 0x00,     	// Logical Minimum (0)
         0x26, 0xFF, 0x00,   // Logical Maximum (255)
         0x75, 0x08,     	// Report Size (8 bits)
-        0x95, 0x02,     	// Report Count (2 fields)
+        0x95, 0x08,     	// Report Count (8 fields)
         0x91, 0x02,      	// Output (Data, Variable, Absolute)
 
 		// The Feature report
@@ -219,7 +219,7 @@ const U8 usb_hid_report_descriptor[USB_HID_REPORT_DESC] =
         0x15, 0x00,     	// Logical Minimum (0)
         0x26, 0xFF, 0x00,   // Logical Maximum (255)
         0x75, 0x08,			// Report Size (8 bits)
-        0x95, 0x02, 		// Report Count	(2 fields)
+        0x95, 0x08, 		// Report Count	(8 fields)
         0xB1, 0x02,     	// Feature (Data, Variable, Absolute)
 
 	  	0xC0	// end collection

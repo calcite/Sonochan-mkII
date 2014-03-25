@@ -92,8 +92,8 @@
 
 //_____ P R I V A T E   D E C L A R A T I O N S ____________________________
 
-U8 usb_feature_report[3];
-U8 usb_report[3];
+U8 usb_feature_report[9];
+U8 usb_report[9];
 
 U8 g_u8_report_rate=0;
 

@@ -73,7 +73,6 @@
 #define STD_AS_INTERFACE_IN        0x03
 
 
-//[Martin] commented HID
 // USB HID Interface descriptor
 #define INTERFACE_NB0          0
 #define ALTERNATE_NB0              0                  //! The alt setting nb of this interface
@@ -104,11 +103,9 @@
 #define EP_ATTRIBUTES_2         TYPE_INTERRUPT
 #define EP_OUT_LENGTH_2_FS      8
 #define EP_SIZE_2_FS            EP_OUT_LENGTH_2_FS
-#define EP_OUT_LENGTH_2_HS       8
+#define EP_OUT_LENGTH_2_HS      8
 #define EP_SIZE_2_HS            EP_OUT_LENGTH_2_HS
 #define EP_INTERVAL_2           5               //! Interrupt polling interval from host
-
-//[/Martin] Comment end*/
 
 // Standard Audio Control (AC) interface descriptor
 #define INTERFACE_NB2       1
@@ -316,7 +313,6 @@ __attribute__((__packed__))
     S_usb_configuration_descriptor cfg;
     S_usb_interface_descriptor   ifc0;
 
-    //[Martin] HID commented
     S_usb_hid_descriptor           hid;
     S_usb_endpoint_descriptor      ep1;
     S_usb_endpoint_descriptor     ep2;

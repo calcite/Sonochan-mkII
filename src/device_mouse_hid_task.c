@@ -74,6 +74,9 @@
 #include "device_mouse_hid_task.h"
 
 
+//[Martin]
+///\todo REMOVE
+#include <stdio.h>
 
 //_____ M A C R O S ________________________________________________________
 
@@ -134,6 +137,12 @@ void device_mouse_hid_task(void)
   U8 data_length;
   const U8 EP_HID_RX = ep_hid_rx;
   const U8 EP_HID_TX = ep_hid_tx;
+
+
+  uint8_t i;
+  char c_tmp[20];
+
+
 #ifdef FREERTOS_USED
   portTickType xLastWakeTime;
 
@@ -156,10 +165,23 @@ void device_mouse_hid_task(void)
 		   LED_Toggle(LED1);
 		   Usb_reset_endpoint_fifo_access(EP_HID_RX);
 		   data_length = Usb_byte_count(EP_HID_RX);
-		   if (data_length > 2) data_length = 2;
+
+
+		   sprintf(&c_tmp[0], "DLEN: %d\n", data_length);
+		   print_dbg(&c_tmp[0]);
+
+		   //if (data_length > 2) data_length = 2;
+		   if(data_length > 8) data_length = 8;
 		   usb_read_ep_rxpacket(EP_HID_RX, &usb_report[0], data_length, NULL);
 		   Usb_ack_out_received_free(EP_HID_RX);
            print_dbg("HID: report received\n");
+           // Show data
+
+           for(i=0 ; i<data_length ; i++)
+           {
+             sprintf(&c_tmp[0], " 0x%X\n", usb_report[i]);
+             print_dbg(&c_tmp[0]);
+           }
 
 		   usb_state = 't';
 	   }
@@ -175,11 +197,17 @@ void device_mouse_hid_task(void)
           //! Write report
 
           //[Martin] For example just change values
-          usb_report[0] = usb_report[0] +33;
-          usb_report[1] = usb_report[1] -15;
+          usb_report[0] = usb_report[0] +2;
+          usb_report[1] = usb_report[1] -1;
 
-          Usb_write_endpoint_data(EP_HID_TX, 8, usb_report[0]);
-          Usb_write_endpoint_data(EP_HID_TX, 8, usb_report[1]);
+          for(i=0 ; i<8 ; i++)
+          {
+            sprintf(&c_tmp[0], "TXD: 0x%X\n", usb_report[i]);
+            print_dbg(&c_tmp[0]);
+
+            Usb_write_endpoint_data(EP_HID_TX, 8, usb_report[i]);
+          }
+
           Usb_ack_in_ready_send(EP_HID_TX);
           usb_state = 'r';
 
