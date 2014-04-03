@@ -19,7 +19,7 @@
 #include "conf_usb.h"
 #include "usb_task.h"
 #if USB_DEVICE_FEATURE == ENABLED
-#include "device_mouse_hid_task.h"
+#include "device_generic_hid.h"
 #endif
 #if USB_HOST_FEATURE == ENABLED
 //#include "host_keyboard_hid_task.h"
@@ -28,6 +28,8 @@
 #include "composite_widget.h"
 #include "taskAK5394A.h"
 #include "uac1_taskAK5394A.h"
+
+#include "HW_bridge_uniprot.h"
 
 /*
  * Task specific headers.
@@ -66,7 +68,9 @@ static void x_image_task_init(void) {
 
   // vStartTaskEXERCISE( tskIDLE_PRIORITY );
   uac1_AK5394A_task_init();
-  device_mouse_hid_task_init(UAC1_EP_HID_RX, UAC1_EP_HID_TX);
+  bridge_init();
+  //device_generic_HID_init(UAC1_EP_HID_RX, UAC1_EP_HID_TX);
+
   uac1_device_audio_task_init(UAC1_EP_AUDIO_IN, UAC1_EP_AUDIO_OUT, UAC1_EP_AUDIO_OUT_FB);
 #endif
 }

@@ -51,12 +51,6 @@
 //_____  I N C L U D E S ___________________________________________________
 
 #include "conf_usb.h"
-#if BOARD != EVK1104 && BOARD != SDRwdgtLite
-#include "joystick.h"
-#endif
-#if BOARD == EVK1101
-# include "lis3l06al.h"
-#endif
 
 
 #if USB_DEVICE_FEATURE == ENABLED
@@ -71,12 +65,7 @@
 #include "usb_descriptors.h"
 #include "usb_standard_request.h"
 #include "usb_specific_request.h"
-#include "device_mouse_hid_task.h"
-
-
-//[Martin]
-///\todo REMOVE
-#include <stdio.h>
+#include "device_generic_hid.h"
 
 //_____ M A C R O S ________________________________________________________
 
@@ -87,60 +76,56 @@
 
 //_____ D E C L A R A T I O N S ____________________________________________
 
-static U8 usb_state = 'r';
-static U8 ep_hid_rx;
-static U8 ep_hid_tx;
+static uint8_t ep_hid_rx;
+static uint8_t ep_hid_tx;
 //!
 //! @brief This function initializes the hardware/software resources
 //! required for device HID task.
 //!
-void device_mouse_hid_task_init(U8 ep_rx, U8 ep_tx)
+void device_generic_HID_init(uint8_t ep_rx, uint8_t ep_tx)
 {
-
-#if BOARD == EVK1101
-	// Initialize accelerometer driver
-	acc_init();
-#endif
-	ep_hid_rx = ep_rx;
-	ep_hid_tx = ep_tx;
+  ep_hid_rx = ep_rx;
+  ep_hid_tx = ep_tx;
 #ifndef FREERTOS_USED
 #if USB_HOST_FEATURE == ENABLED
-	// If both device and host features are enabled, check if device mode is engaged
-	// (accessing the USB registers of a non-engaged mode, even with load operations,
-	// may corrupt USB FIFO data).
-	if (Is_usb_device())
+  // If both device and host features are enabled, check if device mode is engaged
+  // (accessing the USB registers of a non-engaged mode, even with load operations,
+  // may corrupt USB FIFO data).
+  if (Is_usb_device())
 #endif  // USB_HOST_FEATURE == ENABLED
-		Usb_enable_sof_interrupt();
+    Usb_enable_sof_interrupt();
 #endif  // FREERTOS_USED
 
 #ifdef FREERTOS_USED
-	xTaskCreate(device_mouse_hid_task,
-				configTSK_USB_DHID_MOUSE_NAME,
-				configTSK_USB_DHID_MOUSE_STACK_SIZE,
-				NULL,
-				configTSK_USB_DHID_MOUSE_PRIORITY,
-				NULL);
+  xTaskCreate(device_gneric_hid,
+        configTSK_USB_DHID_NAME,
+        configTSK_USB_DHID_STACK_SIZE,
+        NULL,
+        configTSK_USB_DHID_PRIORITY,
+        NULL);
 #endif  // FREERTOS_USED
 }
 
 
 
 //!
-//! @brief Entry point of the device mouse HID task management
+//! @brief Entry point of the device gneric HID task management
 //!
 #ifdef FREERTOS_USED
-void device_mouse_hid_task(void *pvParameters)
+void device_gneric_hid(void *pvParameters)
 #else
-void device_mouse_hid_task(void)
+void device_gneric_hid(void)
 #endif
 {
-  U8 data_length;
-  const U8 EP_HID_RX = ep_hid_rx;
-  const U8 EP_HID_TX = ep_hid_tx;
+  uint8_t i_data_length;
+  const uint8_t EP_HID_RX = ep_hid_rx;
+  const uint8_t EP_HID_TX = ep_hid_tx;
 
+  // Enable/disable transmitter
+  uint8_t i_tx_enable = 0;
 
+  // Small sounter
   uint8_t i;
-  char c_tmp[20];
 
 
 #ifdef FREERTOS_USED
@@ -149,7 +134,7 @@ void device_mouse_hid_task(void)
   xLastWakeTime = xTaskGetTickCount();
   while (TRUE)
   {
-    vTaskDelayUntil(&xLastWakeTime, configTSK_USB_DHID_MOUSE_PERIOD);
+    vTaskDelayUntil(&xLastWakeTime, configTSK_USB_DHID_PERIOD);
 
     // First, check the device enumeration state
     if (!Is_device_enumerated()) continue;
@@ -158,63 +143,57 @@ void device_mouse_hid_task(void)
     if (!Is_device_enumerated()) return;
 #endif  // FREERTOS_USED
 
-       switch (usb_state){
+    // Check if RX data ready
+    if( Is_usb_out_received(EP_HID_RX))
+    {
+      Usb_reset_endpoint_fifo_access(EP_HID_RX);
+      // Get data length
+      i_data_length = Usb_byte_count(EP_HID_RX);
+      /* Test data length. We expect 8, so if data input is longer, than extra
+       * bytes will be removed/unused
+       */
+      if(i_data_length > 8)
+      {
+        i_data_length = 8;
+      }
+      // Read data
+      usb_read_ep_rxpacket(EP_HID_RX, &usb_report[0], i_data_length, NULL);
+      Usb_ack_out_received_free(EP_HID_RX);
 
-       case 'r':
-	   if ( Is_usb_out_received(EP_HID_RX)){
-		   LED_Toggle(LED1);
-		   Usb_reset_endpoint_fifo_access(EP_HID_RX);
-		   data_length = Usb_byte_count(EP_HID_RX);
+      // Call function that process data
+#if DEVICE_GENERIC_HID_SUPPORT_UNIPROT
+      Uniprot_rx_data(DEVICE_GENERIC_HID_UNIPROT_PIPE, &usb_report[0]);
+#else
+      // PUT YOUR RX FUNCTION HERE
+#endif
+    }
 
-
-		   sprintf(&c_tmp[0], "DLEN: %d\n", data_length);
-		   print_dbg(&c_tmp[0]);
-
-		   //if (data_length > 2) data_length = 2;
-		   if(data_length > 8) data_length = 8;
-		   usb_read_ep_rxpacket(EP_HID_RX, &usb_report[0], data_length, NULL);
-		   Usb_ack_out_received_free(EP_HID_RX);
-           print_dbg("HID: report received\n");
-           // Show data
-
-           for(i=0 ; i<data_length ; i++)
-           {
-             sprintf(&c_tmp[0], " 0x%X\n", usb_report[i]);
-             print_dbg(&c_tmp[0]);
-           }
-
-		   usb_state = 't';
-	   }
-	   break;
-
-       case 't':
-
-       if( Is_usb_in_ready(EP_HID_TX) )
-       {
-    	  LED_Toggle(LED0);
-          Usb_reset_endpoint_fifo_access(EP_HID_TX);
-          
-          //! Write report
-
-          //[Martin] For example just change values
-          usb_report[0] = usb_report[0] +2;
-          usb_report[1] = usb_report[1] -1;
-
-          for(i=0 ; i<8 ; i++)
-          {
-            sprintf(&c_tmp[0], "TXD: 0x%X\n", usb_report[i]);
-            print_dbg(&c_tmp[0]);
-
-            Usb_write_endpoint_data(EP_HID_TX, 8, usb_report[i]);
-          }
-
-          Usb_ack_in_ready_send(EP_HID_TX);
-          usb_state = 'r';
-
-          print_dbg("HID: send report\n");
-       }
-       break;
-       }
+    // Check if TX should transmit
+#if DEVICE_GENERIC_HID_SUPPORT_UNIPROT
+    i_tx_enable = Uniprot_Is_TX_transmission_enable(
+                                            DEVICE_GENERIC_HID_UNIPROT_PIPE);
+#else
+    // PUT YOUR TX ENABLE FUNCTION/CONDITION HERE
+    i_tx_enable = 1;
+#endif
+    if(i_tx_enable != 0)
+    {
+      if(Is_usb_in_ready(EP_HID_TX))
+      {
+        Usb_reset_endpoint_fifo_access(EP_HID_TX);
+#if DEVICE_GENERIC_HID_SUPPORT_UNIPROT
+        Uniprot_tx_data(DEVICE_GENERIC_HID_UNIPROT_PIPE, &usb_report[0]);
+#else
+        // PUT YOUR TX FUNCTION HERE
+#endif
+        // Transmit byte per byte
+        for(i=0 ; i<8 ; i++)
+        {
+          Usb_write_endpoint_data(EP_HID_TX, 8, usb_report[i]);
+        }
+        Usb_ack_in_ready_send(EP_HID_TX);
+      }
+    }
 
 #ifdef FREERTOS_USED
   }

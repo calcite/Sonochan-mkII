@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 22.03.2014
+ * Modified: 02.04.2014
  *
- * \version 0.3
+ * \version 0.4.1
  * \author Martin Stejskal
  */
 
@@ -49,12 +49,10 @@
 /**
  * \brief Support for generic driver support
  *
- * Options: 1 (support enabled) or 0 (support disabled) (recommended)
+ * Options: 1 (support enabled) or 0 (support disabled)
  *
- * \note Support is not even in testing mode! Do not turn on unless you\n
- * testing software!
  */
-#define CS2200_SUPPORT_GENERIC_DRIVER   0
+#define CS2200_SUPPORT_GENERIC_DRIVER   1
 /// @}
 
 
@@ -239,14 +237,16 @@ typedef struct{
 typedef struct{
   // Frequency as integer value
   cs2200_32b_to_8b_t i_real_freq;
+  // Output divider/multiplier as float
+  float f_out_div_mul;
 } cs2200_virtual_reg_img_t;
 
 //===========================| Additional includes |===========================
 #if CS2200_SUPPORT_GENERIC_DRIVER == 1
 // If used generic driver, get actual structures
-#include "ALPS_generic_driver.h"
+#include "generic_driver.h"
 // Also say compiler, that there exist settings on flash
-extern const gd_config_struct CS2200_config_table_flash[];
+extern const gd_config_struct CS2200_config_table[];
 // And metadata
 extern const gd_metadata CS2200_metadata;
 
@@ -314,76 +314,6 @@ extern xSemaphoreHandle mutexI2C;
 #define CS2200_REG_FUNC_CFG_2           0x17
 /// @}
 
-/**
- * \name Bit positions and masks in CS2200 registers
- *
- * @{
- */
-/// \brief Device identification bit position
-#define CS2200_DEVICE_BIT               3
-/// \brief Device identification mask
-#define CS2200_DEVICE_MASK              0x1F
-
-///\brief Device revision bit position
-#define CS2200_REVID_BIT                0
-///\brief Device revision mask
-#define CS2200_REVID_MASK               0x7
-
-///\brief Unlock indicator bit position
-#define CS2200_UNLOCK_BIT               7
-///\brief Unlock indicator mask
-#define CS2200_UNLOCK_MASK              0x1
-
-///\brief Auxiliary output disable bit position
-#define CS2200_AUXOUTDIS_BIT            1
-///\brief Auxiliary output disable mask
-#define CS2200_AUXOUTDIS_MASK           0x1
-
-///\brief PLL clock output disable bit position
-#define CS2200_CLKOUTDIS_BIT            0
-///\brief PLL clock output disable mask
-#define CS2200_CLKOUTDIS_MASK           0x1
-
-///\brief R-Mod selection bit position
-#define CS2200_RMODSEL_BIT              5
-///\brief R-Mod selection mask
-#define CS2200_RMODSEL_MASK             0x7
-
-///\brief Auxiliary output source selection bit position
-#define CS2200_AUXOUTSRC_BIT            1
-///\brief Auxiliary output source selection mask
-#define CS2200_AUXOUTSRC_MASK           0x3
-
-///\brief Enable device configuration registers 1 bit position
-#define CS2200_ENDEVCFG1_BIT            0
-///\brief Enable device configuration registers 1 mask
-#define CS2200_ENDEVCFG1_MASK           0x1
-
-///\brief Device configuration freeze bit position
-#define CS2200_FREEZE_BIT               3
-///\brief Device configuration freeze mask
-#define CS2200_FREEZE_MASK              0x1
-
-///\brief Enable device configuration registers 2 bit position
-#define CS2200_ENDEVCFG2_BIT            0
-///\brief Enable device configuration registers 2 mask
-#define CS2200_ENDEVCFG2_MASK           0x1
-
-///\brief AUX PLL lock output configuration bit position
-#define CS2200_AUXLOCKCFG_BIT           6
-///\brief AUX PLL lock output configuration mask
-#define CS2200_AUDLOCKCFG_MASK          0x1
-
-///\brief Reference clock input divider bit position
-#define CS2200_REFCLKDIV_BIT            3
-///\brief Reference clock input divider
-#define CS2200_REFCLKDIV_MASK           0x3
-
-///\brief Enable PLL clock output on unlock bit position
-#define CS2200_CLKOUTUNL_BIT            4
-///\brief Enable PLL clock output on unlock mask
-#define CS2200_CLKOUTUNL_MASK           0x1
-/// @}
 
 ///\brief Auto increment bit position in address byte
 #define CS2200_MAP_AUTO_INC_BIT         7
@@ -422,6 +352,10 @@ GD_RES_CODE cs2200_get_PLL_freq(uint32_t *p_i_freq);
 GD_RES_CODE cs2200_inc_PLL_freq(void);
 
 GD_RES_CODE cs2200_dec_PLL_freq(void);
+
+GD_RES_CODE cs2200_set_out_divider_multiplier_float(float f_div_mul);
+
+GD_RES_CODE cs2200_get_out_divider_multiplier_float(float *p_div_mul);
 
 GD_RES_CODE cs2200_set_out_divider_multiplier(cs2200_r_mod_t e_out_div_mul);
 

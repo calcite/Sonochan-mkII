@@ -155,10 +155,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
-
 //_____  I N C L U D E S ___________________________________________________
-
 #include <stdio.h>
 
 #include "compiler.h"
@@ -177,6 +174,7 @@
 
 ///\TODO REMOVE
 #include "cs2200.h"
+#include "tlv320aic33.h"
 #include <stdio.h>
 /*
  *  A few global variables.
@@ -254,6 +252,48 @@ int main(void)
   cs2200_get_PLL_freq(&i_freq);
   sprintf(&tmp[0], "MCLK: %lu\n", i_freq);
   print(DBG_USART, &tmp[0]);
+
+  print_dbg("<------------------>\n  TLV\n\n");
+
+  sprintf(&tmp[0],"TLV init: %d\n", tlv320aic33_init());
+  print_dbg(&tmp[0]);
+
+
+  uint8_t data[][2]={
+      {0x00,0x00},
+      {0x01,0x80},
+      {0x01,0x00},
+      {0x02,0x00},
+      {0x03,0x11},
+      {0x07,0x0a},
+      {0x08,0x20},// Slave, BCLK & SYNC as input
+      {0x09,0x30},
+      {0x0c,0x50},
+      {0x0f,0x00},
+      {0x10,0x00},
+      {0x13,0x04},
+      {0x16,0x04},
+      {0x25,0xe0},
+      {0x26,0x10},
+      {0x28,0x80},
+      {0x29,0xa0},
+      {0x2a,0x34},
+      {0x2b,0x00},
+      {0x2c,0x00},
+      {0x33,0x0d},
+      {0x41,0x0d},
+      {0x65,0x01},
+      {0x66,0x00}//CLKDIV_IN = MCLK
+  };
+
+  uint8_t i;
+  for(i=0 ; i<(24) ; i++)
+  {
+    sprintf(&tmp[0], "Send %d | stat: %d\n",
+        i, tlv320aic33_write_data(&data[i][0], 2));
+    print_dbg(&tmp[0]);
+  }
+
 
   // boot the image
   image_boot();

@@ -168,12 +168,6 @@
 /*! \name TWI Connections of the Spare TWI Connector
  */
 //! @{
-#define TWIM1                    	(&AVR32_TWIM1)
-#define TWIM1_SCL_PIN            	AVR32_TWIMS1_TWCK_0_PIN
-#define TWIM1_SCL_FUNCTION       	AVR32_TWIMS1_TWCK_0_FUNCTION
-#define TWIM1_SDA_PIN            	AVR32_TWIMS1_TWD_0_PIN
-#define TWIM1_SDA_FUNCTION       	AVR32_TWIMS1_TWD_0_FUNCTION
-
 #define TWIM0                   	(&AVR32_TWIM0)
 #define TWIM0_SCL_PIN           	AVR32_TWIMS0_TWCK_0_0_PIN
 #define TWIM0_SCL_FUNCTION      	AVR32_TWIMS0_TWCK_0_0_FUNCTION

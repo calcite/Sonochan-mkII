@@ -28,7 +28,7 @@
 #include "conf_usb.h"
 #include "usb_task.h"
 #if USB_DEVICE_FEATURE == ENABLED
-#include "device_mouse_hid_task.h"
+#include "device_generic_hid.h"
 #endif
 #if USB_HOST_FEATURE == ENABLED
 //#include "host_keyboard_hid_task.h"

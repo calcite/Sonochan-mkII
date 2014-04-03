@@ -47,30 +47,66 @@
  *
  */
 
-#ifndef _DEVICE_MOUSE_HID_TASK_H_
-#define _DEVICE_MOUSE_HID_TASK_H_
+#ifndef _DEVICE_GENERIC_HID_H_
+#define _DEVICE_GENERIC_HID_H_
 
 
-//_____ I N C L U D E S ____________________________________________________
+//================================| Includes |=================================
+#include <inttypes.h>
 
 #include "conf_usb.h"
 
 #if USB_DEVICE_FEATURE == DISABLED
-  #error device_mouse_hid_task.h is #included although USB_DEVICE_FEATURE is disabled
+  #error "device_mouse_hid_task.h is #included although USB_DEVICE_FEATURE\
+ is disabled!"
 #endif
 
 
-//_____ M A C R O S ________________________________________________________
+
+//============================| Uniprot settings |=============================
+/**
+ * \brief Allow enable or disable uniprot support
+ * Options: 0 (disabled), 1 (enabled)
+ */
+#define DEVICE_GENERIC_HID_SUPPORT_UNIPROT         1
 
 
-//_____ D E C L A R A T I O N S ____________________________________________
+// This settings have meaning only is support is enabled
+#if DEVICE_GENERIC_HID_SUPPORT_UNIPROT
+/**
+ * Define pipe number for uniprot (Pipe order is defined in uniprot.h file)
+ * by UNI_PIPEx_FRAME_SIZE, UNI_PIPEx_FUNC_INIT and UNI_PIPEx_FUNC_TASK
+ * where "x" is pipe number which must be same here!
+ */
+#define DEVICE_GENERIC_HID_UNIPROT_PIPE    0
 
-extern void device_mouse_hid_task_init(U8 ep_hid_rx, U8 ep_hid_tx);
+/// Define frame size (number of bytes per one transmission)
+#define UNI_PIPE0_FRAME_SIZE    8
+/// Initialize function which will be called in initialization process
+
+#define UNI_PIPE0_FUNC_INIT     \
+  device_generic_HID_init(UAC1_EP_HID_RX, UAC1_EP_HID_TX)
+
+/// Driver task
+// When RTOS is enabled, then task should not be called
 #ifdef FREERTOS_USED
-extern void device_mouse_hid_task(void *pvParameters);
+ #define UNI_PIPE0_FUNC_TASK
 #else
-extern void device_mouse_hid_task(void);
+ #define UNI_PIPE0_FUNC_TASK     \
+   device_gneric_hid()
+#endif
+// Universal protocol header file
+#include "uniprot.h"
+#endif
+
+//===========================| Function prototypes |===========================
+
+extern void device_generic_HID_init(U8 ep_hid_rx, U8 ep_hid_tx);
+#ifdef FREERTOS_USED
+extern void device_gneric_hid(void *pvParameters);
+#else
+extern void device_gneric_hid(void);
 #endif
 
 
-#endif  // _DEVICE_MOUSE_HID_TASK_H_
+#endif  // _DEVICE_GENERIC_HID_H_

@@ -6,10 +6,16 @@
 C_SRCS += \
 ../src/cs2200_HAL_AVR32_UC3A3_HW_interface.c \
 ../src/cs2200.c \
+../src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.c \
+../src/tlv320aic33.c \
+../src/generic_driver.c \
+../src/HW.c \
+../src/HW_bridge_uniprot.c \
+../src/uniprot.c \
 ../src/sync_control.c \
 ../src/composite_widget.c \
 ../src/device_audio_task.c \
-../src/device_mouse_hid_task.c \
+../src/device_generic_hid.c \
 ../src/host_audio_task.c \
 ../src/image.c \
 ../src/taskAK5394A.c \
@@ -31,10 +37,16 @@ C_SRCS += \
 OBJS += \
 ./src/cs2200_HAL_AVR32_UC3A3_HW_interface.o \
 ./src/cs2200.o \
+./src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.o \
+./src/tlv320aic33.o \
+./src/generic_driver.o \
+./src/HW.o \
+./src/HW_bridge_uniprot.o \
+./src/uniprot.o \
 ./src/sync_control.o \
 ./src/composite_widget.o \
 ./src/device_audio_task.o \
-./src/device_mouse_hid_task.o \
+./src/device_generic_hid.o \
 ./src/host_audio_task.o \
 ./src/image.o \
 ./src/taskAK5394A.o \
@@ -56,10 +68,16 @@ OBJS += \
 C_DEPS += \
 ./src/cs2200_HAL_AVR32_UC3A3_HW_interface.d \
 ./src/cs2200.d \
+./src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.d \
+./src/tlv320aic33.d \
+./src/generic_driver.d \
+./src/HW.d \
+./src/HW_bridge_uniprot.d \
+./src/uniprot.d \
 ./src/sync_control.d \
 ./src/composite_widget.d \
 ./src/device_audio_task.d \
-./src/device_mouse_hid_task.d \
+./src/device_generic_hid.d \
 ./src/host_audio_task.d \
 ./src/image.d \
 ./src/taskAK5394A.d \

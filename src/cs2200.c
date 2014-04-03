@@ -4,62 +4,13 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 22.03.2014
+ * Modified: 02.04.2014
  *
- * \version 0.3
+ * \version 0.4.1
  * \author Martin Stejskal
  */
 
 #include "cs2200.h"
-//=========================| Generic driver support |==========================
-#if CS2200_SUPPORT_GENERIC_DRIVER == 1
-/**
- * \brief Configure table for device
- */
-
-// Test architecture (AVR8 versus other)
-#ifndef __PGMSPACE_H_
-const gd_config_struct CS2200_config_table_flash[]
-#else
-const gd_config_struct CS2200_config_table_flash[] PROGMEM =
-#endif
-    {
-        {
-                0,              // Command ID
-                "Initialize",   // Descriptor
-                void_type,      // Input data type
-                {.data_uint32 = 0},     // Minimum input value
-                {.data_uint32 = 0},     // Maximum input value
-                void_type,              // Output data type
-                {.data_uint32 = 0},     // Minimum output value
-                {.data_uint32 = 0},     // Maximum output value
-                (GD_DATA_VALUE*)&gd_void_value, // Output value
-                cs2200_init                     /* Function, that should be
-                                                 * called
-                                                 */
-          }
-    };
-// \brief Maximum command ID (is defined by last command)
-#define CS2200_MAX_CMD_ID          0
-
-
-const gd_metadata CS2200_metadata =
-{
-        CS2200_MAX_CMD_ID, // Max CMD ID
-        "Fractional PLL CS2200",        // Description
-        (gd_config_struct*)&CS2200_config_table_flash[0],
-        0x01    // Serial number (0~255)
-};
-#endif
-
-
-//=============================| FreeRTOS stuff |==============================
-// If RTOS support is enabled, create this
-#if CS2200_SUPPORT_RTOS != 0
-portBASE_TYPE xStatus;
-xSemaphoreHandle mutexI2C;
-#endif
-
 //============================| Global variables |=============================
 /**
  * \brief Register image of CS2200.
@@ -78,6 +29,137 @@ static cs2200_reg_img_t s_register_img;
  * t is static, so it is "global" only for this file.
  */
 static cs2200_virtual_reg_img_t s_virtual_reg_img;
+
+
+
+//=========================| Generic driver support |==========================
+#if CS2200_SUPPORT_GENERIC_DRIVER == 1
+/**
+ * \brief Configure table for device
+ */
+
+// Test architecture (AVR8 versus other)
+#ifdef __AVR_ARCH__
+const gd_config_struct CS2200_config_table[] PROGMEM =
+#else
+const gd_config_struct CS2200_config_table[] =
+#endif
+  {
+    {
+      0,                      // Command ID
+      "Initialize hardware",  // Name
+      "Initialize I/O and TWI module (if used)",      // Descriptor
+      void_type,              // Input data type
+      {.data_uint32 = 0},     // Minimum input value
+      {.data_uint32 = 0},     // Maximum input value
+      void_type,              // Output data type
+      {.data_uint32 = 0},     // Minimum output value
+      {.data_uint32 = 0},     // Maximum output value
+      (GD_DATA_VALUE*)&gd_void_value, // Output value
+      cs2200_init                     /* Function, that should be
+                                       * called
+                                       */
+    },
+    {
+      1,
+      "Set PLL frequency",
+      "Frequency format: unsigned 32 bit in Hz",
+      uint32_type,
+      {.data_uint32 =  6000000},        // Min 6 MHz
+      {.data_uint32 = 75000000},        // Max 75 MHz
+      uint32_type,
+      {.data_uint32 =  6000000},
+      {.data_uint32 = 75000000},
+      (GD_DATA_VALUE*)&s_virtual_reg_img.i_real_freq.i_32bit,
+      cs2200_set_PLL_freq
+    },
+    {
+      2,
+      "Get PLL frequency",
+      "Frequency format: unsigned 32 bit in Hz",
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      uint32_type,
+      {.data_uint32 =  6000000},
+      {.data_uint32 = 75000000},
+      (GD_DATA_VALUE*)&s_virtual_reg_img.i_real_freq.i_32bit,
+      gd_void_function
+    },
+    {
+      3,
+      "Increase PLL frequency by 1",
+      "Increase ratio number by 1",
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      (GD_DATA_VALUE*)&gd_void_value,
+      cs2200_inc_PLL_freq
+    },
+    {
+      4,
+      "Decrease PLL frequency by 1",
+      "Decrease ratio number by 1",
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      (GD_DATA_VALUE*)&gd_void_value,
+      cs2200_inc_PLL_freq
+    },
+    {
+      5,
+      "Set output divider/multiplier ratio",
+      "Input values: 1 2 4 8 0.5 0.25 0.125 0.0625",
+      float_type,
+      {.data_float = 0.0625},
+      {.data_float = 8},
+      float_type,
+      {.data_float = 0.0625},
+      {.data_float = 8},
+      (GD_DATA_VALUE*)&s_virtual_reg_img.f_out_div_mul,
+      cs2200_set_out_divider_multiplier_float
+    },
+    {
+      6,
+      "Get output divider/multiplier ratio",
+      "Valid values: 1 2 4 8 0.5 0.25 0.125 0.0625",
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      float_type,
+      {.data_float = 0.0625},
+      {.data_float = 8},
+      (GD_DATA_VALUE*)&s_virtual_reg_img.f_out_div_mul,
+      gd_void_function
+    }
+
+  };
+// \brief Maximum command ID (is defined by last command)
+#define CS2200_MAX_CMD_ID          6
+
+
+const gd_metadata CS2200_metadata =
+{
+        CS2200_MAX_CMD_ID,              // Max CMD ID
+        "Fractional PLL CS2200-CP",     // Description
+        (gd_config_struct*)&CS2200_config_table[0],
+        0x23    // Serial number (0~255)
+};
+#endif
+
+
+//=============================| FreeRTOS stuff |==============================
+// If RTOS support is enabled, create this
+#if CS2200_SUPPORT_RTOS != 0
+portBASE_TYPE xStatus;
+xSemaphoreHandle mutexI2C;
+#endif
 
 //==========================| High level functions |===========================
 
@@ -119,6 +201,7 @@ GD_RES_CODE cs2200_init(void)
   s_register_img.func_cfg_2_reg = 0;
 
   s_virtual_reg_img.i_real_freq.i_32bit = 0;    // Frequency not set yet
+  s_virtual_reg_img.f_out_div_mul = 1;          // Multiplier not set yet (1x)
 
   // Create status variable
   GD_RES_CODE e_status;
@@ -308,6 +391,50 @@ GD_RES_CODE cs2200_dec_PLL_freq(void)
       s_register_img.Ratio.i_32bit -1);
 }
 
+/**
+ * \brief Set output divider
+ *
+ * This function allow easily a quickly change output frequency. Sometimes\n
+ * can be this useful when need just change frequency to 1/2x, 1/4x, 2x an so\n
+ * on.
+ * @param f_div_mul Divider/multiplier ratio.\n
+ *  Valid values: 1 2 4 8 0.5 0.25 0.125 0.0625
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_set_out_divider_multiplier_float(float f_div_mul)
+{
+  if(f_div_mul == 1)
+    return cs2200_set_out_divider_multiplier(CS2200_R_MOD__MUL_1x);
+  else if(f_div_mul == 2)
+    return cs2200_set_out_divider_multiplier(CS2200_R_MOD__MUL_2x);
+  else if(f_div_mul == 4)
+    return cs2200_set_out_divider_multiplier(CS2200_R_MOD__MUL_4x);
+  else if(f_div_mul == 8)
+    return cs2200_set_out_divider_multiplier(CS2200_R_MOD__MUL_8x);
+  else if(f_div_mul == 0.5)
+    return cs2200_set_out_divider_multiplier(CS2200_R_MOD__DIV_2x);
+  else if(f_div_mul == 0.25)
+    return cs2200_set_out_divider_multiplier(CS2200_R_MOD__DIV_4x);
+  else if(f_div_mul == 0.125)
+    return cs2200_set_out_divider_multiplier(CS2200_R_MOD__DIV_8x);
+  else if(f_div_mul == 0.0625)
+    return cs2200_set_out_divider_multiplier(CS2200_R_MOD__DIV_16x);
+  // If value not found in list -> incorrect parameter
+  else
+    return GD_INCORRECT_PARAMETER;
+}
+
+
+/**
+ * \brief Load output divider/multiplier value
+ * @param p_div_mul Pinter to memory where value will be written
+ * @return GD_SUCCESS if all right
+ */
+GD_RES_CODE cs2200_get_out_divider_multiplier_float(float *p_div_mul)
+{
+  *p_div_mul = s_virtual_reg_img.f_out_div_mul;
+  return GD_SUCCESS;
+}
 
 
 /**
@@ -364,7 +491,37 @@ GD_RES_CODE cs2200_set_out_divider_multiplier(cs2200_r_mod_t e_out_div_mul)
     return e_status;
   }
 
-  // Else all OK
+  // Else all OK - Write correct divider/multiplier value to virtual register
+  switch(e_out_div_mul)
+  {
+  case CS2200_R_MOD__MUL_1x:
+    s_virtual_reg_img.f_out_div_mul = 1;
+    break;
+  case CS2200_R_MOD__MUL_2x:
+    s_virtual_reg_img.f_out_div_mul = 2;
+    break;
+  case CS2200_R_MOD__MUL_4x:
+    s_virtual_reg_img.f_out_div_mul = 4;
+    break;
+  case CS2200_R_MOD__MUL_8x:
+    s_virtual_reg_img.f_out_div_mul = 8;
+    break;
+  case CS2200_R_MOD__DIV_2x:
+    s_virtual_reg_img.f_out_div_mul = 0.5;
+    break;
+  case CS2200_R_MOD__DIV_4x:
+    s_virtual_reg_img.f_out_div_mul = 0.25;
+    break;
+  case CS2200_R_MOD__DIV_8x:
+    s_virtual_reg_img.f_out_div_mul = 0.125;
+    break;
+  case CS2200_R_MOD__DIV_16x:
+    s_virtual_reg_img.f_out_div_mul = 0.0625;
+    break;
+  // Never should happen
+  default:
+    while(1);
+  }
   return GD_SUCCESS;
 }
 
