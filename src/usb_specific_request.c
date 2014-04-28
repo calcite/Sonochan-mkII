@@ -190,21 +190,6 @@ Bool usb_user_get_descriptor(U8 type, U8 string)
       pbuffer = &usb_user_serial_number;
       break;
 
-    case CLOCK_SOURCE_1_INDEX:
-      data_to_transfer = sizeof(usb_user_clock_source_1);
-      pbuffer = &usb_user_clock_source_1;
-      break;
-
-    case CLOCK_SOURCE_2_INDEX:
-      data_to_transfer = sizeof(usb_user_clock_source_2);
-      pbuffer = &usb_user_clock_source_2;
-      break;
-
-    case CLOCK_SELECTOR_INDEX:
-       data_to_transfer = sizeof(usb_user_clock_selector);
-       pbuffer = &usb_user_clock_selector;
-       break;
-
     case WL_INDEX:
        data_to_transfer = sizeof(usb_user_wl);
        pbuffer = &usb_user_wl;

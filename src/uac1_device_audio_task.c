@@ -83,9 +83,11 @@
 #include "taskAK5394A.h"
 
 //[Martin]
+#include "sync_control.h"
+
 #include "print_funcs.h"
 #include <stdio.h>
-#include "cs2200.h"
+
 
 //_____ M A C R O S ________________________________________________________
 
@@ -95,6 +97,9 @@
 
 #define FB_RATE_DELTA (1<<12)
 #define FB_RATE_DELTA_NUM 2
+
+//[Martin] For testing we can set high value. In real it should be about 1000
+#define MAX_PLL_PPM     50000
 
 //_____ D E C L A R A T I O N S ____________________________________________
 
@@ -163,6 +168,11 @@ void uac1_device_audio_task(void *pvParameters)
   const U8 OUT_RIGHT = 1;
   volatile avr32_pdca_channel_t *pdca_channel = pdca_get_handler(PDCA_CHANNEL_SSC_RX);
   volatile avr32_pdca_channel_t *spk_pdca_channel = pdca_get_handler(PDCA_CHANNEL_SSC_TX);
+
+  //[Martin]
+  int i_pll_diff = 0;
+  U16 old_num_samples = 0;
+  char c[20];
 
 
   switch(current_freq.frequency)
@@ -233,7 +243,11 @@ void uac1_device_audio_task(void *pvParameters)
     }
     //else {
 
-      //[Martin] When num_samples constant -> problem. Set according to actual frequency
+      /*[Martin]
+       * When num_samples constant -> problem. Set according to actual
+       * frequency.
+       *
+       */
       switch(current_freq.frequency)
       {
       case 48000:
@@ -241,6 +255,7 @@ void uac1_device_audio_task(void *pvParameters)
         break;
       case 44100:
         num_samples = 44;
+
         break;
       case 32000:
         num_samples = 32;
@@ -261,6 +276,15 @@ void uac1_device_audio_task(void *pvParameters)
             "uac1_device_audio_task() Unknown frequency in current_freq."
             "frequency.\n\n");*/
         num_samples = 48;
+      }
+
+      // Test if frequency was changed
+      if(old_num_samples != num_samples)
+      {
+        // Set "old" value
+        old_num_samples = num_samples;
+        // And reset pll difference
+        i_pll_diff = 0;
       }
 
 
@@ -301,10 +325,20 @@ void uac1_device_audio_task(void *pvParameters)
           // throttle back
           if  (gap < AUDIO_BUFFER_SIZE/2) {
             num_samples--;
+            //[Martin] Check number of samples
+            if(num_samples < 1) // 1kHz is really low rate
+            {
+              num_samples = 1;
+            }
           } else {
             // speed up
             if  (gap > (AUDIO_BUFFER_SIZE + AUDIO_BUFFER_SIZE/2)) {
               num_samples++;
+              //[Martin] Check if number of samples fit to buffer
+              if(num_samples >= (48+10))
+              {
+                num_samples = 48+9;
+              }
             }
           }
 
@@ -384,17 +418,66 @@ void uac1_device_audio_task(void *pvParameters)
               FB_rate -= FB_RATE_DELTA;
               delta_num--;
 
+              //[Martin] This should be commented. Only for debug
+              print_dbg("D-\n");
+
               //old_gap = gap;
             }
             else
+            {
               //if ( (gap > (SPK_BUFFER_SIZE + (SPK_BUFFER_SIZE/2))) && (gap > old_gap)) {
               if ( (gap > SPK_BUFFER_SIZE + 10) && (delta_num < FB_RATE_DELTA_NUM)) {
                 LED_Toggle(LED1);
                 FB_rate += FB_RATE_DELTA;
                 delta_num++;
 
+                //[Martin] This should be commented. Only for debug
+                print_dbg("D+\n");
+
+
                 //old_gap = gap;
               }
+            }
+            /* [Martin] When Feedback not work (probably not supported)
+             * then is last option change PLL frequency by few PPM and pray.
+             * When frequency change is too high, then data process will be
+             * desynchronized. So change PLL frequency only if buffer have
+             * only 33% remaining.
+             */
+            if((gap < SPK_BUFFER_SIZE -(SPK_BUFFER_SIZE*2/3)) &&
+                    (i_pll_diff < (MAX_PLL_PPM/10)) &&
+                    (delta_num <= -FB_RATE_DELTA_NUM))
+            {
+              // We must change frequency - speed up
+              if(cs2200_inc_PLL_freq() != 0)
+              {
+                print_dbg("INC PLL FAILED!\n");
+              }
+              i_pll_diff++;
+
+              //[Martin] This should be commented. Only for debug
+              print_dbg("I ");
+              print_dbg_hex(gap);
+              print_dbg("\n");
+            }
+            if((gap > SPK_BUFFER_SIZE +(SPK_BUFFER_SIZE*2/3)) &&
+                    (i_pll_diff > -(MAX_PLL_PPM/10)) &&
+                    (delta_num >= FB_RATE_DELTA_NUM))
+            {
+              // We must change frequency - slow down
+              if(cs2200_dec_PLL_freq() != 0)
+              {
+                print_dbg("DEC PLL FAILED!\n");
+              }
+
+              i_pll_diff--;
+
+              //[Martin] This should be commented. Only for debug
+              print_dbg("D ");
+              print_dbg_hex(gap);
+              print_dbg("\n");
+
+            }
           }
 
           if (Is_usb_full_speed_mode()) {      // FB rate is 3 bytes in 10.14 format
@@ -424,7 +507,7 @@ void uac1_device_audio_task(void *pvParameters)
           //spk_usb_heart_beat++;      // indicates EP_AUDIO_OUT receiving data from host
 
           Usb_reset_endpoint_fifo_access(EP_AUDIO_OUT);
-          num_samples = Usb_byte_count(EP_AUDIO_OUT) / 6;
+          num_samples = Usb_byte_count(EP_AUDIO_OUT) / 6;       // Bit resolution (6)
 
           if(!playerStarted)
           {

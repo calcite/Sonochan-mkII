@@ -174,7 +174,6 @@
 
 ///\TODO REMOVE
 #include "cs2200.h"
-#include "tlv320aic33.h"
 #include <stdio.h>
 /*
  *  A few global variables.
@@ -226,87 +225,57 @@ int main(void)
   // Initialize usart comm
   init_dbg_rs232(pm_freq_param.pba_f);
 
+
+
   // [Martin] Just let know, that UART works
-  print(DBG_USART, "\n\n--------\n\n[Sonochan mkII] based on SDR widget\n");
+  print_dbg("\n\n--------\n\n..::Sonochan mkII ::.. based on SDR widget\n");
+
+  // Clock must be set BEFORE setting UC3 clock
+  // Initialize  cs2200 library
+  GD_RES_CODE i_status;
+  i_status = cs2200_init();
+  if(i_status != GD_SUCCESS)
+  {
+    print_dbg("CS2200 initialization failed.\n");
+    ///\todo More process
+    while(1);
+  }
+  print_dbg("> PLL found\n");
+  /* Set some testing frequency. Anyway it will be changed, but we must give
+   * UC3 at least some clock.
+   */
+  i_status = cs2200_set_PLL_freq(10000000);
+  if(i_status != GD_SUCCESS)
+  {
+    print_dbg("CS2200 set PLL frequency failed.\n");
+    ///\todo More process
+    while(1);
+  }
+  print_dbg("> PLL started\n");
+
+
+
 
   // Initialize USB clock (on PLL1)
   pm_configure_usb_clock();
-
-  char tmp[50];
-  // Init CS2200 TWI
-  sprintf(&tmp[0],"TWI init: %d\n", cs2200_init());
-  print(DBG_USART, &tmp[0]);
-
-
-  //sprintf(&tmp[0], "TWI set status: %d\n", cs2200_set_PLL_freq(11289600UL));
-  sprintf(&tmp[0], "TWI set status: %d\n", cs2200_set_PLL_freq(12288000UL));
-
-  //sprintf(&tmp[0], "TWI set status: %d\n", cs2200_set_PLL_freq(16000000UL));
-  print(DBG_USART, &tmp[0]);
-  uint32_t i_freq;
-
-  cs2200_get_ratio(&i_freq);
-  sprintf(&tmp[0], "Ratio: %lu\n", i_freq);
-  print(DBG_USART, &tmp[0]);
-
-  cs2200_get_PLL_freq(&i_freq);
-  sprintf(&tmp[0], "MCLK: %lu\n", i_freq);
-  print(DBG_USART, &tmp[0]);
-
-  print_dbg("<------------------>\n  TLV\n\n");
-
-  sprintf(&tmp[0],"TLV init: %d\n", tlv320aic33_init());
-  print_dbg(&tmp[0]);
-
-
-  uint8_t data[][2]={
-      {0x00,0x00},
-      {0x01,0x80},
-      {0x01,0x00},
-      {0x02,0x00},
-      {0x03,0x11},
-      {0x07,0x0a},
-      {0x08,0x20},// Slave, BCLK & SYNC as input
-      {0x09,0x30},
-      {0x0c,0x50},
-      {0x0f,0x00},
-      {0x10,0x00},
-      {0x13,0x04},
-      {0x16,0x04},
-      {0x25,0xe0},
-      {0x26,0x10},
-      {0x28,0x80},
-      {0x29,0xa0},
-      {0x2a,0x34},
-      {0x2b,0x00},
-      {0x2c,0x00},
-      {0x33,0x0d},
-      {0x41,0x0d},
-      {0x65,0x01},
-      {0x66,0x00}//CLKDIV_IN = MCLK
-  };
-
-  uint8_t i;
-  for(i=0 ; i<(24) ; i++)
-  {
-    sprintf(&tmp[0], "Send %d | stat: %d\n",
-        i, tlv320aic33_write_data(&data[i][0], 2));
-    print_dbg(&tmp[0]);
-  }
-
+  print_dbg("> Setting USB clock\n");
 
   // boot the image
   image_boot();
+  print_dbg("> Image boot\n");
 
   // initialize the image
   image_init();
+  print_dbg("> Image init\n");
+
 
   // Start the image tasks
   image_task_init();
+  print_dbg("> Image task init\n");
 
   // Start OS scheduler
   vTaskStartScheduler();
-  portDBG_TRACE("FreeRTOS returned.");
+  portDBG_TRACE("FreeRTOS returned.\n");
 
   return 42;
 }

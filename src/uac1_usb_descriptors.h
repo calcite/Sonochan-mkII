@@ -122,8 +122,8 @@
 #define ENDPOINT_NB_3       ( UAC1_EP_AUDIO_OUT )
 #define EP_ATTRIBUTES_3     0b00000101      // ISOCHRONOUS ASYNCHRONOUS EXPLICIT FEEDBACK
 //#define EP_ATTRIBUTES_3     0b00001101      // ISOCHRONOUS SYNCHRONOUS
-#define EP_IN_LENGTH_3_HS   294        // 3 bytes * 48 khz * stereo + 6 bytes for add sample
-#define EP_IN_LENGTH_3_FS  294
+#define EP_IN_LENGTH_3_HS   308        // 3 bytes * 48 khz * stereo + 6 bytes for add sample
+#define EP_IN_LENGTH_3_FS  308  // 294
 #define EP_SIZE_3_FS    EP_IN_LENGTH_3_FS
 #define EP_SIZE_3_HS        EP_IN_LENGTH_3_HS
 #define EP_INTERVAL_3_FS  0x01       // one packet per uframe
@@ -151,8 +151,8 @@
 // USB Endpoint 5 descriptor
 #define ENDPOINT_NB_5       ( UAC1_EP_AUDIO_IN | MSK_EP_DIR )
 #define EP_ATTRIBUTES_5     0b00100101      // ISOCHROUNOUS ASYNCHRONOUS IMPLICIT FEEDBACK
-#define EP_IN_LENGTH_5_HS   294        // 3 bytes * 48 khz * stereo + 6 bytes for add sample
-#define EP_IN_LENGTH_5_FS  294
+#define EP_IN_LENGTH_5_HS   308        // 3 bytes * 48 khz * stereo + 6 bytes for add sample
+#define EP_IN_LENGTH_5_FS  308
 #define EP_SIZE_5_FS    EP_IN_LENGTH_5_FS
 #define EP_SIZE_5_HS        EP_IN_LENGTH_5_HS
 #define EP_INTERVAL_5_FS  0x01       // one packet per uframe

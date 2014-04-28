@@ -125,31 +125,6 @@ const S_usb_serial_number usb_user_serial_number =
   USB_SERIAL_NUMBER
 };
 
-//usb_user_clock_source_1
-const S_usb_clock_source_1 usb_user_clock_source_1 =
-{
-	sizeof(S_usb_clock_source_1),
-	STRING_DESCRIPTOR,
-	USB_CLOCK_SOURCE_1
-};
-
-
-//usb_user_clock_source_2
-const S_usb_clock_source_2 usb_user_clock_source_2 =
-{
-	sizeof(S_usb_clock_source_2),
-	STRING_DESCRIPTOR,
-	USB_CLOCK_SOURCE_2
-};
-
-
-//usb_user_clock_selector
-const S_usb_clock_selector usb_user_clock_selector =
-{
-	sizeof(S_usb_clock_selector),
-	STRING_DESCRIPTOR,
-	USB_CLOCK_SELECTOR
-};
 
 //usb_user_wl
 const S_usb_wl usb_user_wl =

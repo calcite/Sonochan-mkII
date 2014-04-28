@@ -5,12 +5,13 @@
  * library
  *
  *
- * Created  24.09.2013
- * Modified 02.04.2014
+ * Created  24.09.2013\n
+ * Modified 26.04.2014
  *
- * \version 0.3
+ * \version 0.4
  * \author Martin Stejskal
  */
+
 #ifndef _HW_BRIDGE_UNIPROT_H
 #define _HW_BRIDGE_UNIPROT_H
 

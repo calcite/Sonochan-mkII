@@ -32,6 +32,7 @@
 #define AUDIO_BUFFER_SIZE	(48*2*8) // 48 khz, stereo, 8 ms worth
 #define SPK_BUFFER_SIZE 	(48*2*16)
 
+
 //extern const gpio_map_t SSC_GPIO_MAP;
 //extern const pdca_channel_options_t PDCA_OPTIONS;
 //extern const pdca_channel_options_t SPK_PDCA_OPTIONS;

@@ -10,9 +10,9 @@
  * updates independent to higher layer (new features and so on).
  *
  * Created:  02.04.2014\n
- * Modified: 02.04.2014
+ * Modified: 23.04.2014
  *
- * \version 0.1a
+ * \version 0.1
  * \author Martin Stejskal
  */
 
@@ -153,15 +153,14 @@ TLV320AIC33_status_t tlv320aic33_HAL_init(void)
  *
  * MCU is in master mode. Send TLV320AIC33 address and then data (argument).
  *
- * @param p_data Pointer to data array which will be send to PLL thru TWI (I2C)
- *
- * @param i_number_of_bytes Number of data bytes, which will be send
+ * @param i_register_number Register number
+ * @param i_data Data which will be send to codec
  *
  * @return TLV320AIC33_OK (0) if all OK
  */
 TLV320AIC33_status_t tlv320aic33_HAL_write_data(
-    uint8_t *p_data,
-    uint8_t i_number_of_bytes)
+    uint8_t i_register_number,
+    uint8_t i_data)
 {
   // Pointer to TWI address
   volatile avr32_twim_t *p_twi;
@@ -195,8 +194,8 @@ TLV320AIC33_status_t tlv320aic33_HAL_write_data(
   // Set slave address - must calculate with option that TWI use another driver
   p_twi->CMDR.sadr = TLV320AIC33_TWI_ADDRESS;
 
-  // Set number of bytes to send
-  p_twi->CMDR.nbytes = i_number_of_bytes;
+  // Set number of bytes to 2 (register number + value)
+  p_twi->CMDR.nbytes = 2;
 
   p_twi->CMDR.start = 1;
   p_twi->CMDR.stop = 1;
@@ -207,36 +206,55 @@ TLV320AIC33_status_t tlv320aic33_HAL_write_data(
   // Data in CMDR are valid
   p_twi->CMDR.valid = 1;
 
-  while(i_number_of_bytes != 0)
+
+  // Send byte
+  p_twi->THR.txdata = i_register_number;
+
+  // Wait until read TX data - during this, check for timeout and NACK
+  while(!p_twi->SR.txrdy)
   {
-    // Send byte
-    p_twi->THR.txdata = *(p_data++);
-
-    // Wait until read TX data - during this, check for timeout and NACK
-    while(!p_twi->SR.txrdy)
+    // Again, check for timeout
+    // Increase timeout counter
+    i_cnt_timeout++;
+    // Test timeout counter
+    if(i_cnt_timeout > TLV320AIC33_TWI_TIMEOUT)
     {
-      // Again, check for timeout
-      // Increase timeout counter
-      i_cnt_timeout++;
-      // Test timeout counter
-      if(i_cnt_timeout > TLV320AIC33_TWI_TIMEOUT)
-      {
-        // If higher -> return error value
-        return TLV320AIC33_ERROR_TWI_TIMEOUT;
-      }
-      // Check for NACK
-      if(p_twi->SR.anak || p_twi->SR.dnak)
-      {
-        return TLV320AIC33_ERROR_TWI_NACK;
-      }
+      // If higher -> return error value
+      return TLV320AIC33_ERROR_TWI_TIMEOUT;
     }
-
-    // Decrement number of bytes which we need to send
-    i_number_of_bytes--;
-
-    // Clear counter (byte was successfully send)
-    i_cnt_timeout = 0;
+    // Check for NACK
+    if(p_twi->SR.anak || p_twi->SR.dnak)
+    {
+      return TLV320AIC33_ERROR_TWI_NACK;
+    }
   }
+
+  // Clear counter (byte was successfully send)
+  i_cnt_timeout = 0;
+
+
+  // Send byte
+  p_twi->THR.txdata = i_data;
+
+  // Wait until read TX data - during this, check for timeout and NACK
+  while(!p_twi->SR.txrdy)
+  {
+    // Again, check for timeout
+    // Increase timeout counter
+    i_cnt_timeout++;
+    // Test timeout counter
+    if(i_cnt_timeout > TLV320AIC33_TWI_TIMEOUT)
+    {
+      // If higher -> return error value
+      return TLV320AIC33_ERROR_TWI_TIMEOUT;
+    }
+    // Check for NACK
+    if(p_twi->SR.anak || p_twi->SR.dnak)
+    {
+      return TLV320AIC33_ERROR_TWI_NACK;
+    }
+  }
+
 
   // When all data send and no NACK received
   return TLV320AIC33_OK;
@@ -244,25 +262,22 @@ TLV320AIC33_status_t tlv320aic33_HAL_write_data(
 
 
 
-
 /**
  * \brief Read data on TWI (I2C) bus
  *
- * MCU is in master mode. Send TLV320AIC33 address and then receive data.
+ * MCU is in master mode. Send TLV320AIC33 address, register value, repeated\n
+ * start condition, TLV320AIC33 address and then receive data.
  *
+ * @param i_register_number Register number
  * @param p_data Data are saved thru this pointer
- * @param i_number_of_bytes Number of data bytes, which will be received
+ *
  * @return TLV320AIC33_OK (0) if all OK
  *
- * \todo CHECK READING BYTE FUNCTION
  */
 TLV320AIC33_status_t tlv320aic33_HAL_read_data(
-    uint8_t *p_data,
-    uint8_t i_number_of_bytes)
+    uint8_t i_register_number,
+    uint8_t *p_data)
 {
-  uint8_t *pdb;
-  pdb = p_data;
-
   // Pointer to TWI address
   volatile avr32_twim_t *p_twi;
   p_twi = TLV320AIC33_TWI_DEVICE;
@@ -291,46 +306,79 @@ TLV320AIC33_status_t tlv320aic33_HAL_read_data(
 
   p_twi->CMDR.sadr = TLV320AIC33_TWI_ADDRESS;
 
-  p_twi->CMDR.nbytes = i_number_of_bytes;
+  // Send just 1 Byte (register number)
+  p_twi->CMDR.nbytes = 1;
 
   p_twi->CMDR.start = 1;
-  p_twi->CMDR.stop = 1;
+  p_twi->CMDR.stop = 0; // Do not send stop condition after data
 
-  // Want receive data
-  p_twi->CMDR.read = 1;
+  // So far we want transmit data
+  p_twi->CMDR.read = 0;
 
   // Data in CMDR are valid
   p_twi->CMDR.valid = 1;
 
-  while(i_number_of_bytes != 0)
+
+  p_twi->NCMDR.sadr = TLV320AIC33_TWI_ADDRESS;
+  // Send just 1 Byte (register value)
+  p_twi->NCMDR.nbytes = 1;
+
+  p_twi->NCMDR.start = 1;
+  p_twi->NCMDR.stop = 1;
+
+  // Want receive data
+  p_twi->NCMDR.read = 1;
+
+  // Data in CMDR are valid
+  p_twi->NCMDR.valid = 1;
+
+
+  // Wait until read TX data - during this, check for timeout and NACK
+  while(!p_twi->SR.txrdy)
   {
-    // Wait until TX is done - during this check for timeout and NACK
-    while(!p_twi->SR.rxrdy)
+    // Again, check for timeout
+    // Increase timeout counter
+    i_cnt_timeout++;
+    // Test timeout counter
+    if(i_cnt_timeout > TLV320AIC33_TWI_TIMEOUT)
     {
-      // Again, check for timeout
-      // Increase timeout counter
-      i_cnt_timeout++;
-      // Test timeout counter
-      if(i_cnt_timeout > TLV320AIC33_TWI_TIMEOUT)
-      {
-        // If higher -> return error value
-        return TLV320AIC33_ERROR_TWI_TIMEOUT;
-      }
-      // Check for NACK (address is ACKed by TLV320AIC33. Data are ACKed by AVR)
-      if(p_twi->SR.anak)
-      {
-        return TLV320AIC33_ERROR_TWI_NACK;
-      }
+      // If higher -> return error value
+      return TLV320AIC33_ERROR_TWI_TIMEOUT;
     }
-    // If byte read, then add copy it!
-    *(p_data++) = p_twi->RHR.rxdata;
-
-    // Decrement number of bytes which we need to send
-    i_number_of_bytes--;
-
-    // Clear counter (byte was successfully received)
-    i_cnt_timeout = 0;
+    // Check for NACK
+    if(p_twi->SR.anak || p_twi->SR.dnak)
+    {
+      return TLV320AIC33_ERROR_TWI_NACK;
+    }
   }
+
+  // Send Byte
+  p_twi->THR.txdata = i_register_number;
+
+  // Clear timeout
+  i_cnt_timeout = 0;
+
+
+  // Wait until RX is done - during this check for timeout and NACK
+  while(!p_twi->SR.rxrdy)
+  {
+    // Again, check for timeout
+    // Increase timeout counter
+    i_cnt_timeout++;
+    // Test timeout counter
+    if(i_cnt_timeout > TLV320AIC33_TWI_TIMEOUT)
+    {
+      // If higher -> return error value
+      return TLV320AIC33_ERROR_TWI_TIMEOUT;
+    }
+    // Check for NACK (address is ACKed by TLV320AIC33. Data are ACKed by AVR)
+    if(p_twi->SR.anak)
+    {
+      return TLV320AIC33_ERROR_TWI_NACK;
+    }
+  }
+  // If byte read, then add copy it!
+  *(p_data) = p_twi->RHR.rxdata;
 
   return TLV320AIC33_OK;
 }

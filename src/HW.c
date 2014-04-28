@@ -3,15 +3,15 @@
  *
  * \brief HW controller for generic driver
  *
- * Created  28.08.2013
- * Modified 01.04.2014
- *
  * \b Important \b note for \b AVR8 architecture: functions, that read from\n
  * flash memory presume that constants are stored in low 64 kB of flash\n
  * memory. If not, please take a look at\n
  * \a http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=93874
  *
- * \version 1.2.1
+ * Created  28.08.2013\n
+ * Modified 23.04.2014
+ * 
+ * \version 1.2.2
  * \author Martin Stejskal
  */
 

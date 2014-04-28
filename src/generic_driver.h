@@ -3,18 +3,17 @@
  *
  * \brief Generic driver
  *
- * Created  26.08.2013
- * Modified 02.04.2014
- *
  * \b Important \b note for \b AVR8 architecture: functions, that read from\n
  * flash memory presume that constants are stored in low 64 kB of flash\n
  * memory. If not, please take a look at\n
  * \a http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=93874
  *
- * \version 1.4
+ * Created  26.08.2013\n
+ * Modified 26.04.2014
+ *
+ * \version 1.3
  * \author Martin Stejskal
  */
-
 
 
 #ifndef _GENERIC_DRIVER_H_
@@ -39,6 +38,9 @@
 #define GD_MAX_STRING_SIZE    80
 
 //===============================| Structures |================================
+#ifndef GD_RES_CODE_DEFINED
+
+#define GD_RES_CODE_DEFINED
 /**
  * \brief Error codes returned by functions
  */
@@ -50,7 +52,7 @@ typedef enum{
   GD_CMD_ID_NOT_EQUAL_IN_FLASH = 4,//!< GD_CMD_ID_NOT_EQUAL_IN_FLASH
   GD_INCORRECT_DEVICE_ID =       5 //!< GD_INCORRECT_DEVICE_ID
 } GD_RES_CODE;
-
+#endif
 
 /**
  * \brief Enum of supported data types as values
@@ -84,13 +86,15 @@ typedef enum{
  * \brief For different data types is used union
  *
  * Because simply protocol do not know what data will receive, there is\n
- * 4 bytes "space" to save value. Depend on programmer witch data type will\n
+ * 4 bytes "space" to save value. Depend on programmer which data type will\n
  * use.
+ *
+ * \note Big endian issue is corrected "on the fly".
  */
 typedef union{
   char          data_char;
 
-  int           data_int;
+  int           data_int;       // Process as 32 bit. If not it is Your problem
   int8_t        data_int8;
   int16_t       data_int16;
   int32_t       data_int32;
@@ -98,7 +102,7 @@ typedef union{
 #ifndef uint  // For case, that uint is not defined
 #define uint unsigned int
 #endif
-  uint          data_uint;
+  uint          data_uint;      // Process as 32 bit. If not it is Your problem
   uint8_t       data_uint8;
   uint16_t      data_uint16;
   uint32_t      data_uint32;
@@ -156,14 +160,31 @@ typedef struct{
 //=================================| Macros |==================================
 // If AVR8 architecture
 #ifdef __AVR_ARCH__
-#define read_byte_ro_mem(p_address)     pgm_read_byte(p_address)
-#define read_word_ro_mem(p_address)     pgm_read_word(p_address)
-#define read_dword_ro_mem(p_address)    pgm_read_dword(p_address)
+#define gd_read_byte_ro_mem(p_address)     pgm_read_byte(p_address)
+#define gd_read_word_ro_mem(p_address)     pgm_read_word(p_address)
+#define gd_read_dword_ro_mem(p_address)    pgm_read_dword(p_address)
 #else   // Else different architecture
-#define read_byte_ro_mem(p_address)     *(p_address)
-#define read_word_ro_mem(p_address)     *(p_address)
-#define read_dword_ro_mem(p_address)    *(p_address)
+#define gd_read_byte_ro_mem(p_address)     *(p_address)
+#define gd_read_word_ro_mem(p_address)     *(p_address)
+#define gd_read_dword_ro_mem(p_address)    *(p_address)
 #endif
+
+// Create pointer according to pointer size (architecture)
+#define GD_POINTER_TO_FUNCTION                                  \
+switch(sizeof(p_size))                                          \
+{                                                               \
+case 1:                                                         \
+  p_func = (void*) gd_read_byte_ro_mem(&p_flash->p_funtion);    \
+  break;                                                        \
+case 2:                                                         \
+  p_func = (void*) gd_read_word_ro_mem(&p_flash->p_funtion);    \
+  break;                                                        \
+case 4:                                                         \
+  p_func = (void*) gd_read_dword_ro_mem(&p_flash->p_funtion);   \
+  break;                                                        \
+default:                                                        \
+  while(1);                                                     \
+}
 
 //============================| Global variables |=============================
 extern volatile GD_DATA_VALUE gd_void_value;

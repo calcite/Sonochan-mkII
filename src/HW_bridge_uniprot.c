@@ -5,10 +5,10 @@
  * library
  *
  *
- * Created  24.09.2013
- * Modified 02.04.2014
+ * Created  24.09.2013\n
+ * Modified 26.04.2014
  *
- * \version 0.3
+ * \version 0.4
  * \author Martin Stejskal
  */
 
@@ -278,18 +278,20 @@ void bridge_task(void)
       // Test 8 bit values - just copy low 8 bits
       else if((gd_cfg_struct_tmp.e_out_data_type == char_type) ||
           (gd_cfg_struct_tmp.e_out_data_type == uint8_type) ||
-          (gd_cfg_struct_tmp.e_out_data_type == int16_type) )
+          (gd_cfg_struct_tmp.e_out_data_type == int8_type) )
       {
         *(p_tx_buffer++) = 0x00;
         *(p_tx_buffer++) = 0x00;
         *(p_tx_buffer++) = 0x00;
         *(p_tx_buffer++) = gd_cfg_struct_tmp.p_out_value->data_uint8;
       }
-      // Test for 16 bit values. Note that int is in most 8 bit MCU 16bit
+      /* Test for 16 bit values. Note that int is in most 8 bit MCU 16bit
+       * so, there can be problem. Bridge process that as 32 bit value. If
+       * MCU use little endian, then all is OK, but if big endian, there could
+       * be problem.
+       */
       else if((gd_cfg_struct_tmp.e_out_data_type == int16_type) ||
-          (gd_cfg_struct_tmp.e_out_data_type == uint16_type) ||
-          (gd_cfg_struct_tmp.e_out_data_type == int_type) ||
-          (gd_cfg_struct_tmp.e_out_data_type == uint_type) )
+          (gd_cfg_struct_tmp.e_out_data_type == uint16_type) )
       {
         *(p_tx_buffer++) = 0x00;
         *(p_tx_buffer++) = 0x00;

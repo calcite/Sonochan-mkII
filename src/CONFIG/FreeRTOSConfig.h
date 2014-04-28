@@ -95,7 +95,7 @@
 #define configUSE_TRACE_FACILITY  0
 #define configUSE_16_BIT_TICKS    0
 #define configIDLE_SHOULD_YIELD   1
-#define configUSE_MUTEXES		  1
+#define configUSE_MUTEXES         1
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES     0
 #define configMAX_CO_ROUTINE_PRIORITIES ( 0 )
@@ -128,7 +128,7 @@ to exclude the API function. */
 
 /* Debug trace configuration.
    configDBG is a boolean indicating whether to activate the debug trace. */
-#define configDBG                     1
+#define configDBG                     0
 #define configDBG_USART               (&AVR32_USART1)
 #define configDBG_USART_RX_PIN        AVR32_USART1_RXD_0_2_PIN
 #define configDBG_USART_RX_FUNCTION   AVR32_USART1_RXD_0_2_FUNCTION
@@ -148,7 +148,6 @@ to exclude the API function. */
 #define configTSK_USB_DEV_PRIORITY            (tskIDLE_PRIORITY + 3)
 #define UAC1_configTSK_USB_DEV_PERIOD              10
 #define UAC2_configTSK_USB_DEV_PERIOD              2
-#define HPSDR_configTSK_USB_DEV_PERIOD              2
 
 /* USB host task definitions. */
 #define configTSK_USB_HST_NAME                ((const signed portCHAR *)"USB Host")
@@ -156,30 +155,22 @@ to exclude the API function. */
 #define configTSK_USB_HST_PRIORITY            (tskIDLE_PRIORITY + 2)
 #define configTSK_USB_HST_PERIOD              200
 
-/* USB device CDC task definitions. */
-#define configTSK_USB_DCDC_NAME               ((const signed portCHAR *)"USB Device CDC")
-#define configTSK_USB_DCDC_STACK_SIZE         256
-#define configTSK_USB_DCDC_PRIORITY           (tskIDLE_PRIORITY + 1)
-#define UAC1_configTSK_USB_DCDC_PERIOD             200
-#define UAC2_configTSK_USB_DCDC_PERIOD             80
-#define HPSDR_configTSK_USB_DCDC_PERIOD             80
-
 
 
 
 
 /* USB device HID task definitions. */
 #define configTSK_USB_DHID_NAME         ((const signed portCHAR *)"USB Device generic HID")
-#define configTSK_USB_DHID_STACK_SIZE   1024
-#define configTSK_USB_DHID_PRIORITY     (tskIDLE_PRIORITY + 1)
-#define configTSK_USB_DHID_PERIOD       3
+#define configTSK_USB_DHID_STACK_SIZE   128
+#define configTSK_USB_DHID_PRIORITY     (tskIDLE_PRIORITY + 0)
+#define configTSK_USB_DHID_PERIOD       100
 
 //=======================| HW bridge task definitions |========================
 #define configTSK_HW_bridge_uniprot_NAME       \
                                 ((const signed portCHAR *)"HW bridge uniprot")
 #define configTSK_HW_bridge_uniprot_STACK_SIZE  1024
-#define configTSK_HW_bridge_uniprot_PRIORITY    (tskIDLE_PRIORITY + 1)
-#define configTSK_HW_bridge_uniprot_PERIOD      100
+#define configTSK_HW_bridge_uniprot_PRIORITY    (tskIDLE_PRIORITY + 0)
+#define configTSK_HW_bridge_uniprot_PERIOD      200
 
 
 
@@ -202,51 +193,8 @@ to exclude the API function. */
 #define configTSK_AK5394A_STACK_SIZE			256
 #define UAC1_configTSK_AK5394A_PRIORITY			(tskIDLE_PRIORITY + 2)// Was 1
 #define UAC2_configTSK_AK5394A_PRIORITY			(tskIDLE_PRIORITY + 3)// Was +1, then +2
-#define HPSDR_configTSK_AK5394A_PRIORITY		(tskIDLE_PRIORITY + 2)
 #define UAC1_configTSK_AK5394A_PERIOD			200
 #define UAC2_configTSK_AK5394A_PERIOD			200
-#define HPSDR_configTSK_AK5394A_PERIOD			100
-
-/* USB host Audio HID task definitions. */
-#define configTSK_USB_HAUDIO_NAME             ((const signed portCHAR *)"USB Host Audio")
-#define configTSK_USB_HAUDIO_STACK_SIZE       256
-#define configTSK_USB_HAUDIO_PRIORITY         (tskIDLE_PRIORITY + 2)// Was 1
-#define configTSK_USB_HAUDIO_PERIOD           10
-
-
-
-
-
-
-/* taskMoboCtrl definitions. */
-#define configTSK_MoboCtrl_NAME				  ((const signed portCHAR *)"taskMoboCtrl")
-#define configTSK_MoboCtrl_STACK_SIZE		  1024
-#define configTSK_MoboCtrl_PRIORITY			  (tskIDLE_PRIORITY + 1) // Was 0
-// Not used... is in a loop with a fixed wait of 10ms at the end
-//#define configTSK_MoboCtrl_PERIOD			  100
-
-/* taskPowerDisplay definitions. */
-#define configTSK_PDISPLAY_NAME				  ((const signed portCHAR *)"taskPowerDisplay")
-#define configTSK_PDISPLAY_STACK_SIZE		  1024
-#define configTSK_PDISPLAY_PRIORITY			  (tskIDLE_PRIORITY )
-// Not used... Lowest priority task, but is in a fast loop with a fixed wait of only 5ms at the end
-//#define configTSK_PDISPLAY_PERIOD			  50
-
-/* taskPushButtonMenu definitions. */
-#define configTSK_PBTNMENU_NAME				  ((const signed portCHAR *)"taskPushButtonMenu")
-#define configTSK_PBTNMENU_STACK_SIZE		  1024
-#define configTSK_PBTNMENU_PRIORITY			  (tskIDLE_PRIORITY )
-#define configTSK_PBTNMENU_PERIOD			  100	// 10ms
-
-/* taskLCD definitions */
-// Priority has to be same or greater than that of client tasks such as MoboControl and PowerDisplay
-#define configTSK_LCD_PRIORITY        		( tskIDLE_PRIORITY + 1) // Was 0.
-#define	configTSK_LCD_STACK_SIZE			1024
-
-/* taskStartupLogDisplay definitions */
-#define configTSK_LOGDISPLAY_NAME			((const signed portCHAR *)"taskStartupLogDisplay")
-#define configTSK_LOGDISPLAY_PRIORITY		configTSK_LCD_PRIORITY
-#define configTSK_LOGDISPLAY_STACK_SIZE		1024
 
 /* taskExercise definitions */
 #define configTSK_EXERCISE_STACK_SIZE		256

@@ -10,9 +10,9 @@
  * updates independent to higher layer (new features and so on).
  *
  * Created:  02.04.2014\n
- * Modified: 02.04.2014
+ * Modified: 23.04.2014
  *
- * \version 0.1a
+ * \version 0.1
  * \author Martin Stejskal
  */
 
@@ -234,12 +234,12 @@ typedef enum{
 TLV320AIC33_status_t tlv320aic33_HAL_init(void);
 
 TLV320AIC33_status_t tlv320aic33_HAL_write_data(
-    uint8_t *p_data,
-    uint8_t i_number_of_bytes);
+    uint8_t i_register_number,
+    uint8_t i_data);
 
 TLV320AIC33_status_t tlv320aic33_HAL_read_data(
-    uint8_t *p_data,
-    uint8_t i_number_of_bytes);
+    uint8_t i_register_number,
+    uint8_t *p_data);
 
 
 

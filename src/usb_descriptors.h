@@ -773,49 +773,6 @@ __attribute__((__packed__))
 #endif
 S_usb_serial_number;
 
-
-//_____ U S B   CLOCK SOURCE 1   D E S C R I P T O R _____________
-
-//! struct usb_st_clock_source_1
-typedef
-#if (defined __ICCAVR32__)
-#pragma pack(1)
-#endif
-struct
-#if (defined __GNUC__)
-__attribute__((__packed__))
-#endif
-{
-  U8  bLength;                  //!< Size of this descriptor in U8s
-  U8  bDescriptorType;          //!< STRING descriptor type
-  U16 wstring[USB_CS1_LENGTH];   //!< Unicode characters
-}
-#if (defined __ICCAVR32__)
-#pragma pack()
-#endif
-S_usb_clock_source_1;
-
-//_____ U S B   CLOCK SOURCE 2   D E S C R I P T O R _____________
-
-//! struct usb_st_clock_source_2
-typedef
-#if (defined __ICCAVR32__)
-#pragma pack(1)
-#endif
-struct
-#if (defined __GNUC__)
-__attribute__((__packed__))
-#endif
-{
-  U8  bLength;                  //!< Size of this descriptor in U8s
-  U8  bDescriptorType;          //!< STRING descriptor type
-  U16 wstring[USB_CS2_LENGTH];   //!< Unicode characters
-}
-#if (defined __ICCAVR32__)
-#pragma pack()
-#endif
-S_usb_clock_source_2;
-
 //_____ U S B   CLOCK SELECTOR   D E S C R I P T O R _____________
 
 //! struct usb_st_clock_selector
@@ -1400,9 +1357,6 @@ extern const S_usb_manufacturer_string_descriptor usb_user_manufacturer_string_d
 extern const S_usb_product_string_descriptor usb_user_product_string_descriptor;
 extern const S_usb_serial_number usb_user_serial_number;
 extern const S_usb_language_id usb_user_language_id;
-extern const S_usb_clock_source_1 usb_user_clock_source_1;
-extern const S_usb_clock_source_2 usb_user_clock_source_2;
-extern const S_usb_clock_selector usb_user_clock_selector;
 
 extern const S_usb_wl usb_user_wl;
 extern const S_usb_ait usb_user_ait;

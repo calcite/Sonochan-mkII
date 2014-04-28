@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 02.04.2014
+ * Modified: 25.04.2014
  *
- * \version 0.4.1
+ * \version 0.5.1
  * \author Martin Stejskal
  */
 
@@ -242,7 +242,7 @@ typedef struct{
 } cs2200_virtual_reg_img_t;
 
 //===========================| Additional includes |===========================
-#if CS2200_SUPPORT_GENERIC_DRIVER == 1
+#if CS2200_SUPPORT_GENERIC_DRIVER != 0
 // If used generic driver, get actual structures
 #include "generic_driver.h"
 // Also say compiler, that there exist settings on flash

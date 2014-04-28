@@ -29,7 +29,9 @@
 #include "taskAK5394A.h"
 #include "uac1_taskAK5394A.h"
 
+//[Martin]
 #include "HW_bridge_uniprot.h"
+#include "brd_driver_hw_03.h"
 
 /*
  * Task specific headers.
@@ -59,6 +61,9 @@ static void x_image_init(void) {
 }
 
 static void x_image_task_init(void) {
+  // Status variable
+  GD_RES_CODE i_status;
+
   // Initialize USB task
   usb_task_init();
 
@@ -68,8 +73,15 @@ static void x_image_task_init(void) {
 
   // vStartTaskEXERCISE( tskIDLE_PRIORITY );
   uac1_AK5394A_task_init();
+
+  i_status = brd_drv_init();
+  if(i_status != GD_SUCCESS)
+  {
+    print_dbg("Board initialization failed.");
+    ///\todo More process
+  }
+
   bridge_init();
-  //device_generic_HID_init(UAC1_EP_HID_RX, UAC1_EP_HID_TX);
 
   uac1_device_audio_task_init(UAC1_EP_AUDIO_IN, UAC1_EP_AUDIO_OUT, UAC1_EP_AUDIO_OUT_FB);
 #endif

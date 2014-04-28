@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 02.04.2014
+ * Modified: 25.04.2014
  *
- * \version 0.4.1
+ * \version 0.5.1
  * \author Martin Stejskal
  */
 
@@ -33,7 +33,7 @@ static cs2200_virtual_reg_img_t s_virtual_reg_img;
 
 
 //=========================| Generic driver support |==========================
-#if CS2200_SUPPORT_GENERIC_DRIVER == 1
+#if CS2200_SUPPORT_GENERIC_DRIVER != 0
 /**
  * \brief Configure table for device
  */
@@ -47,7 +47,7 @@ const gd_config_struct CS2200_config_table[] =
   {
     {
       0,                      // Command ID
-      "Initialize hardware",  // Name
+      "Initialize CS2200 hardware",  // Name
       "Initialize I/O and TWI module (if used)",      // Descriptor
       void_type,              // Input data type
       {.data_uint32 = 0},     // Minimum input value
@@ -110,7 +110,7 @@ const gd_config_struct CS2200_config_table[] =
       {.data_uint32 = 0},
       {.data_uint32 = 0},
       (GD_DATA_VALUE*)&gd_void_value,
-      cs2200_inc_PLL_freq
+      cs2200_dec_PLL_freq
     },
     {
       5,
@@ -140,14 +140,14 @@ const gd_config_struct CS2200_config_table[] =
     }
 
   };
-// \brief Maximum command ID (is defined by last command)
+/// \brief Maximum command ID (is defined by last command)
 #define CS2200_MAX_CMD_ID          6
 
 
 const gd_metadata CS2200_metadata =
 {
         CS2200_MAX_CMD_ID,              // Max CMD ID
-        "Fractional PLL CS2200-CP",     // Description
+        "Fractional PLL CS2200-CP v0.5",     // Description
         (gd_config_struct*)&CS2200_config_table[0],
         0x23    // Serial number (0~255)
 };
@@ -272,7 +272,8 @@ GD_RES_CODE cs2200_init(void)
  * \brief Set PLL to get user defined frequency
  *
  * If CS2200_REF_CLK_FREQ is 0, then just send data (i_freq argument) to PLL\n
- * and activate values.
+ * and activate values. Also set output divider/multiplier back to 1 to make\n
+ * sure that output frequency is correct.
  *
  * @param i_freq Frequency which user want. In case, that CS2200_REF_CLK_FREQ\n
  * is 0, then no calculation is done and data are send directly to PLL.
@@ -320,6 +321,13 @@ GD_RES_CODE cs2200_set_PLL_freq(uint32_t i_freq)
 
   // Set ratio
   e_status = cs2200_set_ratio(i_ratio);
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+
+  // Disable divider
+  e_status = cs2200_set_out_divider_multiplier(CS2200_R_MOD__MUL_1x);
   if(e_status != GD_SUCCESS)
   {
     return e_status;
