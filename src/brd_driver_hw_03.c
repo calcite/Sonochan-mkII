@@ -59,23 +59,133 @@ const gd_metadata BRD_DRV_metadata =
 //====================| Function prototypes not for user |=====================
 GD_RES_CODE brd_drv_TLV_default(void);
 
+GD_RES_CODE brd_drv_adc_init(void);
+
+
+//=============================| FreeRTOS stuff |==============================
+// If RTOS support is enabled, create this
+#if BRD_DRV_SUPPORT_RTOS != 0
+portBASE_TYPE xStatus;
+xSemaphoreHandle mutexADC;
+#endif
+
+#if BRD_DRV_SUPPORT_RTOS != 0
+/**
+* \brief FreeRTOS task
+*
+* Instead of complicating brd_drv_task() we just make function, that is ready\n
+* for FreeRTOS stuff, so code will be still easy to use.
+*/
+void brd_drv_task_FreeRTOS(void *pvParameters)
+{
+  portTickType xLastWakeTime;
+
+  xLastWakeTime = xTaskGetTickCount();
+  while (TRUE)
+  {
+    vTaskDelayUntil(&xLastWakeTime, configTSK_HW_bridge_uniprot_PERIOD);
+
+    // Call simple task
+    brd_drv_task();
+  }
+}
+#endif
+
 //==========================| High level functions |===========================
 GD_RES_CODE brd_drv_init(void)
 {
+  // If RTOS support enable and create flag is set then create mutex
+#if (BRD_DRV_SUPPORT_RTOS != 0) && (BRD_DRV_RTOS_CREATE_MUTEX != 0)
+  mutexADC = xSemaphoreCreateMutex();
+#endif
+
   // Variable for storing status
   GD_RES_CODE e_status;
 
   // Set I/O
 
 
-  // Prepare TLV
+  // Take control over ADC
+  BRD_DRV_LOCK_ADC_MODULE_IF_RTOS
+  // ADC for volume control
+  e_status = brd_drv_adc_init();
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+  // Give back control on ADC
+  BRD_DRV_UNLOCK_ADC_MODULE_IF_RTOS
+
+
+  // Prepare TLV (CS2200 have to be already initialized)
   e_status = brd_drv_TLV_default();
   if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
 
-  print_dbg("R DAC OK\n");
+
+  /* If FreeRTOS is used, then create task. Note that
+   * "configTSK_brd_drv_*" should be defined in FreeRTOSConfig.h
+   * file to keep code clear. However it should be possible set settings
+   * here.
+   */
+#if BRD_DRV_SUPPORT_RTOS != 0
+  xTaskCreate(brd_drv_task_FreeRTOS,             // Task function
+      configTSK_brd_drv_NAME,       // String name
+      configTSK_brd_drv_STACK_SIZE, // Stack size (2^N)
+      NULL,
+      configTSK_brd_drv_PRIORITY,   // 0 is lowest
+      NULL);
+#endif  // FREERTOS_USED
 
   return GD_SUCCESS;
 }
+
+
+
+
+
+
+/**
+ * \brief Board driver task. Watch ADC and buttons
+ *
+ * If detected some change, then start processing. Else return
+ */
+void brd_drv_task(void)
+{
+  // Simple time counter
+  static uint32_t i_time_cnt = 0;
+
+  // Store ADC volume value
+  static uint8_t  i_saved_volume_value;
+
+  // Pointer to ADC structure
+  volatile avr32_adc_t *p_adc;
+  p_adc = (avr32_adc_t*)BDR_DRV_ADC_ADDRESS;
+
+
+
+  if((BRD_DRV_IS_ADC_DONE(BRD_DRV_ADC_VOLUME_CONTROL_CHANNEL)) &&
+     (BRD_DRV_IS_ADC_DONE(BRD_DRV_ADC_CON_VOLTAGE_CHANNEL)) &&
+     i_time_cnt > BRD_DRV_BUTTON_REFRESH_PERIOD)
+  {
+    // ADC ready and timeout occurs -> let's process some data
+    i_time_cnt = 0;
+    char c[20];
+    sprintf(&c[0], "Vol: %lu\nCon: %lu\n\n",
+        BRD_DRV_ADC_DATA(BRD_DRV_ADC_VOLUME_CONTROL_CHANNEL),
+        BRD_DRV_ADC_DATA(BRD_DRV_ADC_CON_VOLTAGE_CHANNEL));
+    print_dbg(&c[0]);
+    // Start new conversion
+    p_adc->CR.start = 1;
+  }
+  // Increase counter
+  i_time_cnt++;
+  return;
+}
+
+
 //===========================| Mid level functions |===========================
 
 
@@ -84,6 +194,10 @@ GD_RES_CODE brd_drv_init(void)
 
 
 //=========================| Functions not for user |==========================
+/**
+ * \brief Set TLV codec to default setting
+ * @return GD_SUCCESS (0) if all OK
+ */
 inline GD_RES_CODE brd_drv_TLV_default(void)
 {
   // Variable for storing status
@@ -171,4 +285,102 @@ inline GD_RES_CODE brd_drv_TLV_default(void)
   }
 
   return e_status;
+}
+
+
+
+
+
+/**
+ * \brief Prepare ADC
+ *
+ * Set I/O, enable clock to ADC module (thru PM), reset ADC settings, set\n
+ * active channels, prescaller and so on.
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE brd_drv_adc_init(void)
+{
+  // For backup IRQ flags
+  uint32_t flags;
+
+  // Variable as mask
+  uint32_t mask;
+
+  // Pointer to ADC structure
+  volatile avr32_adc_t *p_adc;
+  p_adc = (avr32_adc_t*)BDR_DRV_ADC_ADDRESS;
+
+  //=================================| GPIO |==================================
+  static const gpio_map_t brd_drv_adc_pin_map = {
+      {BRD_DRV_ADC_VOLUME_CONTROL_PIN, BRD_DRV_ADC_VOLUME_CONTROL_FUNCTION},
+      {BRD_DRV_ADC_CON_VOLTAGE_PIN   , BRD_DRV_ADC_CON_VOLTAGE_FUNCTION}
+  };
+  // Map ADC pin in GPIO module
+  if(gpio_enable_module(brd_drv_adc_pin_map,
+      sizeof(brd_drv_adc_pin_map)/sizeof(brd_drv_adc_pin_map[0])) != 0)
+  {
+    // If something goes wrong
+    return GD_FAIL;
+  }
+
+
+  //==================================| PM |===================================
+  // Enable clock to device (in default should be on, but just for case)
+  // Get and clear global interrupt
+  flags = __builtin_mfsr(AVR32_SR);
+  // Disable IRQ
+  __builtin_ssrf(AVR32_SR_GM_OFFSET);
+  asm volatile("" ::: "memory");
+
+  /*
+   * Poll MSKRDY before changing mask rather than after, as it's
+   * highly unlikely to actually be cleared at this point.
+   */
+  while (!(AVR32_PM.poscsr & (1U << AVR32_PM_POSCSR_MSKRDY))) {
+          /* Do nothing */
+  }
+
+  // Enable the clock to flash and PBA bridge
+  mask = *(&AVR32_PM.cpumask + AVR32_PM_CLK_GRP_HSB);
+  mask |= 1U << (AVR32_FLASHC_CLK_HSB % 32);
+  mask |= 1U << (AVR32_HMATRIX_CLK_HSB_PBA_BRIDGE % 32);
+  *(&AVR32_PM.cpumask + AVR32_PM_CLK_GRP_HSB) = mask;
+
+  // Enable clock to ADC and GPIO in PBA
+  mask = *(&AVR32_PM.cpumask + AVR32_PM_CLK_GRP_PBA);
+  mask |= 1U << (AVR32_ADC_CLK_PBA % 32);
+  mask |= 1U << (AVR32_GPIO_CLK_PBA % 32);
+  *(&AVR32_PM.cpumask + AVR32_PM_CLK_GRP_PBA) = mask;
+
+  // Restore global interrupt flags
+  asm volatile("" ::: "memory");
+  __builtin_csrf(AVR32_SR_GM_OFFSET);
+  asm volatile("" ::: "memory");
+
+
+  //==================================| ADC |==================================
+  // Backup registers that will be changed
+
+  // Reset ADC -> known state
+  p_adc->CR.swrst = 1;
+  // Set ADC sample and hold time
+  p_adc->MR.shtim = BRD_DRV_ADC_SAMPLE_HOLD_TIME;
+  // Set start-up time
+  p_adc->MR.startup = BRD_DRV_ADC_START_UP_TIME;
+  // Set prescaller
+  p_adc->MR.prescal = BRD_DRV_ADC_PRESCAL;
+  // Turn off sleep mode - by default normal mode
+  //p_adc->MR.sleep = 0;
+  // 8 bit resolution is enough
+  p_adc->MR.lowres = 1;
+  // Do not enable hardware triggers - by default off
+  //p_adc->MR.trgen = 0;
+  // Enable selected channels
+  BRD_DRV_EN_ADC_CHANNEL(BRD_DRV_ADC_VOLUME_CONTROL_CHANNEL);
+  BRD_DRV_EN_ADC_CHANNEL(BRD_DRV_ADC_CON_VOLTAGE_CHANNEL);
+
+  // Everything should be ready, start conversion
+  p_adc->CR.start = 1;
+
+  return GD_SUCCESS;
 }

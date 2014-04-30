@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 25.04.2014
+ * Modified: 28.04.2014
  *
- * \version 0.5.1
+ * \version 0.6
  * \author Martin Stejskal
  */
 
@@ -130,9 +130,12 @@ typedef union{
  * This structures allow write bit by bit to register image, Also save memory.
  * @{
  */
+
+// Note, that this is endian (and compiler) dependent. So at least try...
+#if defined(__ORDER_BIG_ENDIAN__) || defined(__AVR32__)
 typedef struct device_id
 {
-  uint8_t Device        :5;
+  uint8_t Device        :5;     // MSB
   uint8_t Revision      :3;
 }device_id_t;
 
@@ -176,6 +179,57 @@ typedef struct func_Cfg_2_t
   uint8_t ClkOutUnl     :1;
   uint8_t               :4;     // Space
 } func_Cfg_2_t;
+#else   // Little Endian
+typedef struct device_id
+{
+  uint8_t Revision      :3;     // LSB
+  uint8_t Device        :5;
+}device_id_t;
+
+typedef struct device_Ctrl_t
+{
+  uint8_t ClkOutDis     :1;
+  uint8_t AuxOutDis     :1;
+  uint8_t               :5;     // 5 Reserved bits - blank space
+  uint8_t Unlock        :1;
+} device_ctrl_t;
+
+typedef struct device_Cfg_1_t
+{
+  uint8_t EnDevCfg1     :1;
+  uint8_t AuxOutSrc     :2;
+  uint8_t               :2;     // Space
+  uint8_t RModSel       :3;
+
+} device_Cfg_1_t;
+
+typedef struct global_Cfg_t
+{
+  uint8_t EnDevCfg2     :1;
+  uint8_t               :2;     // Space
+  uint8_t Freeze        :1;
+  uint8_t               :4;     // Space
+} global_Cfg_t;
+
+typedef struct func_Cfg_1_t
+{
+  uint8_t               :3;     // Space
+  uint8_t RefClkDiv     :2;
+  uint8_t               :1;     // Space
+  uint8_t AuxLockCfg    :1;
+  uint8_t               :1;     // Space
+
+} func_Cfg_1_t;
+
+typedef struct func_Cfg_2_t
+{
+  uint8_t               :4;     // Space
+  uint8_t ClkOutUnl     :1;
+  uint8_t               :3;     // Space
+} func_Cfg_2_t;
+#endif
+
+
 
 ///@}
 
@@ -282,9 +336,6 @@ typedef enum{
 #include "semphr.h"
 
 extern xSemaphoreHandle mutexI2C;
-
-
-
 #endif
 
 //===============================| Definitions |===============================

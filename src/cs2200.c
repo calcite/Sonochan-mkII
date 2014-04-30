@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 25.04.2014
+ * Modified: 28.04.2014
  *
- * \version 0.5.1
+ * \version 0.6
  * \author Martin Stejskal
  */
 

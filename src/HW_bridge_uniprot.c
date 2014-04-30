@@ -6,9 +6,9 @@
  *
  *
  * Created  24.09.2013\n
- * Modified 26.04.2014
+ * Modified 28.04.2014
  *
- * \version 0.4
+ * \version 0.4.1
  * \author Martin Stejskal
  */
 
@@ -46,20 +46,24 @@ void bridge_init(void)
    * will host (PC program) send
    */
 
-  // If FreeRTOS is used, then create task
-#ifdef FREERTOS_USED
-  xTaskCreate(bridge_task_FreeRTOS,
-        configTSK_HW_bridge_uniprot_NAME,
-        configTSK_HW_bridge_uniprot_STACK_SIZE,
+  /* If FreeRTOS is used, then create task. Note that
+   * "configTSK_HW_bridge_uniprot_*" should be defined in FreeRTOSConfig.h
+   * file to keep code clear. However it should be possible set settings
+   * here.
+   */
+#if HW_BRIDGE_UNIPROT_SUPPORT_RTOS != 0
+  xTaskCreate(bridge_task_FreeRTOS,             // Task function
+        configTSK_HW_bridge_uniprot_NAME,       // String name
+        configTSK_HW_bridge_uniprot_STACK_SIZE, // Stack size (2^N)
         NULL,
-        configTSK_HW_bridge_uniprot_PRIORITY,
+        configTSK_HW_bridge_uniprot_PRIORITY,   // 0 is lowest
         NULL);
 #endif  // FREERTOS_USED
 }
 
 
 
-#ifdef FREERTOS_USED
+#if HW_BRIDGE_UNIPROT_SUPPORT_RTOS != 0
 /**
  * \brief FreeRTOS task
  *
@@ -393,7 +397,7 @@ void bridge_task(void)
       /* Get metadata - First in RX buffer is Device ID - check if
        * metadata for wanted device exist (only in debug)
        */
-#if bridge_version_debug == 1
+#if HW_BRIDGE_UNIPROT_DEBUG != 0
       if( hw_get_device_metadata(i_rx_buffer[0], p_p_metadata)
           != GD_SUCCESS )
       {
@@ -549,7 +553,7 @@ void bridge_task(void)
    * never ever should happen, but it is there for debug purposes or bugs.
    * This only work in debug version
    */
-#if bridge_version_debug == 1
+#if HW_BRIDGE_UNIPROT_DEBUG != 0
   if(i_state == HW_BRIDGE_UNIPROT_STATE_FAILED_TO_READ_METADATA)
   {
     while(1);

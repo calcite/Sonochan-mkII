@@ -41,14 +41,7 @@
  *
  */
 #define TLV320AIC33_SUPPORT_GENERIC_DRIVER   1
-/// @}
 
-
-/**
- * \name Advanced TLV320AIC33 settings
- *
- * @{
- */
 /**
  * \brief Allow enable FreeRTOS features
  *
@@ -71,7 +64,14 @@
 
 /// @}
 
+/// @}
 
+
+/**
+ * \name Advanced TLV320AIC33 settings
+ *
+ * @{
+ */
 
 
 
@@ -202,36 +202,36 @@ typedef union{
 typedef enum{
   fsref_48khz = 0,
   fsref_44_1khz = 1
-}FsrefSetting_e;
+}e_FsrefSetting;
 typedef enum{
   adc_dual_rate_mode_is_disabled = 0,
   adc_dual_rate_mode_is_enabled = 1
-}ADCDualRateControl_e;
+}e_ADCDualRateControl;
 typedef enum{
   dac_dual_rate_mode_is_disabled = 0,
   dac_dual_rate_mode_is_enabled = 1
-}DACDualRateControl_e;
+}e_DACDualRateControl;
 typedef enum{
   left_dac_datapath_is_off = 0,
   left_dac_datapath_plays_left_channel_input_data = 1,
   left_dac_datapath_plays_right_channel_input_data = 2,
   left_dac_datapath_plays_mono_mix_left_and_right_channel_input_data = 3
-}LeftDACDatapathControl_e;
+}e_LeftDACDatapathControl;
 typedef enum
 {
   right_dac_datapath_is_off = 0,
   right_dac_datapath_plays_right_channel_input_data = 1,
   right_dac_datapath_plays_left_channel_input_data = 2,
   right_dac_datapath_plays_mono_mix_left_and_right_channel_input_data = 3
-}RightDACDatapathControl_e;
+}e_RightDACDatapathControl;
 
 typedef union{
   struct{
-    FsrefSetting_e FsrefSetting                         :1;
-    ADCDualRateControl_e ADCDualRateControl             :1;
-    DACDualRateControl_e DACDualRateControl             :1;
-    LeftDACDatapathControl_e LeftDACDatapathControl     :2;
-    RightDACDatapathControl_e RightDACDatapathControl   :2;
+    e_FsrefSetting FsrefSetting                         :1;
+    e_ADCDualRateControl ADCDualRateControl             :1;
+    e_DACDualRateControl DACDualRateControl             :1;
+    e_LeftDACDatapathControl LeftDACDatapathControl     :2;
+    e_RightDACDatapathControl RightDACDatapathControl   :2;
     uint8_t                                             :1;
   }s;
   uint8_t i_reg;
@@ -244,39 +244,39 @@ typedef union{
 typedef enum{
   bit_clock_is_an_input = 0,
   bit_clock_is_an_output = 1
-}BitClockDirectionalControl_e;
+}e_BitClockDirectionalControl;
 typedef enum{
   word_clock_is_an_input = 0,
   word_clock_is_an_output = 1
-}WordClockDirectionalControl_e;
+}e_WordClockDirectionalControl;
 typedef enum{
   do_not_3state_DOUT_when_valid_data_is_not_being_send = 0,
   three_state_DOUT_when_valid_data_is_not_being_send = 1
-}SerialOutputDataDriver3StateControl_e;
+}e_SerialOutputDataDriver3StateControl;
 typedef enum{
   bit_clk_and_word_clk_not_transmitt_in_master_mode_if_power_dwn = 0,
   bit_clk_and_word_clk_transmitt_in_master_mode_if_power_dwn = 1
-}BitWordClockDriveControl_e;
+}e_BitWordClockDriveControl;
 typedef enum{
   disable_3D_digital_effect = 0,
   enable_3D_digital_effect = 1
-}_3DEffectControl_e;
+}e_3DEffectControl;
 typedef enum{
   digital_mic_support_disabled = 0,
   digital_mic_support_enabled_oversampling_128 = 1,
   digital_mic_support_enabled_oversampling_64 = 2,
   digital_mic_support_enabled_oversampling_32 = 3
-}DigitalMicrophoneFunctionalityControl_e;
+}e_DigitalMicrophoneFunctionalityControl;
 typedef union{
   struct{
-    BitClockDirectionalControl_e BitClockDirectionalControl     :1;
-    WordClockDirectionalControl_e WordClockDirectionalControl   :1;
-    SerialOutputDataDriver3StateControl_e
+    e_BitClockDirectionalControl BitClockDirectionalControl     :1;
+    e_WordClockDirectionalControl WordClockDirectionalControl   :1;
+    e_SerialOutputDataDriver3StateControl
       SerialOutputDataDriver3StateControl   :1;
-    BitWordClockDriveControl_e BitWordClockDriveControl              :1;
+    e_BitWordClockDriveControl BitWordClockDriveControl              :1;
     uint8_t                                       :1;
-    _3DEffectControl_e _3DEffectControl                      :1;
-    DigitalMicrophoneFunctionalityControl_e
+    e_3DEffectControl _3DEffectControl                      :1;
+    e_DigitalMicrophoneFunctionalityControl
       DigitalMicrophoneFunctionalityControl :2;
   }s;
   uint8_t i_reg;
@@ -295,31 +295,31 @@ typedef enum{
   serial_data_bus_uses_DSP_mode = 1,            //!< DSP mode
   serial_data_bus_uses_right_justified_mode = 2,//!< Right justified mode
   serial_data_bus_uses_left_justified_mode = 3  //!< Left justified mode
-}AudioSerialDataInterfaceTransferMode_e;
+}e_AudioSerialDataInterfaceTransferMode;
 typedef enum{
   audio_data_word_length_16bit = 0,
   audio_data_word_length_20bit = 1,
   audio_data_word_length_24bit = 2,
   audio_data_word_length_32bit = 3
-}AudioSerialDataWordLengthControl_e;
+}e_AudioSerialDataWordLengthControl;
 typedef enum{
   continuous_transfer_mode = 0,
   clock_256_transfer_mode = 1
-}BitClockRateControl_e;
+}e_BitClockRateControl;
 typedef enum{
   re_sync_without_soft_muting = 0,
   re_sync_with_soft_muting = 1
-}ReSyncMuteBehavior_e;
+}e_ReSyncMuteBehavior;
 typedef union{
   struct{
-    AudioSerialDataInterfaceTransferMode_e
+    e_AudioSerialDataInterfaceTransferMode
       AudioSerialDataInterfaceTransferMode  :2;
-    AudioSerialDataWordLengthControl_e
+    e_AudioSerialDataWordLengthControl
       AudioSerialDataWordLengthControl      :2;
-    BitClockRateControl_e BitClockRateControl                   :1;
+    e_BitClockRateControl BitClockRateControl                   :1;
     uint8_t DACReSync                             :1;
     uint8_t ADCReSync                             :1;
-    ReSyncMuteBehavior_e ReSyncMuteBehavior                    :1;
+    e_ReSyncMuteBehavior ReSyncMuteBehavior                    :1;
   }s;
   uint8_t i_reg;
 }p0_r9_Audio_Serial_Interface_Control_B_t;
@@ -487,12 +487,12 @@ typedef enum{
   HPLCOM_is_differential_of_HPLOUT = 0,
   HPLCOM_is_constant_VCM = 1,
   HPLCOM_is_single_ended = 2
-}HPLCOMOutputDriverConfigurationControl_e;
+}e_HPLCOMOutputDriverConfigurationControl;
 typedef union{
   struct{
     uint8_t LeftDACPower                                  :1;
     uint8_t RightDACPower                                 :1;
-    HPLCOMOutputDriverConfigurationControl_e
+    e_HPLCOMOutputDriverConfigurationControl
       HPLCOMOutputDriverConfigurationControl              :2;
     uint8_t                                               :4;
   }s;
@@ -510,18 +510,18 @@ typedef enum{
   HPRCOM_is_single_ended = 2,
   HPRCOM_is_differential_of_HPLCOM = 3,
   HPRCOM_is_external_feedback_with_HPLCOM_as_VCM_output = 4
-}HPRCOMOutputDriverConfigurationControl_e;
+}e_HPRCOMOutputDriverConfigurationControl;
 typedef enum{
   if_short_protect_en_limit_max_current = 0,
   if_short_protect_en_power_down_when_short = 1
-}ShortCorcuitProtectionModeControl_e;
+}e_ShortCorcuitProtectionModeControl;
 typedef union{
   struct{
     uint8_t                                               :2;
-    HPRCOMOutputDriverConfigurationControl_e
+    e_HPRCOMOutputDriverConfigurationControl
       HPRCOMOutputDriverConfigurationControl              :3;
     uint8_t ShortCircuitProtection                        :1;
-    ShortCorcuitProtectionModeControl_e
+    e_ShortCorcuitProtectionModeControl
       ShortCorcuitProtectionModeControl                   :1;
     uint8_t                                               :1;
   }s;
@@ -552,25 +552,25 @@ typedef enum{
   left_DAC_output_DAC_L1_path = 0,
   left_DAC_output_DAC_L3_path = 1,
   left_DAC_output_DAC_L2_path = 2
-}LeftDACOutputSwitchingControl_e;
+}e_LeftDACOutputSwitchingControl;
 typedef enum{
   right_DAC_output_DAC_R1_path = 0,
   right_DAC_output_DAC_R3_path = 1,
   right_DAC_output_DAC_R2_path = 2
-}RightDACOutputSwitchingControl_e;
+}e_RightDACOutputSwitchingControl;
 typedef enum{
   left_and_right_DAC_channels_independent_volume = 0,
   left_DAC_channel_follows_right_channel = 1,
   right_DAC_channel_follows_left_channel = 2
-}DACDigitalVolumeControlFunctionality_e;
+}e_DACDigitalVolumeControlFunctionality;
 typedef union{
   struct{
-    LeftDACOutputSwitchingControl_e
+    e_LeftDACOutputSwitchingControl
       LeftDACOutputSwitchingControl                       :2;
-    RightDACOutputSwitchingControl_e
+    e_RightDACOutputSwitchingControl
       RightDACOutputSwitchingControl                      :2;
     uint8_t                                               :2;
-    DACDigitalVolumeControlFunctionality_e
+    e_DACDigitalVolumeControlFunctionality
       DACDigitalVolumeControlFunctionality                :2;
   }s;
   uint8_t i_reg;
@@ -594,25 +594,25 @@ typedef enum{
   driver_power_on_time_800ms = 9,
   driver_power_on_time_2s = 10,
   driver_power_on_time_4s = 11
-}OutputDriverPowerOnDelayControl_e;
+}e_OutputDriverPowerOnDelayControl;
 typedef enum{
   driver_ramp_up_step_time_0ms = 0,
   driver_ramp_up_step_time_1ms = 1,
   driver_ramp_up_step_time_2ms = 2,
   driver_ramp_up_step_time_4ms = 3
-}DriverRampUpStepTimingControl_e;
+}e_DriverRampUpStepTimingControl;
 typedef enum{
   common_output_voltage_generated_from_resistor_divider = 0,
   common_output_voltage_generated_from_bandgap_reference = 1
-}WeakOutputCommonModeVoltageControl_e;
+}e_WeakOutputCommonModeVoltageControl;
 typedef union
 {
   struct{
-    OutputDriverPowerOnDelayControl_e
+    e_OutputDriverPowerOnDelayControl
       OutputDriverPowerOnDelayControl                     :4;
-    DriverRampUpStepTimingControl_e
+    e_DriverRampUpStepTimingControl
       DriverRampUpStepTimingControl                       :2;
-    WeakOutputCommonModeVoltageControl_e
+    e_WeakOutputCommonModeVoltageControl
       WeakOutputCommonModeVoltageControl                  :1;
     uint8_t                                               :1;
   }s;
@@ -662,18 +662,18 @@ typedef union{
 typedef enum{
   HPLOUT_is_weakly_driven_to_common_mode_when_pwr_dwn = 0,
   HPLOUT_is_3_stated_with_pwr_dwn = 1
-}HPLOUTPowerDownDriveControl_e;
+}e_HPLOUTPowerDownDriveControl;
 typedef enum{
   all_programmed_gains_to_HPLOUT_have_been_applied_yet = 0,
   not_all_programmed_gains_to_HPLOUT_have_been_applied_yet = 1
-}HPLOUTVolumeControlStatus_e;
+}e_HPLOUTVolumeControlStatus;
 typedef union{
   struct{
     uint8_t HPLOUTOutputLevelControl                    :4;
     uint8_t HPLOUTMute                                  :1;
-    HPLOUTPowerDownDriveControl_e
+    e_HPLOUTPowerDownDriveControl
       HPLOUTPowerDownDriveControl                       :1;
-    HPLOUTVolumeControlStatus_e
+    e_HPLOUTVolumeControlStatus
       HPLOUTVolumeControlStatus                         :1;
     uint8_t HPLOUTFullyPoweredUp                        :1;
   }s;
@@ -703,18 +703,18 @@ typedef union{
 typedef enum{
   HPROUT_is_weakly_driven_to_common_mode_when_pwr_dwn = 0,
   HPROUT_is_3_stated_with_pwr_dwn = 1
-}HPROUTPowerDownDriveControl_e;
+}e_HPROUTPowerDownDriveControl;
 typedef enum{
   all_programmed_gains_to_HPROUT_have_been_applied_yet = 0,
   not_all_programmed_gains_to_HPROUT_have_been_applied_yet = 1
-}HPROUTVolumeControlStatus_e;
+}e_HPROUTVolumeControlStatus;
 typedef union{
   struct{
     uint8_t HPROUTOutputLevelControl                    :4;
     uint8_t HPROUTMute                                  :1;
-    HPROUTPowerDownDriveControl_e
+    e_HPROUTPowerDownDriveControl
       HPROUTPowerDownDriveControl                       :1;
-    HPROUTVolumeControlStatus_e
+    e_HPROUTVolumeControlStatus
       HPROUTVolumeControlStatus                         :1;
     uint8_t HPROUTFullyPoweredUp                        :1;
   }s;
@@ -730,17 +730,17 @@ typedef enum{
   CLKDIV_IN_uses_MCLK = 0,
   CLKDIV_IN_uses_GPIO2 = 1,
   CLKDIV_IN_uses_BCLK = 2
-}CLKDIV_INSourceSelection_e;
+}e_CLKDIV_INSourceSelection;
 typedef enum{
   PLLCLK_IN_uses_MCLK = 0,
   PLLCLK_IN_uses_GPIO2 = 1,
   PLLCLK_IN_uses_BLCK = 2
-}PLLCLK_INSourceSelection_e;
+}e_PLLCLK_INSourceSelection;
 typedef union{
   struct{
-    CLKDIV_INSourceSelection_e
+    e_CLKDIV_INSourceSelection
       CLKDIV_INSourceSelection                                  :2;
-    PLLCLK_INSourceSelection_e PLLCLK_INSourceSelection         :2;
+    e_PLLCLK_INSourceSelection PLLCLK_INSourceSelection         :2;
     // 0b0000 -> 16 ; 0b0001 -> 17 ; 0b0010 -> 2 ; 0b0011 -> 3 ; 0b1111 -> 15
     uint8_t PLLClockDividerNValue                               :4;
   }s;
@@ -818,23 +818,23 @@ GD_RES_CODE tlv320aic33_init(void);
 GD_RES_CODE tlv320aic33_set_DAC_play_input_data(uint8_t i_play_stereo);
 GD_RES_CODE tlv320aic33_set_digital_interface_as_master(uint8_t i_master);
 GD_RES_CODE tlv320aic33_set_data_interface_mode(
-    AudioSerialDataInterfaceTransferMode_e e_mode);
+    e_AudioSerialDataInterfaceTransferMode e_mode);
 GD_RES_CODE tlv320aic33_set_word_length(uint8_t i_word_length);
 GD_RES_CODE tlv320aic33_set_DAC_power(uint8_t enable_DACs);
 GD_RES_CODE tlv320aic33_set_headphones_single_ended(uint8_t i_single_ended);
 GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag);
 GD_RES_CODE tlv320aic33_set_DAC_volume_dB(float f_volume);
 GD_RES_CODE tlv320aic33_set_CLKDIV_IN_source(
-    CLKDIV_INSourceSelection_e e_source);
+    e_CLKDIV_INSourceSelection e_source);
 GD_RES_CODE tlv320aic33_set_PLLCLK_IN_source(
-    PLLCLK_INSourceSelection_e e_source);
+    e_PLLCLK_INSourceSelection e_source);
 GD_RES_CODE tlv320aic33_set_headphones_volume_dB(float f_volume);
 //===========================| Mid level functions |===========================
 GD_RES_CODE tlv320aic33_reset(void);
 GD_RES_CODE tlv320aic33_set_output_driver_power_on_delay(
-    OutputDriverPowerOnDelayControl_e e_delay);
+    e_OutputDriverPowerOnDelayControl e_delay);
 GD_RES_CODE tlv320aic33_set_driver_ramp_up_step_time(
-    DriverRampUpStepTimingControl_e e_time);
+    e_DriverRampUpStepTimingControl e_time);
 GD_RES_CODE tlv320aic33_set_DAC_volume(uint8_t i_volume);
 GD_RES_CODE tlv320aic33_set_headphones_volume(uint8_t i_volume);
 //===========================| Low level functions |===========================

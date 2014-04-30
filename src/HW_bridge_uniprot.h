@@ -6,9 +6,9 @@
  *
  *
  * Created  24.09.2013\n
- * Modified 26.04.2014
+ * Modified 28.04.2014
  *
- * \version 0.4
+ * \version 0.4.1
  * \author Martin Stejskal
  */
 
@@ -20,19 +20,24 @@
 #define HW_BRIDGE_UNIPROT_USED_PIPE             0
 
 /**
+ * \brief Allow enable or disable FreeRTOS support
+ *
+ * Options: 0 (FreeRTOS disabled) or 1 (FreeRTOS enabled)
+ */
+#define HW_BRIDGE_UNIPROT_SUPPORT_RTOS          1
+
+
+/**
  * \brief Debug version - 1 (debug enabled) or 0 (debug disabled)
  *
  * When software is in develop stage there can be a lot unexpected behavior.\n
  * So in debug mode is there more checking, witch in fully working code have\n
  * no meaning. Anyway sometimes this redundant checking is good when debugging.
  */
-#define bridge_version_debug                    1
+#define HW_BRIDGE_UNIPROT_DEBUG                 1
 
 //=========================| Some checks of settings |=========================
 
-#if (bridge_version != 1) && (bridge_version != 0)
-#error "Please select one of the option for version debug: 1 or 0"
-#endif
 //================================| Includes |=================================
 // HW library
 #include "HW.h"
@@ -41,7 +46,7 @@
 #include "uniprot.h"
 
 // FreeRTOS stuff
-#ifdef FREERTOS_USED
+#if HW_BRIDGE_UNIPROT_SUPPORT_RTOS != 0
 #include "FreeRTOS.h"
 #include "task.h"
 #endif
@@ -91,7 +96,7 @@ typedef enum{
 void bridge_init(void);
 
 
-#ifdef FREERTOS_USED
+#if HW_BRIDGE_UNIPROT_SUPPORT_RTOS != 0
 void bridge_task_FreeRTOS(void *pvParameters);
 #endif
 

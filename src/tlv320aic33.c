@@ -363,11 +363,11 @@ GD_RES_CODE tlv320aic33_set_digital_interface_as_master(uint8_t i_master)
 
 /**
  * \brief Set data interface mode
- * @param i_mode Options are defined in AudioSerialDataInterfaceTransferMode_e
+ * @param i_mode Options are defined in e_AudioSerialDataInterfaceTransferMode
  * @return GD_SUCCESS (0) if all OK
  */
 GD_RES_CODE tlv320aic33_set_data_interface_mode(
-    AudioSerialDataInterfaceTransferMode_e e_mode)
+    e_AudioSerialDataInterfaceTransferMode e_mode)
 {
   // For result codes
   GD_RES_CODE e_status;
@@ -408,7 +408,7 @@ GD_RES_CODE tlv320aic33_set_word_length(uint8_t i_word_length)
   GD_RES_CODE e_status;
 
   // Word length as enum
-  AudioSerialDataWordLengthControl_e e_word_length;
+  e_AudioSerialDataWordLengthControl e_word_length;
 
   char tmp[20];
   sprintf(&tmp[0], "I wor: %d\n", i_word_length);
@@ -647,11 +647,11 @@ GD_RES_CODE tlv320aic33_set_DAC_volume_dB(float f_volume)
 
 /**
  * \brief Set CLKDIV_IN source
- * @param e_source Options are defined in CLKDIV_INSourceSelection_e
+ * @param e_source Options are defined in e_CLKDIV_INSourceSelection
  * @return GD_SUCCESS (0) if all OK
  */
 GD_RES_CODE tlv320aic33_set_CLKDIV_IN_source(
-    CLKDIV_INSourceSelection_e e_source)
+    e_CLKDIV_INSourceSelection e_source)
 {
   // For result codes
   GD_RES_CODE e_status;
@@ -674,11 +674,11 @@ GD_RES_CODE tlv320aic33_set_CLKDIV_IN_source(
 
 /**
  * \brief Set PLLCLK_IN source
- * @param e_source Options are defined in PLLCLK_INSourceSelection_e
+ * @param e_source Options are defined in e_PLLCLK_INSourceSelection
  * @return GD_SUCCESS (0) if all OK
  */
 GD_RES_CODE tlv320aic33_set_PLLCLK_IN_source(
-    PLLCLK_INSourceSelection_e e_source)
+    e_PLLCLK_INSourceSelection e_source)
 {
   // For result codes
   GD_RES_CODE e_status;
@@ -776,11 +776,11 @@ inline GD_RES_CODE tlv320aic33_reset(void)
 
 /**
  * \brief Set output driver power on delay
- * @param e_delay Options are defined in OutputDriverPowerOnDelayControl_e
+ * @param e_delay Options are defined in e_OutputDriverPowerOnDelayControl
  * @return GD_SUCCESS (0) if all OK
  */
 GD_RES_CODE tlv320aic33_set_output_driver_power_on_delay(
-    OutputDriverPowerOnDelayControl_e e_delay)
+    e_OutputDriverPowerOnDelayControl e_delay)
 {
   // For store status code
   GD_RES_CODE e_status;
@@ -803,11 +803,11 @@ GD_RES_CODE tlv320aic33_set_output_driver_power_on_delay(
 
 /**
  * \brief Set driver ramp-up step time
- * @param e_time Options are defined in DriverRampUpStepTimingControl_e
+ * @param e_time Options are defined in e_DriverRampUpStepTimingControl
  * @return GD_SUCCESS (0) if all OK
  */
 GD_RES_CODE tlv320aic33_set_driver_ramp_up_step_time(
-    DriverRampUpStepTimingControl_e e_time)
+    e_DriverRampUpStepTimingControl e_time)
 {
   // For store status code
   GD_RES_CODE e_status;

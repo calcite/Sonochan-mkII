@@ -158,8 +158,7 @@ to exclude the API function. */
 
 
 
-
-/* USB device HID task definitions. */
+//=============================| USB device HID |==============================
 #define configTSK_USB_DHID_NAME         ((const signed portCHAR *)"USB Device generic HID")
 #define configTSK_USB_DHID_STACK_SIZE   128
 #define configTSK_USB_DHID_PRIORITY     (tskIDLE_PRIORITY + 0)
@@ -171,9 +170,12 @@ to exclude the API function. */
 #define configTSK_HW_bridge_uniprot_STACK_SIZE  1024
 #define configTSK_HW_bridge_uniprot_PRIORITY    (tskIDLE_PRIORITY + 0)
 #define configTSK_HW_bridge_uniprot_PERIOD      200
-
-
-
+//==============================| Board driver |===============================
+#define configTSK_brd_drv_NAME                  \
+                                ((const signed portCHAR *)"Board driver")
+#define configTSK_brd_drv_STACK_SIZE            256
+#define configTSK_brd_drv_PRIORITY              (tskIDLE_PRIORITY + 0)
+#define configTSK_brd_drv_PERIOD                500
 
 
 
