@@ -98,8 +98,11 @@
 #define FB_RATE_DELTA (1<<12)
 #define FB_RATE_DELTA_NUM 2
 
-//[Martin] For testing we can set high value. In real it should be about 1000
+//[Martin]
+// For testing we can set high value. In real it should be about 1000
 #define MAX_PLL_PPM     50000
+// Define minimum "time delay" between two frequency changes (INC, DEC functions)
+#define PLL_CHANGE_TIME_DIFF    1500
 
 //_____ D E C L A R A T I O N S ____________________________________________
 
@@ -170,9 +173,15 @@ void uac1_device_audio_task(void *pvParameters)
   volatile avr32_pdca_channel_t *spk_pdca_channel = pdca_get_handler(PDCA_CHANNEL_SSC_TX);
 
   //[Martin]
+  // Counts how many times was PLL frequency changed
   int i_pll_diff = 0;
-  U16 old_num_samples = 0;
-  char c[20];
+  // Store number of samples and if not same reset i_pll_diff
+  uint16_t old_num_samples = 0;
+  // Measure time. Useful for changing PLL frequency
+  uint32_t i_last_time = 0;
+
+  // Just 4 debug - if needed, then uncomment
+  //char c[20];
 
 
   switch(current_freq.frequency)
@@ -186,12 +195,24 @@ void uac1_device_audio_task(void *pvParameters)
   case 32000:
     FB_rate = (32 << 14);
     break;
+  case 24000:
+    FB_rate = (24 << 14);
+    break;
+  case 22050:
+    FB_rate = (22 << 14) + (50 << 14)/100;
+    break;
   case 16000:
     FB_rate = (16 << 14);
     break;
-  case 8000:
-    FB_rate = (44 << 14);
+  case 11025:
+    FB_rate = (11 << 14) + (25 << 14)/100;
     break;
+  case 8000:
+    FB_rate = (8 << 14);
+    break;
+  default:
+    // Case that something happens and frequency is wrong -> set default
+    FB_rate = 48 << 14;
   }
 
   portTickType xLastWakeTime;
@@ -242,6 +263,10 @@ void uac1_device_audio_task(void *pvParameters)
       }
     }
     //else {
+    /* Now measure "loop time" - this is CPU frequency dependent, so it is
+     * little bit tricky
+     */
+    time++;
 
       /*[Martin]
        * When num_samples constant -> problem. Set according to actual
@@ -255,13 +280,21 @@ void uac1_device_audio_task(void *pvParameters)
         break;
       case 44100:
         num_samples = 44;
-
         break;
       case 32000:
         num_samples = 32;
         break;
+      case 24000:
+        num_samples = 24;
+        break;
+      case 22050:
+        num_samples = 22;
+        break;
       case 16000:
         num_samples = 16;
+        break;
+      case 11025:
+        num_samples = 11;
         break;
       case 8000:
         num_samples = 8;
@@ -419,7 +452,7 @@ void uac1_device_audio_task(void *pvParameters)
               delta_num--;
 
               //[Martin] This should be commented. Only for debug
-              print_dbg("D-\n");
+              //print_dbg("D-\n");
 
               //old_gap = gap;
             }
@@ -432,7 +465,7 @@ void uac1_device_audio_task(void *pvParameters)
                 delta_num++;
 
                 //[Martin] This should be commented. Only for debug
-                print_dbg("D+\n");
+                //print_dbg("D+\n");
 
 
                 //old_gap = gap;
@@ -442,27 +475,35 @@ void uac1_device_audio_task(void *pvParameters)
              * then is last option change PLL frequency by few PPM and pray.
              * When frequency change is too high, then data process will be
              * desynchronized. So change PLL frequency only if buffer have
-             * only 33% remaining.
+             * only few % remaining.
              */
             if((gap < SPK_BUFFER_SIZE -(SPK_BUFFER_SIZE*2/3)) &&
                     (i_pll_diff < (MAX_PLL_PPM/10)) &&
-                    (delta_num <= -FB_RATE_DELTA_NUM))
+                    (delta_num <= -FB_RATE_DELTA_NUM) &&
+                    ((time - i_last_time) > PLL_CHANGE_TIME_DIFF))
             {
               // We must change frequency - speed up
               if(cs2200_inc_PLL_freq() != 0)
               {
                 print_dbg("INC PLL FAILED!\n");
               }
-              i_pll_diff++;
 
               //[Martin] This should be commented. Only for debug
-              print_dbg("I ");
-              print_dbg_hex(gap);
+              print_dbg("I\n");
+              /*print_dbg_hex(gap);
               print_dbg("\n");
+              */
+
+              // Increase difference number
+              i_pll_diff++;
+              // Save actual time
+              i_last_time = time;
             }
             if((gap > SPK_BUFFER_SIZE +(SPK_BUFFER_SIZE*2/3)) &&
                     (i_pll_diff > -(MAX_PLL_PPM/10)) &&
-                    (delta_num >= FB_RATE_DELTA_NUM))
+                    (delta_num >= FB_RATE_DELTA_NUM) &&
+                    ((time - i_last_time) > PLL_CHANGE_TIME_DIFF)
+                    )
             {
               // We must change frequency - slow down
               if(cs2200_dec_PLL_freq() != 0)
@@ -470,13 +511,19 @@ void uac1_device_audio_task(void *pvParameters)
                 print_dbg("DEC PLL FAILED!\n");
               }
 
-              i_pll_diff--;
-
               //[Martin] This should be commented. Only for debug
-              print_dbg("D ");
-              print_dbg_hex(gap);
+              print_dbg("D\n");
+              /*print_dbg_hex(gap);
               print_dbg("\n");
+              */
 
+              /*print_dbg("Time: ");
+              print_dbg_hex(time);
+              print_dbg("\n\n");*/
+              // Decrease difference number
+              i_pll_diff--;
+              // Save actual time
+              i_last_time = time;
             }
           }
 

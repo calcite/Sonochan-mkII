@@ -9,6 +9,8 @@ C_SRCS += \
 ../src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.c \
 ../src/tlv320aic33.c \
 ../src/brd_driver_hw_03.c \
+../src/LCD_5110_HAL_AVR32_UC3A3_HW_interface.c \
+../src/LCD_5110.c \
 ../src/generic_driver.c \
 ../src/HW.c \
 ../src/HW_bridge_uniprot.c \
@@ -41,6 +43,8 @@ OBJS += \
 ./src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.o \
 ./src/tlv320aic33.o \
 ./src/brd_driver_hw_03.o \
+./src/LCD_5110_HAL_AVR32_UC3A3_HW_interface.o \
+./src/LCD_5110.o \
 ./src/generic_driver.o \
 ./src/HW.o \
 ./src/HW_bridge_uniprot.o \
@@ -73,6 +77,8 @@ C_DEPS += \
 ./src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.d \
 ./src/tlv320aic33.d \
 ./src/brd_driver_hw_03.d \
+./src/LCD_5110_HAL_AVR32_UC3A3_HW_interface.d \
+./src/LCD_5110.d \
 ./src/generic_driver.d \
 ./src/HW.d \
 ./src/HW_bridge_uniprot.d \

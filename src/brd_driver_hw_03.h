@@ -6,7 +6,7 @@
  * Allow set basic settings on board. Also support "generic driver"
  *
  * Created:  23.04.2014\n
- * Modified: 23.04.2014\n
+ * Modified: 06.05.2014
  *
  * \version 0.1
  * \author  Martin Stejskal
@@ -23,7 +23,7 @@
  * Recommended value is about -40, but it is up to you if you want destroy \n
  * your ears or headphones...
  */
-#define BRD_DRV_DEFAULT_HEADPHONES_VOLUME_IN_DB         -35
+#define BRD_DRV_DEFAULT_HEADPHONES_VOLUME_IN_DB         -45
 
 /**
  * \brief Option for generic driver support
@@ -122,6 +122,54 @@
 ///\brief Used ADC channel by con voltage signal
 #define BRD_DRV_ADC_CON_VOLTAGE_CHANNEL         0
 
+///\brief Mute enable on MCU side
+#define BRD_DRV_MUTE_EN_A_PIN                   AVR32_PIN_PB02
+
+///\brief Reset enable on MCU side
+#define BRD_DRV_RST_EN_A_PIN                    AVR32_PIN_PA27
+
+///\brief Bit clock enable on MCU side
+#define BRD_DRV_BCLK_EN_A_PIN                   AVR32_PIN_PX42
+
+///brief Frame sync enable on MCU side
+#define BRD_DRV_FS_EN_A_PIN                     AVR32_PIN_PX03
+
+///\brief Master clock enable on MCU side
+#define BRD_DRV_MCLK_EN_A_PIN                   AVR32_PIN_PX34
+
+///\brief Mute enable on CON side
+#define BRD_DRV_MUTE_EN_B_PIN                   AVR32_PIN_PB01
+
+///\brief Reset enable on CON side
+#define BRD_DRV_RST_EN_B_PIN                    AVR32_PIN_PB03
+
+///\brief TX enable on CON side
+#define BRD_DRV_TX_EN_B_PIN                     AVR32_PIN_PX58
+
+///\brief Master clock enable on CON side
+#define BRD_DRV_MCLK_EN_B_PIN                   AVR32_PIN_PX41
+
+///\brief Bit clock enable on CON side
+#define BRD_DRV_BCLK_EN_B_PIN                   AVR32_PIN_PX33
+
+///\brief Frame sync enable on CON side
+#define BRD_DRV_FS_EN_B_PIN                     AVR32_PIN_PX45
+
+///\brief Mute button
+#define BRD_DRV_MUTE_BTN_PIN                    AVR32_PIN_PX10
+
+///\brief Reset I2S button
+#define BRD_DRV_RESET_I2S_BTN_PIN               AVR32_PIN_PA25
+
+///\brief Reset I2S signal
+#define BRD_DRV_RESET_I2S_PIN                   AVR32_PIN_PX07
+
+///\brief Mute signal
+#define BRD_DRV_MUTE_PIN                        AVR32_PIN_PX38
+
+///\brief Error indication
+#define BRD_DRV_ERROR_INDICATION_PIN            AVR32_PIN_PC00
+
 /// @}
 
 
@@ -179,8 +227,14 @@
 // Basic data types
 #include <inttypes.h>
 
+// PLL control
+#include "cs2200.h"
+
 // For codec control
 #include "tlv320aic33.h"
+
+// For LCD support
+#include "LCD_5110.h"
 
 // GPIO operations
 ///\todo Try to remove this dependency
@@ -227,6 +281,41 @@ typedef enum{
 
 
 //===============================| Definitions |===============================
+/**
+ * \name Error messages
+ *
+ * This is set of error messages, which will be written to debug UART or LCD
+ * @{
+ */
+/// Can not set isolators I/O
+#define BRD_DRV_MSG_ISOLATOR_FAIL       \
+  {"BRD DRV init: setting I/O for isolators failed!\n"}
+
+/// Can not initialize LCD display
+#define BRD_DRV_MSG_LCD_INIT_FAIL       \
+  {"BRD DRV init: LCD initialization failed!\n"}
+
+/// Sonochan mk II
+#define BRD_DRV_MSG_SONOCHAN_MK_II      \
+  {"Sonochan mk II\n > Beta\n"}
+
+/// Can not draw logo
+#define BRD_DRV_MSG_DRAW_LOGO_FAIL      \
+  {"BRD DRV: Write logo failed\n"}
+
+/// Can not initialize ADC
+#define BRD_DRV_MSG_ADC_INIT_FAIL       \
+  {"BRD DRV: Can not initialize internal ADC\n"}
+
+/// Can not initialize codec
+#define BRD_DRV_MSG_CODEC_INIT_FAIL     \
+  {"BRD DRV: Can not initialize codec\n"}
+
+/// Can not set save flag
+#define BRD_DRV_MSG_PLL_SET_SAVE_FLAG_FAIL      \
+  {"BRD DRV: Can not set save flag at PLL\n"}
+/// @}
+
 //=================================| Macros |==================================
 
 /**
@@ -238,7 +327,7 @@ typedef enum{
  */
 #if BRD_DRV_SUPPORT_RTOS != 0
   #define BRD_DRV_LOCK_ADC_MODULE_IF_RTOS               \
-    xSemaphoreTake( mutexI2C, portMAX_DELAY );
+    xSemaphoreTake( mutexADC, portMAX_DELAY );
 #else
   #define BRD_DRV_LOCK_ADC_MODULE_IF_RTOS
 #endif
@@ -246,7 +335,7 @@ typedef enum{
 
 #if BRD_DRV_SUPPORT_RTOS != 0
   #define BRD_DRV_UNLOCK_ADC_MODULE_IF_RTOS             \
-    xSemaphoreGive( mutexI2C );
+    xSemaphoreGive( mutexADC );
 #else
   #define BRD_DRV_UNLOCK_ADC_MODULE_IF_RTOS
 #endif
@@ -331,6 +420,44 @@ typedef enum{
  */
 #define BRD_DRV_ADC_DATA(CH)            BRD_DRV_ADC_DATA_simple(CH)
 
+
+
+#define BRD_DRV_IO_AS_INPUT_simple(PIN)                                 \
+    gpio_port =                                                         \
+          &AVR32_GPIO.port[PIN >> 5];                                   \
+    gpio_port->oderc = 1 << (PIN & 0x1F);                               \
+    gpio_port->gpers = 1 << (PIN & 0x1F)
+
+#define BRD_DRV_IO_AS_INPUT(PIN)                BRD_DRV_IO_AS_INPUT_simple(PIN)
+
+
+#define BRD_DRV_IO_LOW_simple(PIN)                                      \
+    gpio_port =                                                         \
+          &AVR32_GPIO.port[PIN >> 5];                                   \
+    gpio_port->ovrc  = 1 << (PIN & 0x1F);                               \
+    gpio_port->oders = 1 << (PIN & 0x1F);                               \
+    gpio_port->gpers = 1 << (PIN & 0x1F)
+
+
+#define BRD_DRV_IO_LOW(PIN)                     BRD_DRV_IO_LOW_simple(PIN)
+
+#define BRD_DRV_IO_HIGH_simple(PIN)                                     \
+    gpio_port =                                                         \
+          &AVR32_GPIO.port[PIN >> 5];                                   \
+    gpio_port->ovrs  = 1 << (PIN & 0x1F);                               \
+    gpio_port->oders = 1 << (PIN & 0x1F);                               \
+    gpio_port->gpers = 1 << (PIN & 0x1F)
+
+
+#define BRD_DRV_IO_READ_simple(PIN)                                     \
+    gpio_port =                                                         \
+          &AVR32_GPIO.port[PIN >> 5];                                   \
+    i_pin = (gpio_port->pvr >> (pin & 0x1F)) & 1
+
+#define BRD_DRV_IO_READ(PIN)                    BRD_DRV_IO_READ_simple(PIN)
+
+
+#define BRD_DRV_IO_HIGH(PIN)                    BRD_DRV_IO_HIGH_simple(PIN)
 //==================| Checks and preprocessor calculations |===================
 // Check sample and hold time
 #if BRD_DRV_ADC_SAMPLE_HOLD_TIME > 15
@@ -395,6 +522,8 @@ typedef enum{
 #endif
 
 //==========================| High level functions |===========================
+GD_RES_CODE brd_drv_pre_init(void);
+
 GD_RES_CODE brd_drv_init(void);
 
 void brd_drv_task(void);

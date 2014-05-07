@@ -978,6 +978,12 @@ __attribute__((__packed__))
   U8    bMsbyteiSamFreq_4;
   U16  wLsbyteiSamFreq_5;
   U8    bMsbyteiSamFreq_5;
+  U16  wLsbyteiSamFreq_6;
+  U8    bMsbyteiSamFreq_6;
+  U16  wLsbyteiSamFreq_7;
+  U8    bMsbyteiSamFreq_7;
+  U16  wLsbyteiSamFreq_8;
+  U8    bMsbyteiSamFreq_8;
 } S_usb_format_type_1;
 
 //! Audio Format Type descriptor

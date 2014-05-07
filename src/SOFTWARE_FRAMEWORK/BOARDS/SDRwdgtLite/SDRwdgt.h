@@ -121,26 +121,10 @@
 #define LED_MONO3_GREEN   LED3
 //! @}
 
-/*! \name GPIO Connections of the SW2 Push Button
+
+/*! \name Signals for ADC
  */
 //! @{
-#define GPIO_PUSH_BUTTON_SW2            AVR32_PIN_PB10
-#define PRG_BUTTON						GPIO_PUSH_BUTTON_SW2
-#define GPIO_PUSH_BUTTON_SW2_PRESSED    0
-//! @}
-
-
-/*! \name AK5493 24 bit hi-performance ADC
- */
-//! @{
-#define AK5394_DFS0                      AVR32_PIN_PB00		// pulled up sampling speed sense (or control)
-#define AK5394_DFS1                      AVR32_PIN_PB01		// pulled up sampling speed sense (or control)
-#define AK5394_RSTN                      AVR32_PIN_PB03		// pulled up reset sense (or control)
-#define AK5394_HPFE                      AVR32_PIN_PB04		// pulled up High Pass Filter sense (or control)
-#define AK5394_ZCAL                      AVR32_PIN_PB05		// Zero Calibration Control to A/D
-#define AK5394_CAL                       AVR32_PIN_PB06		// Calibration Active from A/D
-#define AK5394_SMODE1                    AVR32_PIN_PB07		// pulled up mode sense (or control)
-#define AK5394_SMODE2                    AVR32_PIN_PB08		// pulled up mode sense (or control)
 
 // NOTE:: need to work on these pin assignments
 #define AK5394_FSYNC                     AVR32_PIN_PX26		// with Jumper 1-2 in J302
@@ -152,18 +136,6 @@
 
 //! @}
 
-/*! \name 4 bit LCD display connections
- */
-//! @{
-#define LCD_BL_PIN                      AVR32_PIN_PX14		// PWM1 to gate of FET
-#define LCD_D4                          AVR32_PIN_PX38
-#define LCD_D5                          AVR32_PIN_PX39
-#define LCD_D6                          AVR32_PIN_PX40
-#define LCD_D7                          AVR32_PIN_PX41
-#define LCD_E                           AVR32_PIN_PX48
-#define LCD_RS                          AVR32_PIN_PX49
-#define LCD_RW                          AVR32_PIN_PX53
-//! @}
 
 /*! \name TWI Connections of the Spare TWI Connector
  */
@@ -175,23 +147,6 @@
 #define TWIM0_SDA_FUNCTION      	AVR32_TWIMS0_TWD_0_0_FUNCTION
 //! @}
 
-
-/*! \name Quadrature encoder w/pushbutton
- */
-//! @{
-#define ENCODER_ROTQ_PIN            AVR32_EIC_EXTINT_8_PIN	//AVR32_PIN_PA20
-#define ENCODER_ROTQ_FUNCTION		AVR32_EIC_EXTINT_8_FUNCTION
-//NMI does not require a #define ENCODER_ROTQ_IRQ
-#define ENCODER_ROTQ_INT			EXT_NMI
-
-#define ENCODER_ROTI_PIN            AVR32_EIC_EXTINT_7_PIN	//AVR32_PIN_PA13
-#define ENCODER_ROTI_FUNCTION		AVR32_EIC_EXTINT_7_FUNCTION
-#define ENCODER_ROTI_IRQ			AVR32_EIC_IRQ_7
-#define ENCODER_ROTI_INT			EXT_INT7
-
-#define ENCODER_SWITCH              AVR32_PIN_PA12
-
-//! @}
 
 /*! \name USART Settings for the SDR-Widget boards
  */
@@ -232,19 +187,6 @@
 #define GCLK2				AVR32_PM_GCLK_2_PIN
 #define GCLK2_FUNCTION		AVR32_PM_GCLK_2_FUNCTION
 
-/*! \name GPIO Connections of the CW key inputs
- */
-//! @{
-
-//#define GPIO_CW_KEY_1        AVR32_PIN_PB9
-#define GPIO_CW_KEY_1        AVR32_PIN_PX00
-#define GPIO_CW_KEY_2        AVR32_PIN_PX01
-#define GPIO_PTT_INPUT       AVR32_PIN_PX02
-
-#define PTT_1				 AVR32_PIN_PX45
-#define PTT_2				 AVR32_PIN_PX42
-#define PTT_3				 AVR32_PIN_PX22
-//! @}
 
 // Inhale list of required modules
 #include "SDR-Widget.h"

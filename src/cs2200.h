@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 28.04.2014
+ * Modified: 07.05.2014
  *
- * \version 0.6
+ * \version 0.7
  * \author Martin Stejskal
  */
 
@@ -282,6 +282,7 @@ typedef struct{
   };
 } cs2200_reg_img_t;
 
+
 /**
  * \brief Virtual settings variables
  *
@@ -291,8 +292,23 @@ typedef struct{
 typedef struct{
   // Frequency as integer value
   cs2200_32b_to_8b_t i_real_freq;
+
   // Output divider/multiplier as float
   float f_out_div_mul;
+
+  /* When frequency is changing, PLL is preset to set PLL_OUT to LOW level
+   * and wait until is locked, because if PLL is not locked, output is
+   * undefined. However if we want change ratio by 1, there is big chance that
+   * PLL output will work as expected. So there is option to override this
+   * default settings only for functions that change ratio by 1.
+   * Options:
+   *  1 - save mode (when PLL is not locked -> low level)
+   *  0 - continuous clock (but PLL output might be undefined)
+   */
+  uint8_t i_save_change_ratio_by_1;
+
+  // Simple access to freeze bit (mainly for generic driver)
+  uint8_t i_freeze_flag;
 } cs2200_virtual_reg_img_t;
 
 //===========================| Additional includes |===========================
@@ -411,6 +427,10 @@ GD_RES_CODE cs2200_get_out_divider_multiplier_float(float *p_div_mul);
 GD_RES_CODE cs2200_set_out_divider_multiplier(cs2200_r_mod_t e_out_div_mul);
 
 GD_RES_CODE cs2200_get_out_divider_multiplier(cs2200_r_mod_t *p_e_out_div_mul);
+
+GD_RES_CODE cs2200_set_save_change_ratio_by_1(uint8_t i_save_change);
+
+GD_RES_CODE cs2200_get_save_change_ratio_by_1(uint8_t *p_save_change);
 //===========================| Mid level functions |===========================
 GD_RES_CODE cs2200_set_ratio(uint32_t i_ratio);
 

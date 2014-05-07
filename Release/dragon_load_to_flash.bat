@@ -16,7 +16,7 @@ REM atprogram -t avrdragon -i JTAG -d at32uc3a0512 program -f file.hex
 REM atprogram -v -t avrdragon -i JTAG -d at32uc3a0512 erase
 
 echo ---------------------
-REM atprogram -v -t avrdragon -i JTAG -d at32uc3a3256 erase
-REM echo --- Memory erased --- 
+atprogram -v -t avrdragon -i JTAG -d at32uc3a3256 erase
+echo --- Memory erased --- 
 atprogram -v -t avrdragon -i JTAG -d at32uc3a3256 program -f widget.elf
 

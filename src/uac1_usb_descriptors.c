@@ -254,7 +254,13 @@ const S_usb_user_configuration_descriptor uac1_usb_conf_desc_fs =
      ,  FORMAT_SAMPLE_FREQ_NB
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_8)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_11025)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_16)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_2205)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_24)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_32)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
@@ -332,7 +338,13 @@ const S_usb_user_configuration_descriptor uac1_usb_conf_desc_fs =
      ,  FORMAT_SAMPLE_FREQ_NB
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_8)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_11025)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_16)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_2205)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_24)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_32)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
@@ -560,7 +572,13 @@ const S_usb_user_configuration_descriptor uac1_usb_conf_desc_hs =
      ,  FORMAT_SAMPLE_FREQ_NB
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_8)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_11025)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_16)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_2205)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_24)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_32)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
@@ -638,7 +656,13 @@ const S_usb_user_configuration_descriptor uac1_usb_conf_desc_hs =
      ,  FORMAT_SAMPLE_FREQ_NB
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_8)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_11025)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_16)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_2205)
+     ,  FORMAT_MSBYTE_SAMPLE_FREQ
+     ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_24)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ
      ,  Usb_format_mcu_to_usb_data(16, FORMAT_LSBYTE_SAMPLE_FREQ_32)
      ,  FORMAT_MSBYTE_SAMPLE_FREQ

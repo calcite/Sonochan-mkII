@@ -69,7 +69,7 @@ cs2200_status_t cs2200_HAL_init(void)
   }
 
   //==================================| PM |===================================
-  // Enable clock to device (in default should be on, but just for case)
+  // Enable clock do device (in default should be on, but just for case)
 
   // Get and clear global interrupt
   flags = __builtin_mfsr(AVR32_SR);

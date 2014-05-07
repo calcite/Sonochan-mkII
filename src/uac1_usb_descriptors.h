@@ -240,9 +240,12 @@
 #define FORMAT_NB_CHANNELS              0x02  // Two Channels
 #define FORMAT_FRAME_SIZE               0x03  // 3 bytes per audio sample
 #define FORMAT_BIT_RESOLUTION           0x18  // 24 bits per sample
-#define FORMAT_SAMPLE_FREQ_NB           0x05  // Five frequency supported
+#define FORMAT_SAMPLE_FREQ_NB           0x08  // 8 frequency supported
 #define FORMAT_LSBYTE_SAMPLE_FREQ_8     8000    // 8 kHz
+#define FORMAT_LSBYTE_SAMPLE_FREQ_11025 11025   // 11 025 Hz
 #define FORMAT_LSBYTE_SAMPLE_FREQ_16    16000   // 16 kHz
+#define FORMAT_LSBYTE_SAMPLE_FREQ_2205  22050   // 22 050 Hz
+#define FORMAT_LSBYTE_SAMPLE_FREQ_24    24000   // 24 kHz
 #define FORMAT_LSBYTE_SAMPLE_FREQ_32    32000   // 32 kHz
 #define FORMAT_LSBYTE_SAMPLE_FREQ_441   0xac44  // 44.1kHz
 #define FORMAT_LSBYTE_SAMPLE_FREQ_48    0xbb80  // 48kHz

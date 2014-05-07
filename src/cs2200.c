@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 28.04.2014
+ * Modified: 07.05.2014
  *
- * \version 0.6
+ * \version 0.7
  * \author Martin Stejskal
  */
 
@@ -45,6 +45,7 @@ const gd_config_struct CS2200_config_table[] PROGMEM =
 const gd_config_struct CS2200_config_table[] =
 #endif
   {
+    //==========================| High level functions |========================
     {
       0,                      // Command ID
       "Initialize CS2200 hardware",  // Name
@@ -75,19 +76,6 @@ const gd_config_struct CS2200_config_table[] =
     },
     {
       2,
-      "Get PLL frequency",
-      "Frequency format: unsigned 32 bit in Hz",
-      void_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 0},
-      uint32_type,
-      {.data_uint32 =  6000000},
-      {.data_uint32 = 75000000},
-      (GD_DATA_VALUE*)&s_virtual_reg_img.i_real_freq.i_32bit,
-      gd_void_function
-    },
-    {
-      3,
       "Increase PLL frequency by 1",
       "Increase ratio number by 1",
       void_type,
@@ -100,7 +88,7 @@ const gd_config_struct CS2200_config_table[] =
       cs2200_inc_PLL_freq
     },
     {
-      4,
+      3,
       "Decrease PLL frequency by 1",
       "Decrease ratio number by 1",
       void_type,
@@ -113,7 +101,7 @@ const gd_config_struct CS2200_config_table[] =
       cs2200_dec_PLL_freq
     },
     {
-      5,
+      4,
       "Set output divider/multiplier ratio",
       "Input values: 1 2 4 8 0.5 0.25 0.125 0.0625",
       float_type,
@@ -126,30 +114,56 @@ const gd_config_struct CS2200_config_table[] =
       cs2200_set_out_divider_multiplier_float
     },
     {
+      5,
+      "Set \"save change frequency by 1\" flag",
+      "Options: 1 - save changing (recommended) ; 0 - \"dangerous\" change",
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      (GD_DATA_VALUE*)&s_virtual_reg_img.i_save_change_ratio_by_1,
+      cs2200_set_save_change_ratio_by_1
+    },
+    //===========================| Mid level functions |========================
+    {
       6,
-      "Get output divider/multiplier ratio",
-      "Valid values: 1 2 4 8 0.5 0.25 0.125 0.0625",
-      void_type,
+      "Set ratio",
+      "Unsigned 32 bit raw value",
+      uint32_type,
       {.data_uint32 = 0},
+      {.data_uint32 = 0xFFFFFFFF},
+      uint32_type,
       {.data_uint32 = 0},
-      float_type,
-      {.data_float = 0.0625},
-      {.data_float = 8},
-      (GD_DATA_VALUE*)&s_virtual_reg_img.f_out_div_mul,
-      gd_void_function
+      {.data_uint32 = 0xFFFFFFFF},
+      (GD_DATA_VALUE*)&s_register_img.Ratio.i_32bit,
+      cs2200_set_ratio
+    },
+    {
+      7,
+      "Set (1) or clear (0) freeze bit",
+      "Freeze bit allow configure PLL while changes are not applied",
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      (GD_DATA_VALUE*)&s_virtual_reg_img.i_freeze_flag,
+      cs2200_set_freeze_bit
     }
-
   };
 /// \brief Maximum command ID (is defined by last command)
-#define CS2200_MAX_CMD_ID          6
+#define CS2200_MAX_CMD_ID          7
 
 
 const gd_metadata CS2200_metadata =
 {
         CS2200_MAX_CMD_ID,              // Max CMD ID
-        "Fractional PLL CS2200-CP v0.5",     // Description
+        "Fractional PLL CS2200-CP v0.7",     // Description
         (gd_config_struct*)&CS2200_config_table[0],
-        0x23    // Serial number (0~255)
+        0x21    // Serial number (0~255)
 };
 #endif
 
@@ -200,8 +214,14 @@ GD_RES_CODE cs2200_init(void)
   s_register_img.func_cfg_1_reg = 0;
   s_register_img.func_cfg_2_reg = 0;
 
-  s_virtual_reg_img.i_real_freq.i_32bit = 0;    // Frequency not set yet
-  s_virtual_reg_img.f_out_div_mul = 1;          // Multiplier not set yet (1x)
+  // Frequency not set yet
+  s_virtual_reg_img.i_real_freq.i_32bit = 0;
+  // Multiplier not set yet (1x)
+  s_virtual_reg_img.f_out_div_mul = 1;
+  // Save mode. PLL output will be in LOW when changing ratio by 1
+  s_virtual_reg_img.i_save_change_ratio_by_1 = 1;
+  // Freeze bit - by default is set to 0
+  s_virtual_reg_img.i_freeze_flag = 0;
 
   // Create status variable
   GD_RES_CODE e_status;
@@ -375,11 +395,59 @@ inline GD_RES_CODE cs2200_get_PLL_freq(uint32_t *p_i_freq)
  */
 GD_RES_CODE cs2200_inc_PLL_freq(void)
 {
+  // For saving e_status. Define default value (just for case)
+  GD_RES_CODE e_status = GD_FAIL;
+
   /* Try to set new ratio value. Function cs2200_set_ratio() do all checks and
    * if there is no problem, then update ratio and frequency value.
    */
-  return cs2200_set_ratio(
-      s_register_img.Ratio.i_32bit +1);
+
+  // Test if we want save, or "dangerous" frequency change
+  if(s_virtual_reg_img.i_save_change_ratio_by_1 == 0)
+  {
+    // If user want change PLL out immediately, set output as always enabled
+    s_register_img.Func_Cfg_2.ClkOutUnl = 1;
+
+    // TX buffer - register and value
+    uint8_t i_tx_buffer[] = {
+        CS2200_REG_FUNC_CFG_2,
+        s_register_img.func_cfg_2_reg};
+
+    e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+    if(e_status != GD_SUCCESS)
+    {
+      return e_status;
+    }
+
+    // Now change ratio
+    e_status = cs2200_set_ratio(s_register_img.Ratio.i_32bit +1);
+    if(e_status != GD_SUCCESS)
+    {
+      return e_status;
+    }
+
+    // Clear "dangerous" bit back to zero
+    s_register_img.Func_Cfg_2.ClkOutUnl = 0;
+    i_tx_buffer[1] = s_register_img.func_cfg_2_reg;     // Change just value
+
+    e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+    if(e_status != GD_SUCCESS)
+    {
+      /* Because in this phase we do not know if bit was cleared or not,
+       * let's set it in the image register so user should note it
+       */
+      s_register_img.Func_Cfg_2.ClkOutUnl = 1;
+      return e_status;
+    }
+
+    // Jump to "return e_status;"
+  }
+  else
+  {
+    // Else user want increase ratio by save way
+    return cs2200_set_ratio(s_register_img.Ratio.i_32bit +1);
+  }
+  return e_status;
 }
 
 
@@ -392,11 +460,59 @@ GD_RES_CODE cs2200_inc_PLL_freq(void)
  */
 GD_RES_CODE cs2200_dec_PLL_freq(void)
 {
+  // For saving e_status. Define default value (just for case)
+  GD_RES_CODE e_status = GD_FAIL;
+
   /* Try to set new ratio value. Function cs2200_set_ratio() do all checks and
    * if there is no problem, then update ratio and frequency value.
    */
-  return cs2200_set_ratio(
-      s_register_img.Ratio.i_32bit -1);
+
+  // Test if we want save, or "dangerous" frequency change
+  if(s_virtual_reg_img.i_save_change_ratio_by_1 == 0)
+  {
+    // If user want change PLL out immediately, set output as always enabled
+    s_register_img.Func_Cfg_2.ClkOutUnl = 1;
+
+    // TX buffer - register and value
+    uint8_t i_tx_buffer[] = {
+        CS2200_REG_FUNC_CFG_2,
+        s_register_img.func_cfg_2_reg};
+
+    e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+    if(e_status != GD_SUCCESS)
+    {
+      return e_status;
+    }
+
+    // Now change ratio
+    e_status = cs2200_set_ratio(s_register_img.Ratio.i_32bit -1);
+    if(e_status != GD_SUCCESS)
+    {
+      return e_status;
+    }
+
+    // Clear "dangerous" bit back to zero
+    s_register_img.Func_Cfg_2.ClkOutUnl = 0;
+    i_tx_buffer[1] = s_register_img.func_cfg_2_reg;     // Change just value
+
+    e_status = cs2200_write_data(&i_tx_buffer[0], 2);
+    if(e_status != GD_SUCCESS)
+    {
+      /* Because in this phase we do not know if bit was cleared or not,
+       * let's set it in the image register so user should note it
+       */
+      s_register_img.Func_Cfg_2.ClkOutUnl = 1;
+      return e_status;
+    }
+
+    // Jump to "return e_status;"
+  }
+  else
+  {
+    // Else user want increase ratio by save way
+    return cs2200_set_ratio(s_register_img.Ratio.i_32bit -1);
+  }
+  return e_status;
 }
 
 /**
@@ -438,7 +554,7 @@ GD_RES_CODE cs2200_set_out_divider_multiplier_float(float f_div_mul)
  * @param p_div_mul Pinter to memory where value will be written
  * @return GD_SUCCESS if all right
  */
-GD_RES_CODE cs2200_get_out_divider_multiplier_float(float *p_div_mul)
+inline GD_RES_CODE cs2200_get_out_divider_multiplier_float(float *p_div_mul)
 {
   *p_div_mul = s_virtual_reg_img.f_out_div_mul;
   return GD_SUCCESS;
@@ -540,12 +656,63 @@ GD_RES_CODE cs2200_set_out_divider_multiplier(cs2200_r_mod_t e_out_div_mul)
  * @param p_e_out_div_mul Pointer to memory where value will be written
  * @return GD_SUCCESS if all right
  */
-GD_RES_CODE cs2200_get_out_divider_multiplier(cs2200_r_mod_t *p_e_out_div_mul)
+inline GD_RES_CODE cs2200_get_out_divider_multiplier(
+    cs2200_r_mod_t *p_e_out_div_mul)
 {
   *p_e_out_div_mul = s_register_img.Device_Cfg_1.RModSel;
   return GD_SUCCESS;
 }
 
+
+/**
+ * \brief Set flag that control PLL output when ratio is changed by 1
+ *
+ * When PLL changing output frequency there may be undefined output. So in\n
+ * default PLL set output to LOW and when is locked then enable output clock.\n
+ * However this may take some time. When changing ratio just by 1, there is\n
+ * big chance that output "will not get crazy" and time when output is in low\n
+ * is reduced from approximately 500 us to 150 ns which sometimes can solve\n
+ * a lot.\n
+ * Anyway generally is recommended set this flag to 1 (save change).
+ *
+ * @param i_save_change Options: 1 - save frequency change by 1 (recommended)\n
+ *  0 - "dangerous" frequency change by 1, but with very short clock shortage
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE cs2200_set_save_change_ratio_by_1(uint8_t i_save_change)
+{
+  if(i_save_change == 0)
+  {
+    s_virtual_reg_img.i_save_change_ratio_by_1 = 0;
+  }
+  else
+  {
+    s_virtual_reg_img.i_save_change_ratio_by_1 = 1;
+  }
+
+  return GD_SUCCESS;
+}
+
+
+/**
+ * \brief Get flag that control PLL output when ratio is changed by 1
+ *
+ * When PLL changing output frequency there may be undefined output. So in\n
+ * default PLL set output to LOW and when is locked then enable output clock.\n
+ * However this may take some time. When changing ratio just by 1, there is\n
+ * big chance that output "will not get crazy" and time when output is in low\n
+ * is reduced from approximately 500 us to 150 ns which sometimes can solve\n
+ * a lot.\n
+ * Anyway generally recommended value is 1.
+ *
+ * @param p_save_change Address where result will be saved
+ * @return GD_SUCCESS (0) if all right
+ */
+inline GD_RES_CODE cs2200_get_save_change_ratio_by_1(uint8_t *p_save_change)
+{
+  *p_save_change = s_virtual_reg_img.i_save_change_ratio_by_1;
+  return GD_SUCCESS;
+}
 //===========================| Mid level functions |===========================
 
 /**
@@ -556,7 +723,7 @@ GD_RES_CODE cs2200_get_out_divider_multiplier(cs2200_r_mod_t *p_e_out_div_mul)
  * @param i_ratio Ratio value
  * @return GD_SUCCESS if all right
  */
-inline GD_RES_CODE cs2200_set_ratio(uint32_t i_ratio)
+GD_RES_CODE cs2200_set_ratio(uint32_t i_ratio)
 {
   // Buffer for transmitting. Allow prepare bytes
   uint8_t i_tx_buffer[5];
@@ -618,7 +785,7 @@ inline GD_RES_CODE cs2200_get_ratio(uint32_t *p_i_ratio)
  * @param i_freeze_flag 0 clear freeze bit, otherwise set freeze bit
  * @return GD_SUCCESS if all right
  */
-inline GD_RES_CODE cs2200_set_freeze_bit(uint8_t i_freeze_flag)
+GD_RES_CODE cs2200_set_freeze_bit(uint8_t i_freeze_flag)
 {
   // TX buffer - MAP value, register value
   uint8_t i_tx_buffer[2];
@@ -656,7 +823,8 @@ inline GD_RES_CODE cs2200_set_freeze_bit(uint8_t i_freeze_flag)
     return e_status;
   }
 
-  // If everything is OK
+  // If everything is OK write flag
+  s_virtual_reg_img.i_freeze_flag = i_freeze_flag;
   return GD_SUCCESS;
 }
 
@@ -667,7 +835,7 @@ inline GD_RES_CODE cs2200_set_freeze_bit(uint8_t i_freeze_flag)
  * @param p_i_freeze_flag Pointer to memory where freeze bit will be written
  * @return GD_SUCCESS if all right
  */
-GD_RES_CODE cs2200_get_freeze_bit(uint8_t *p_i_freeze_flag)
+inline GD_RES_CODE cs2200_get_freeze_bit(uint8_t *p_i_freeze_flag)
 {
   *p_i_freeze_flag = s_register_img.Global_Cfg.Freeze;
   return GD_SUCCESS;
@@ -683,7 +851,7 @@ GD_RES_CODE cs2200_get_freeze_bit(uint8_t *p_i_freeze_flag)
  *
  * @return GD_SUCCESS if all right
  */
-inline GD_RES_CODE cs2200_enable_device_cfg(void)
+GD_RES_CODE cs2200_enable_device_cfg(void)
 {
   // TX buffer - MAP value, register value
   uint8_t i_tx_buffer[2];
@@ -741,7 +909,7 @@ inline GD_RES_CODE cs2200_enable_device_cfg(void)
  *
  * @return GD_SUCCESS if all right
  */
-inline GD_RES_CODE cs2200_disable_device_cfg(void)
+GD_RES_CODE cs2200_disable_device_cfg(void)
 {
   // TX buffer - MAP value, register value
   uint8_t i_tx_buffer[2];
@@ -800,7 +968,7 @@ inline GD_RES_CODE cs2200_disable_device_cfg(void)
  * CS2200_INPUT_DIVIDER_4x
  * @return GD_SUCCESS if all right
  */
-inline GD_RES_CODE cs2200_set_in_divider(cs2200_in_div_t e_in_div)
+GD_RES_CODE cs2200_set_in_divider(cs2200_in_div_t e_in_div)
 {
   // Check input value if correct or not
   if((e_in_div != CS2200_INPUT_DIVIDER_1x) &&
@@ -850,7 +1018,7 @@ inline GD_RES_CODE cs2200_set_in_divider(cs2200_in_div_t e_in_div)
  * @param p_e_in_div Pointer to memory where divider value will be written
  * @return GD_SUCCESS if all right
  */
-GD_RES_CODE cs2200_get_in_divider(cs2200_in_div_t *p_e_in_div)
+inline GD_RES_CODE cs2200_get_in_divider(cs2200_in_div_t *p_e_in_div)
 {
   *p_e_in_div = s_register_img.Func_Cfg_1.RefClkDiv;
   return GD_SUCCESS;

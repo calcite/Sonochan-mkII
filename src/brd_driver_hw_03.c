@@ -6,7 +6,7 @@
  * Allow set basic settings on board. Also support "generic driver"
  *
  * Created:  23.04.2014\n
- * Modified: 23.04.2014\n
+ * Modified: 06.05.2014
  *
  * \version 0.1
  * \author  Martin Stejskal
@@ -57,11 +57,22 @@ const gd_metadata BRD_DRV_metadata =
 #endif
 
 //====================| Function prototypes not for user |=====================
+
+GD_RES_CODE brd_drv_draw_logo(void);
+
+
 GD_RES_CODE brd_drv_TLV_default(void);
+
 
 GD_RES_CODE brd_drv_adc_init(void);
 
 
+GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);
+
+void brd_drv_send_error_msg(
+    const char * p_msg,
+    uint8_t i_write_to_DBG,
+    uint8_t i_write_to_LCD);
 //=============================| FreeRTOS stuff |==============================
 // If RTOS support is enabled, create this
 #if BRD_DRV_SUPPORT_RTOS != 0
@@ -71,7 +82,7 @@ xSemaphoreHandle mutexADC;
 
 #if BRD_DRV_SUPPORT_RTOS != 0
 /**
-* \brief FreeRTOS task
+* \brief Board driver FreeRTOS task
 *
 * Instead of complicating brd_drv_task() we just make function, that is ready\n
 * for FreeRTOS stuff, so code will be still easy to use.
@@ -92,6 +103,64 @@ void brd_drv_task_FreeRTOS(void *pvParameters)
 #endif
 
 //==========================| High level functions |===========================
+/**
+ * \brief Initialization that MUST be done as soon as possible
+ *
+ * Because some parts should be set as soon as possible (I/O pins, set clock\n
+ * for MCU) this function should be called in main on first line.
+ *
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_pre_init(void)
+{
+  // Variable for storing status
+  GD_RES_CODE e_status;
+
+  // Set I/O - this should be OK
+  e_status = brd_drv_set_isolators_to_HiZ();
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+
+  // Clock must be set BEFORE setting UC3 clock
+  // Initialize cs2200 library
+  e_status = cs2200_init();
+  while(e_status != GD_SUCCESS)
+  {
+    /* Without clock we are doomed. So let's try again, and again and again.
+     * Until it success.
+     */
+    e_status = cs2200_init();
+  }
+
+  /* Set some testing frequency. Anyway it will be changed, but we must give
+   * UC3 at least some clock.
+   */
+  e_status = cs2200_set_PLL_freq(8000000);
+  while(e_status != GD_SUCCESS)
+  {
+    /* Again, there MUST be set SOME frequency. So program must try again and
+     * again, until some frequency will be set. Without valid clock this is
+     * just a garbage.
+     */
+    e_status = cs2200_set_PLL_freq(8000000);
+  }
+
+  // If all OK -> return SUCCESS (0)
+  return GD_SUCCESS;
+}
+
+
+/**
+ * \brief Basic initialization of board components
+ *
+ * This function initialize rest of hardware on board. It assume, that debug\n
+ * print output, clock and I/O pins have been initialized by\n
+ * brd_drv_pre_init() function.
+ *
+ * @return GD_SUCCESS (0) if all right
+ */
 GD_RES_CODE brd_drv_init(void)
 {
   // If RTOS support enable and create flag is set then create mutex
@@ -102,27 +171,77 @@ GD_RES_CODE brd_drv_init(void)
   // Variable for storing status
   GD_RES_CODE e_status;
 
+
+  // Initialize LCD
+  e_status = LCD_5110_init();
+  if(e_status != GD_SUCCESS)
+  {
+    const char msg_lcd_init_fail[] = BRD_DRV_MSG_LCD_INIT_FAIL;
+    // Send message over debug interface
+    brd_drv_send_error_msg(&msg_lcd_init_fail[0], 1, 0);
+    return e_status;
+  }
+
+  // Draw logo
+  e_status = brd_drv_draw_logo();
+  if(e_status != GD_SUCCESS)
+  {
+    const char msg_draw_logo_fail[] = BRD_DRV_MSG_DRAW_LOGO_FAIL;
+    brd_drv_send_error_msg(&msg_draw_logo_fail[0], 1, 0);
+    return e_status;
+  }
+
   // Set I/O
+  e_status = brd_drv_set_isolators_to_HiZ();
+  if(e_status != GD_SUCCESS)
+  {
+    const char msg_set_isolators_failed[] = BRD_DRV_MSG_ISOLATOR_FAIL;
+    // Send message over debug interface and LCD
+    brd_drv_send_error_msg(&msg_set_isolators_failed[0], 1, 1);
+    return e_status;
+  }
+
+  // Precise setting of PLL
+  /* Turn of save setting when changing frequency by 1. We want continuous
+   * clock at "any price".
+   */
+  e_status = cs2200_set_save_change_ratio_by_1(0);
+  if(e_status != GD_SUCCESS)
+  {
+    const char msg_set_pll_save_flag_when_change_by_1[] =
+        BRD_DRV_MSG_PLL_SET_SAVE_FLAG_FAIL;
+    brd_drv_send_error_msg(&msg_set_pll_save_flag_when_change_by_1[0], 1 ,1);
+    return e_status;
+  }
+
 
 
   // Take control over ADC
   BRD_DRV_LOCK_ADC_MODULE_IF_RTOS
   // ADC for volume control
   e_status = brd_drv_adc_init();
-  if(e_status != GD_SUCCESS)
-  {
-    return e_status;
-  }
   // Give back control on ADC
   BRD_DRV_UNLOCK_ADC_MODULE_IF_RTOS
+
+  if(e_status != GD_SUCCESS)
+  {
+    const char msg_adc_init_fail[] = BRD_DRV_MSG_ADC_INIT_FAIL;
+    brd_drv_send_error_msg(&msg_adc_init_fail[0], 1, 1);
+    return e_status;
+  }
+
 
 
   // Prepare TLV (CS2200 have to be already initialized)
   e_status = brd_drv_TLV_default();
   if(e_status != GD_SUCCESS)
   {
+    const char msg_codec_init_fail[] = BRD_DRV_MSG_CODEC_INIT_FAIL;
+    brd_drv_send_error_msg(&msg_codec_init_fail[0], 1, 1);
     return e_status;
   }
+
+
 
 
   /* If FreeRTOS is used, then create task. Note that
@@ -158,7 +277,13 @@ void brd_drv_task(void)
   static uint32_t i_time_cnt = 0;
 
   // Store ADC volume value
-  static uint8_t  i_saved_volume_value;
+  static uint8_t  i_saved_volume_value = 0;
+
+  // Variable for store actual volume value
+  uint8_t i_actual_volume;
+
+  // Variable for store voltage on connector side
+  uint8_t i_voltage_connector_side;
 
   // Pointer to ADC structure
   volatile avr32_adc_t *p_adc;
@@ -170,15 +295,33 @@ void brd_drv_task(void)
      (BRD_DRV_IS_ADC_DONE(BRD_DRV_ADC_CON_VOLTAGE_CHANNEL)) &&
      i_time_cnt > BRD_DRV_BUTTON_REFRESH_PERIOD)
   {
-    // ADC ready and timeout occurs -> let's process some data
-    i_time_cnt = 0;
-    char c[20];
-    sprintf(&c[0], "Vol: %lu\nCon: %lu\n\n",
-        BRD_DRV_ADC_DATA(BRD_DRV_ADC_VOLUME_CONTROL_CHANNEL),
-        BRD_DRV_ADC_DATA(BRD_DRV_ADC_CON_VOLTAGE_CHANNEL));
-    print_dbg(&c[0]);
+    // Lock (if needed) ADC and save ADC values
+    BRD_DRV_LOCK_ADC_MODULE_IF_RTOS
+    i_actual_volume = BRD_DRV_ADC_DATA(BRD_DRV_ADC_VOLUME_CONTROL_CHANNEL);
+    i_voltage_connector_side  =
+        BRD_DRV_ADC_DATA(BRD_DRV_ADC_CON_VOLTAGE_CHANNEL);
+
     // Start new conversion
     p_adc->CR.start = 1;
+
+    // Unlock
+    BRD_DRV_UNLOCK_ADC_MODULE_IF_RTOS
+
+
+    // ADC ready and timeout occurs -> let's process some data
+    i_time_cnt = 0;
+
+    // Save volume value and check if volume changed
+
+    char c[20];
+    sprintf(&c[0], "Vol: %lu\nCon: %lu\n\n",
+        i_actual_volume,
+        i_voltage_connector_side);
+    //print_dbg(&c[0]);
+
+
+
+
   }
   // Increase counter
   i_time_cnt++;
@@ -195,7 +338,26 @@ void brd_drv_task(void)
 
 //=========================| Functions not for user |==========================
 /**
- * \brief Set TLV codec to default setting
+ * \brief Draw Sonochan mk II logo on display
+ *
+ * Function assume, that LCD_init() od LCD_clear() was called
+ *
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_draw_logo(void)
+{
+  // For return result code
+  GD_RES_CODE e_status;
+
+  const char snchn_txt[] = BRD_DRV_MSG_SONOCHAN_MK_II;
+  e_status = LCD_5110_write(&snchn_txt[0]);
+
+  return e_status;
+}
+
+
+/**
+ * \brief Set TLV codec to default configuration
  * @return GD_SUCCESS (0) if all OK
  */
 inline GD_RES_CODE brd_drv_TLV_default(void)
@@ -383,4 +545,78 @@ inline GD_RES_CODE brd_drv_adc_init(void)
   p_adc->CR.start = 1;
 
   return GD_SUCCESS;
+}
+
+
+
+
+/**
+ * \brief Set pins, that control signal direction at digital isolators, to low
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE brd_drv_set_isolators_to_HiZ(void)
+{
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+  // Set output enables to low -> disable them by default
+  BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_A_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_RST_EN_A_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_A_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_B_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_RST_EN_B_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_TX_EN_B_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_B_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
+
+
+  // Set MCU some pins as input
+  BRD_DRV_IO_AS_INPUT(BRD_DRV_MUTE_BTN_PIN);
+  BRD_DRV_IO_AS_INPUT(BRD_DRV_RESET_I2S_BTN_PIN);
+  BRD_DRV_IO_AS_INPUT(BRD_DRV_MUTE_PIN);
+  BRD_DRV_IO_AS_INPUT(BRD_DRV_RESET_I2S_PIN);
+
+  return GD_SUCCESS;
+}
+
+
+
+
+/**
+ * \brief Write error message and turn on ERROR LED
+ *
+ * Function do not return any return code. Just hope, that everything else\n
+ * will work.
+ *
+ * @param p_msg Pointer to message
+ * @param i_write_to_DBG Options: 0 - do not write to debug output ;\n
+ *  1 - write to debug output
+ * @param i_write_to_LCD 0 - do not write to LCD ;\n
+ *  1 - write to LCD
+ */
+inline void brd_drv_send_error_msg(
+    const char * p_msg,
+    uint8_t i_write_to_DBG,
+    uint8_t i_write_to_LCD)
+{
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+  // Turn-ON ERROR LED
+  BRD_DRV_IO_HIGH(BRD_DRV_ERROR_INDICATION_PIN);
+
+  // If want write to debug interface
+  if(i_write_to_DBG != 0)
+  {
+    print_dbg(p_msg);
+  }
+
+  // If want write to LCD
+  if(i_write_to_LCD != 0)
+  {
+    // Because of LCD dimensions it should be cleaned first
+    LCD_5110_clear();
+    LCD_5110_write(p_msg);
+  }
 }

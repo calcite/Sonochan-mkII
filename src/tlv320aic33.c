@@ -410,9 +410,6 @@ GD_RES_CODE tlv320aic33_set_word_length(uint8_t i_word_length)
   // Word length as enum
   e_AudioSerialDataWordLengthControl e_word_length;
 
-  char tmp[20];
-  sprintf(&tmp[0], "I wor: %d\n", i_word_length);
-  print_dbg(&tmp[0]);
   // Assign input value correct value for codec
   switch(i_word_length)
   {
@@ -983,7 +980,6 @@ inline GD_RES_CODE tlv320aic33_read_data(
   {
     // If not OK -> unlock device (if needed) and return FAIL
     TLV320AIC33_UNLOCK_TWI_MODULE_IF_RTOS
-    print_dbg("TLV Read failed\n");
     return GD_FAIL;
   }
 

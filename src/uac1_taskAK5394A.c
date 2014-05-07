@@ -95,21 +95,33 @@ void uac1_AK5394A_task(void *pvParameters) {
       spk_mute = TRUE;
       switch(current_freq.frequency)
       {
-        case 48000:
-          FB_rate = 48 << 14;
-          break;
-        case 44100:
-          FB_rate = (44 << 14) + (1 << 14)/10;
-          break;
-        case 32000:
-          FB_rate = (32 << 14);
-          break;
-        case 16000:
-          FB_rate = (16 << 14);
-          break;
-        case 8000:
-          FB_rate = (44 << 14);
-          break;
+      case 48000:
+        FB_rate = 48 << 14;
+        break;
+      case 44100:
+        FB_rate = (44 << 14) + (1 << 14)/10;
+        break;
+      case 32000:
+        FB_rate = (32 << 14);
+        break;
+      case 24000:
+        FB_rate = (24 << 14);
+        break;
+      case 22050:
+        FB_rate = (22 << 14) + (50 << 14)/100;
+        break;
+      case 16000:
+        FB_rate = (16 << 14);
+        break;
+      case 11025:
+        FB_rate = (11 << 14) + (25 << 14)/100;
+        break;
+      case 8000:
+        FB_rate = (8 << 14);
+        break;
+      default:
+        // Case that something happens and frequency is wrong -> set default
+        FB_rate = 48 << 14;
       }
       spk_mute = FALSE;
       freq_changed = FALSE;

@@ -172,9 +172,11 @@
 #include "image.h"
 #include "composite_widget.h"
 
-///\TODO REMOVE
+//[Martin] For board pre init function
+#include "brd_driver_hw_03.h"
+
+// For initialize clock
 #include "cs2200.h"
-#include <stdio.h>
 /*
  *  A few global variables.
  */
@@ -204,6 +206,7 @@ int main(void)
   // Make sure Watchdog timer is disabled initially (otherwise it interferes upon restart)
   wdt_disable();
 
+
   // Initialize Real Time Counter
   rtc_init(&AVR32_RTC, RTC_OSC_RC, 0);  // RC clock at 115kHz
   rtc_disable_interrupt(&AVR32_RTC);
@@ -216,9 +219,6 @@ int main(void)
     return 42;
   }
 
-
-  //gpio_enable_pin_pull_up(GPIO_PTT_INPUT);
-
   // Initialize interrupt controller
   INTC_init_interrupts();
 
@@ -228,54 +228,56 @@ int main(void)
 
 
   // [Martin] Just let know, that UART works
-  print_dbg("\n\n--------\n\n..::Sonochan mkII ::.. based on SDR widget\n");
+  print_dbg("\n\n--------\n\n\n..::Sonochan mkII ::..\n\n"
+            "> Initializing board...");
 
-  // Clock must be set BEFORE setting UC3 clock
-  // Initialize  cs2200 library
-  GD_RES_CODE i_status;
-  i_status = cs2200_init();
-  if(i_status != GD_SUCCESS)
+  // Initialize critical parts on board (PLL, I/O pins and so on)
+  if(brd_drv_pre_init() != GD_SUCCESS)
   {
-    print_dbg("CS2200 initialization failed.\n");
-    ///\todo More process
-    while(1);
+    // This should not happen, but if it happen at least give debugger number
+    print_dbg("      FAILED!\n"
+              "  Can not continue. Critical components were NOT"
+              "  initialized. Try disconnect all devices and try"
+              "  re-plug USB cable.");
+    return 44;
   }
-  print_dbg("> PLL found\n");
-  /* Set some testing frequency. Anyway it will be changed, but we must give
-   * UC3 at least some clock.
-   */
-  i_status = cs2200_set_PLL_freq(10000000);
-  if(i_status != GD_SUCCESS)
-  {
-    print_dbg("CS2200 set PLL frequency failed.\n");
-    ///\todo More process
-    while(1);
-  }
-  print_dbg("> PLL started\n");
-
+  // If board initialized
+  print_dbg("       OK\n");
+  // So far, so good....
 
 
 
   // Initialize USB clock (on PLL1)
+  print_dbg("> Setting USB clock");
   pm_configure_usb_clock();
-  print_dbg("> Setting USB clock\n");
+  print_dbg("           OK\n");
+
 
   // boot the image
+  print_dbg("> Image boot");
   image_boot();
-  print_dbg("> Image boot\n");
+  print_dbg("                  OK\n");
+
 
   // initialize the image
+  print_dbg("> Image init");
   image_init();
-  print_dbg("> Image init\n");
+  print_dbg("                  OK\n");
+
 
 
   // Start the image tasks
+  print_dbg("> Image task init");
   image_task_init();
-  print_dbg("> Image task init\n");
+  print_dbg("             OK\n");
+
 
   // Start OS scheduler
   vTaskStartScheduler();
+
+  // This should never happen
   portDBG_TRACE("FreeRTOS returned.\n");
 
+  print_dbg("Task scheduler FAILED!\n");
   return 42;
 }

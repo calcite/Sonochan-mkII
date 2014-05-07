@@ -199,8 +199,8 @@ to exclude the API function. */
 #define UAC2_configTSK_AK5394A_PERIOD			200
 
 /* taskExercise definitions */
-#define configTSK_EXERCISE_STACK_SIZE		256
-#define configTSK_EXERCISE_PRIORITY			(tskIDLE_PRIORITY + 1 )
-#define configTSK_EXERCISE_PERIOD			100	// 10ms
+#define configTSK_EXERCISE_STACK_SIZE		32
+#define configTSK_EXERCISE_PRIORITY			(tskIDLE_PRIORITY + 0 )
+#define configTSK_EXERCISE_PERIOD			1000	// 100ms
 
 #endif /* FREERTOS_CONFIG_H */

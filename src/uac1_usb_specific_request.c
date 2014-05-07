@@ -557,8 +557,10 @@ void audio_set_cur(void)
 
     freq_changed = TRUE;
 
-    char c_tmp[30];
-    sprintf(&c_tmp[0], "SET CUR: %lu\n", current_freq.frequency);
+    char c_tmp[40];
+    sprintf(&c_tmp[0],
+        "Sampling frequency set to %lu Hz\n",
+        current_freq.frequency);
     print(DBG_USART, &c_tmp[0]);
 
     // When need write to PM registers
@@ -574,7 +576,7 @@ void audio_set_cur(void)
       // Set GLCK1 to 1/4 of PLL OUT
       pm->GCCTRL[1].div = 1;
       pm->GCCTRL[1].diven = 1;
-      gpio_set_gpio_pin(AVR32_PIN_PX16);
+      gpio_set_gpio_pin(AVR32_PIN_PX53);
       break;
     case 44100:
       cs2200_set_PLL_freq(11289600UL);
@@ -584,7 +586,7 @@ void audio_set_cur(void)
       // Set GLCK1 to 1/4 of PLL OUT
       pm->GCCTRL[1].div = 1;
       pm->GCCTRL[1].diven = 1;
-      gpio_clr_gpio_pin(AVR32_PIN_PX16);
+      gpio_clr_gpio_pin(AVR32_PIN_PX53);
       break;
     case 32000:
       cs2200_set_PLL_freq(8192000UL);
@@ -595,8 +597,29 @@ void audio_set_cur(void)
       pm->GCCTRL[1].div = 1;
       pm->GCCTRL[1].diven = 1;
       break;
+    case 24000:
+      // Need 6144000 MCLK, BCLK @ 1536000 (32 bits)
+      cs2200_set_PLL_freq(6144000);
+      // Turn off divide on GCLK 0
+      pm->GCCTRL[0].diven = 0;
+
+      // Set GCLK1 to 1/4 of PLL OUT
+      pm->GCCTRL[1].div = 1;
+      pm->GCCTRL[1].diven = 1;
+      break;
+    case 22050:
+      // Need 5644800 MCLK, BCLK @ 1411200 (32 bits)
+      cs2200_set_PLL_freq(11289600UL);
+      // On GCLK set divider to 2 (2*(0+1))
+      pm->GCCTRL[0].div = 0;
+      pm->GCCTRL[0].diven = 1;
+
+      // Also set BCLK divider (GCLK1) to get 1/4 MCLK
+      pm->GCCTRL[1].div = 3;
+      pm->GCCTRL[1].diven = 1;
+      break;
     case 16000:
-      // Need 4096000 MCLK, BLCK @ 1024000
+      // Need 4096000 MCLK, BLCK @ 1024000 (32 bits)
       // PLL can not set lower freq. than 6 MHz -> use GCLK0 divider
       cs2200_set_PLL_freq(8192000UL);
       // On GCLK0 set divider to 2 ( 2*(0+1))
@@ -607,8 +630,20 @@ void audio_set_cur(void)
       pm->GCCTRL[1].div = 3;
       pm->GCCTRL[1].diven = 1;
       break;
+    case 11025:
+      // Need 28822400 MCLK, BCLK @ 705600 (32 bits)
+      // PLL can not set lower freq. than 6 MHz -> use GCLK0 divider
+      cs2200_set_PLL_freq(11289600UL);
+      // On GCLK0 set divider to 4 ( 2*(0+1))
+      pm->GCCTRL[0].div = 1;
+      pm->GCCTRL[0].diven = 1;
+
+      // Also set BCLK divider (GLCK1) to get 1/4 MCLK
+      pm->GCCTRL[1].div = 7;
+      pm->GCCTRL[1].diven = 1;
+      break;
     case 8000:
-      // Need 2048000 MCLK @ BCLK @ 512000
+      // Need 2048000 MCLK @ BCLK @ 512000 (32 bits)
       // PLL can not set lower freq. than 6 MHz -> use GCLK0 divider
       cs2200_set_PLL_freq(8192000UL);
       // On GCLK0 set divider to 4 ( 2*(1+1))
@@ -625,7 +660,9 @@ void audio_set_cur(void)
        * be easy to track ;)
        */
       cs2200_set_PLL_freq(20000000UL);
-      gpio_set_gpio_pin(AVR32_PIN_PX16);
+
+      pm->GCCTRL[1].diven = 0;
+      pm->GCCTRL[1].diven = 0;
     }
 
   }
