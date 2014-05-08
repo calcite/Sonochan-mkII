@@ -175,8 +175,7 @@
 //[Martin] For board pre init function
 #include "brd_driver_hw_03.h"
 
-// For initialize clock
-#include "cs2200.h"
+
 /*
  *  A few global variables.
  */

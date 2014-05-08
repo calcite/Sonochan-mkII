@@ -152,7 +152,7 @@ void uac1_device_audio_task_init(U8 ep_in, U8 ep_out, U8 ep_out_fb)
 void uac1_device_audio_task(void *pvParameters)
 {
   Bool playerStarted = FALSE;
-  static U32  time=0;
+  static U32  time_startup=0;
   static Bool startup=TRUE;
   int i;
   int delta_num = 0;
@@ -179,6 +179,8 @@ void uac1_device_audio_task(void *pvParameters)
   uint16_t old_num_samples = 0;
   // Measure time. Useful for changing PLL frequency
   uint32_t i_last_time = 0;
+  // Time when not in start up
+  uint32_t time = 0;
 
   // Just 4 debug - if needed, then uncomment
   //char c[20];
@@ -222,26 +224,26 @@ void uac1_device_audio_task(void *pvParameters)
     vTaskDelayUntil(&xLastWakeTime, UAC1_configTSK_USB_DAUDIO_PERIOD);
 
     // First, check the device enumeration state
-    if (!Is_device_enumerated()) { time=0; startup=TRUE; continue; };
+    if (!Is_device_enumerated()) { time_startup=0; startup=TRUE; continue; };
 
     if( startup ) {
 
 
-      time+=UAC1_configTSK_USB_DAUDIO_PERIOD;
+      time_startup+=UAC1_configTSK_USB_DAUDIO_PERIOD;
 #define STARTUP_LED_DELAY  10000
-      if ( time<= 1*STARTUP_LED_DELAY ) {
+      if ( time_startup <= 1*STARTUP_LED_DELAY ) {
         LED_On( LED0 );
         pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
         pdca_disable(PDCA_CHANNEL_SSC_RX);
         //              LED_On( LED1 );
-      } else if( time== 2*STARTUP_LED_DELAY ) LED_On( LED1 );
-      else if( time== 3*STARTUP_LED_DELAY ) LED_On( LED2 );
-      else if( time== 4*STARTUP_LED_DELAY ) LED_On( LED3 );
-      else if( time== 5*STARTUP_LED_DELAY ) LED_Off( LED0 );
-      else if( time== 6*STARTUP_LED_DELAY ) LED_Off( LED1 );
-      else if( time== 7*STARTUP_LED_DELAY ) LED_Off( LED2 );
-      else if( time== 8*STARTUP_LED_DELAY ) LED_Off( LED3 );
-      else if( time >= 9*STARTUP_LED_DELAY ) {
+      } else if( time_startup == 2*STARTUP_LED_DELAY ) LED_On( LED1 );
+      else if( time_startup == 3*STARTUP_LED_DELAY ) LED_On( LED2 );
+      else if( time_startup == 4*STARTUP_LED_DELAY ) LED_On( LED3 );
+      else if( time_startup == 5*STARTUP_LED_DELAY ) LED_Off( LED0 );
+      else if( time_startup == 6*STARTUP_LED_DELAY ) LED_Off( LED1 );
+      else if( time_startup == 7*STARTUP_LED_DELAY ) LED_Off( LED2 );
+      else if( time_startup == 8*STARTUP_LED_DELAY ) LED_Off( LED3 );
+      else if( time_startup >= 9*STARTUP_LED_DELAY ) {
         startup=FALSE;
 
         audio_buffer_in = 0;

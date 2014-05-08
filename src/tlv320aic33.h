@@ -829,6 +829,7 @@ GD_RES_CODE tlv320aic33_set_CLKDIV_IN_source(
 GD_RES_CODE tlv320aic33_set_PLLCLK_IN_source(
     e_PLLCLK_INSourceSelection e_source);
 GD_RES_CODE tlv320aic33_set_headphones_volume_dB(float f_volume);
+GD_RES_CODE tlv320aic33_get_headphones_volume_db(float *p_f_volume);
 //===========================| Mid level functions |===========================
 GD_RES_CODE tlv320aic33_reset(void);
 GD_RES_CODE tlv320aic33_set_output_driver_power_on_delay(

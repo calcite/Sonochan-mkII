@@ -6,7 +6,7 @@
  * Allow set basic settings on board. Also support "generic driver"
  *
  * Created:  23.04.2014\n
- * Modified: 06.05.2014
+ * Modified: 07.05.2014
  *
  * \version 0.1
  * \author  Martin Stejskal
@@ -175,10 +175,19 @@
 
 
 /**
+ * \brief Define on which line will be displayed headphone volume
+ */
+#define BRD_DRV_LCD_HP_VOLUME_LINE              5
+
+/**
  * \brief Define when volume is updated (how much must be value on ADC\n
  * different from previous value on ADC)
+ *
+ * Because of noise on ADC it is recommended to set value 3. Enough for\n
+ * user, no I2C bandwidth wasting because of ADC noise. But it depends on\n
+ * board and environs. For 8 bit ADC resolution is recommended 1 or 2.
  */
-#define BRD_DRV_ADC_UPDATE_TRESHOLD             2
+#define BRD_DRV_ADC_UPDATE_THRESHOLD            3
 
 /**
  * \brief Define "period" in which will be input buttons, ADC and so on scanned
@@ -227,6 +236,9 @@
 // Basic data types
 #include <inttypes.h>
 
+// Because of sprintf()
+#include <stdio.h>
+
 // PLL control
 #include "cs2200.h"
 
@@ -235,6 +247,9 @@
 
 // For LCD support
 #include "LCD_5110.h"
+
+// Printing debug messages through UART
+#include "print_funcs.h"
 
 // GPIO operations
 ///\todo Try to remove this dependency
@@ -314,6 +329,14 @@ typedef enum{
 /// Can not set save flag
 #define BRD_DRV_MSG_PLL_SET_SAVE_FLAG_FAIL      \
   {"BRD DRV: Can not set save flag at PLL\n"}
+
+/// Can not set headphone volume in dB
+#define BRD_DRV_TLV_FAILED_SET_HEADPHONE_VOL_DB \
+  {"BRD DRV: Can not set headphone volume in DB\n"}
+
+/// Can not write to LCD
+#define BRD_DRV_LCD_WRITE_FAIL                  \
+  {"BRD DRV: Can not write to LCD\n"}
 /// @}
 
 //=================================| Macros |==================================
@@ -530,7 +553,7 @@ void brd_drv_task(void);
 //===========================| Mid level functions |===========================
 
 //===========================| Low level functions |===========================
-
+GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);
 
 
 #endif

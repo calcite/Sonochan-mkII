@@ -26,6 +26,28 @@
 
 
 /**
+ * \brief Define default behavior of auto line feed (1 enabled ; 0 disabled)
+ *
+ * If is set to 1, after writing text thru LCD_5110_write() is new message\n
+ * written new line. If value is 0, then new message continue on actual line\n
+ * is possible.\n
+ * Recommended value: 1
+ *
+ */
+#define LCD_5110_DEFAULT_AUTO_LF        0
+
+/**
+ * \brief Define default behavior of auto clear display (1 enabled ; 0 disabled)
+ *
+ * If is cleared, then after writing text to last line continue on line 0.\n
+ * All old informations stay on display. However in some cases is good idea\n
+ * to clear display before continue again on line 0. Something as book page.\n
+ * So if you want this feature, set this to one.\n
+ * Recommended value: 1
+ */
+#define LCD_5110_DEFAULT_AUTO_CLEAR     1
+
+/**
  * \brief Allow enable FreeRTOS features
  *
  * Options: 0 (disabled) or 1 (enabled). When enabled, then FreeRTOS features\n
@@ -172,6 +194,18 @@ e_lcd_5110_status LCD_5110_set_X(uint8_t X_address);
  */
 e_lcd_5110_status LCD_5110_set_line(uint8_t y_line);
 
+/**
+ * \brief Write argument through actual line
+ *
+ * Function do not change actual line number. This is useful for rewriting\n
+ * lines. Also set X coordinates back to 0. If you want erase one line, just\n
+ * call this function with value 0x00.
+ *
+ * @param i_data Raw binary data for LCD module
+ * @return LCD_5110_OK (0) if all OK
+ */
+e_lcd_5110_status LCD_5110_write_to_line(uint8_t i_raw_data);
+
 
 /**
  * \brief Symbolic name for function in HAL driver to turn on backlight
@@ -205,6 +239,17 @@ e_lcd_5110_status LCD_5110_set_line(uint8_t y_line);
  */
 void LCD_5110_auto_newline(uint8_t i_auto_LF_flag);
 
+/**
+ * \brief Allow to set/clear flag which enable/diable auto clear display
+ *
+ * When is called LCD_5110_write*() functions, then after last line new text\n
+ * is written to line 0. So old messages stay on LCD, but in some cases user\n
+ * might want clear display and then write again to first line. Well, this\n
+ * option can do this.
+ *
+ * @param i_auto_clear_flag Enable (1) or disable (0) auto clear display
+ */
+void LCD_5110_auto_clear(uint8_t i_auto_clear_flag);
 //============================| Special functions |============================
 /**
  * \brief Write given number as 8bit hexadecimal number

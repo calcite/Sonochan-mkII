@@ -6,17 +6,13 @@
  * Allow set basic settings on board. Also support "generic driver"
  *
  * Created:  23.04.2014\n
- * Modified: 06.05.2014
+ * Modified: 07.05.2014
  *
  * \version 0.1
  * \author  Martin Stejskal
  */
 
 #include "brd_driver_hw_03.h"
-
-///\todo REMOVE
-#include <stdio.h>
-#include "print_funcs.h"
 
 //=========================| Generic driver support |==========================
 #if BRD_DRV_SUPPORT_GENERIC_DRIVER == 1
@@ -67,7 +63,15 @@ GD_RES_CODE brd_drv_TLV_default(void);
 GD_RES_CODE brd_drv_adc_init(void);
 
 
-GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);
+
+
+void brd_drv_set_mute_reset_i2s_pins_as_input(void);
+
+void brd_drv_send_msg(
+    const char * p_msg,
+    uint8_t i_write_to_DBG,
+    uint8_t i_write_to_LCD,
+    uint8_t i_LCD_line);
 
 void brd_drv_send_error_msg(
     const char * p_msg,
@@ -117,6 +121,7 @@ GD_RES_CODE brd_drv_pre_init(void)
   GD_RES_CODE e_status;
 
   // Set I/O - this should be OK
+  brd_drv_set_mute_reset_i2s_pins_as_input();
   e_status = brd_drv_set_isolators_to_HiZ();
   if(e_status != GD_SUCCESS)
   {
@@ -171,6 +176,8 @@ GD_RES_CODE brd_drv_init(void)
   // Variable for storing status
   GD_RES_CODE e_status;
 
+  // Set all mute and reset_i2s pins as input (default)
+  brd_drv_set_mute_reset_i2s_pins_as_input();
 
   // Initialize LCD
   e_status = LCD_5110_init();
@@ -191,7 +198,7 @@ GD_RES_CODE brd_drv_init(void)
     return e_status;
   }
 
-  // Set I/O
+  // Set isolators I/O
   e_status = brd_drv_set_isolators_to_HiZ();
   if(e_status != GD_SUCCESS)
   {
@@ -203,7 +210,7 @@ GD_RES_CODE brd_drv_init(void)
 
   // Precise setting of PLL
   /* Turn of save setting when changing frequency by 1. We want continuous
-   * clock at "any price".
+   * clock at "any price". PLL CLK OUT should work as expected.
    */
   e_status = cs2200_set_save_change_ratio_by_1(0);
   if(e_status != GD_SUCCESS)
@@ -243,6 +250,15 @@ GD_RES_CODE brd_drv_init(void)
 
 
 
+  // Show actual headphone volume settings
+  // Volume as float value
+  float f_volume;
+  // Temporary string for text
+  char c[20];
+  tlv320aic33_get_headphones_volume_db(&f_volume);
+  sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
+  brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
+
 
   /* If FreeRTOS is used, then create task. Note that
    * "configTSK_brd_drv_*" should be defined in FreeRTOSConfig.h
@@ -273,59 +289,119 @@ GD_RES_CODE brd_drv_init(void)
  */
 void brd_drv_task(void)
 {
+  // Error messages
+  const char msg_tlv_failed_set_headphone_volume_dB[] =
+      BRD_DRV_TLV_FAILED_SET_HEADPHONE_VOL_DB;
+
+
+  // For saving status
+  GD_RES_CODE e_status;
+
   // Simple time counter
   static uint32_t i_time_cnt = 0;
 
   // Store ADC volume value
-  static uint8_t  i_saved_volume_value = 0;
+  static uint16_t  i_saved_volume_value = 0;
 
   // Variable for store actual volume value
-  uint8_t i_actual_volume;
+  uint16_t i_actual_volume;
 
   // Variable for store voltage on connector side
-  uint8_t i_voltage_connector_side;
+  uint16_t i_voltage_connector_side;
 
   // Pointer to ADC structure
   volatile avr32_adc_t *p_adc;
   p_adc = (avr32_adc_t*)BDR_DRV_ADC_ADDRESS;
 
+  // For sprintf(). LCD capable show 84 Bytes
+  char c[84];
 
-
+  /* Check if all ADC conversions are done and if there is "time" for some
+   * data processing
+   */
   if((BRD_DRV_IS_ADC_DONE(BRD_DRV_ADC_VOLUME_CONTROL_CHANNEL)) &&
      (BRD_DRV_IS_ADC_DONE(BRD_DRV_ADC_CON_VOLTAGE_CHANNEL)) &&
      i_time_cnt > BRD_DRV_BUTTON_REFRESH_PERIOD)
   {
+    // ADC ready and timeout occurs -> let's process some data
+    i_time_cnt = 0;
+
+    //=============================| Get ADC values |==========================
     // Lock (if needed) ADC and save ADC values
     BRD_DRV_LOCK_ADC_MODULE_IF_RTOS
     i_actual_volume = BRD_DRV_ADC_DATA(BRD_DRV_ADC_VOLUME_CONTROL_CHANNEL);
     i_voltage_connector_side  =
         BRD_DRV_ADC_DATA(BRD_DRV_ADC_CON_VOLTAGE_CHANNEL);
-
     // Start new conversion
     p_adc->CR.start = 1;
-
     // Unlock
     BRD_DRV_UNLOCK_ADC_MODULE_IF_RTOS
 
 
-    // ADC ready and timeout occurs -> let's process some data
-    i_time_cnt = 0;
 
-    // Save volume value and check if volume changed
+    //==============================| Change volume |==========================
+    // Test if volume value has been changed
+    if(i_actual_volume > i_saved_volume_value)
+    {
+      // Actual volume is higher than saved
+      // Check if difference is higher then threshold
+      if((i_actual_volume - i_saved_volume_value) >
+                                                  BRD_DRV_ADC_UPDATE_THRESHOLD)
+      {
+        // Save actual ADC value for "next round"
+        i_saved_volume_value = i_actual_volume;
 
-    char c[20];
-    sprintf(&c[0], "Vol: %lu\nCon: %lu\n\n",
-        i_actual_volume,
-        i_voltage_connector_side);
-    //print_dbg(&c[0]);
+        /* Calculate volume value. Because higher value on ADC mean louder output
+         * and codec can set volume as attenuation we need to invert value.
+         * So maximal attenuation is approximately -79 dB, but ADC give 1023 :/
+         * OK, we divide inverted ADC value by 12.9494 (1023/79) so we should
+         * valid number in dB. Not so easy, but it work.
+         */
+        float f_volume = -1*((1023-i_actual_volume)/(12.9494));
+        e_status = tlv320aic33_set_headphones_volume_dB(f_volume);
+        // Check result
+        if(e_status != GD_SUCCESS)
+        {
+          // If some problem -> tell user
+          // Print do debug output and LCD
+          brd_drv_send_error_msg(&msg_tlv_failed_set_headphone_volume_dB[0],1,1);
+        }
+        // Get real volume value - do not need check error code.
+        tlv320aic33_get_headphones_volume_db(&f_volume);
+        sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
+        brd_drv_send_msg(&c[0], 1, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
+      }
+    }
+    else
+    {
+      // Actual volume is lower or equal
+      if((i_saved_volume_value - i_actual_volume) >
+                                                  BRD_DRV_ADC_UPDATE_THRESHOLD)
+      {
+        i_saved_volume_value = i_actual_volume;
+        float f_volume = -1*((1023-i_actual_volume)/(12.9494));
+        e_status = tlv320aic33_set_headphones_volume_dB(f_volume);
+        if(e_status != GD_SUCCESS)
+        {
+          brd_drv_send_error_msg(&msg_tlv_failed_set_headphone_volume_dB[0],1,1);
+        }
+        // Get real volume value - do not need check error code.
+        tlv320aic33_get_headphones_volume_db(&f_volume);
+        sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
+        brd_drv_send_msg(&c[0], 1, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
+      }
+    }// Test if volume value has been changed
 
 
 
 
-  }
-  // Increase counter
+  }/* Check if all ADC conversions are done and if there is "time" for some
+    * data processing
+    */
+
+
+  // Increase counter (always)
   i_time_cnt++;
-  return;
 }
 
 
@@ -333,7 +409,29 @@ void brd_drv_task(void)
 
 
 //===========================| Low level functions |===========================
+/**
+ * \brief Set pins, that control signal direction at digital isolators, to low
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE brd_drv_set_isolators_to_HiZ(void)
+{
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+  // Set output enables to low -> disable them by default
+  BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_A_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_RST_EN_A_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_A_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_B_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_RST_EN_B_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_TX_EN_B_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_B_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
+  BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
 
+  return GD_SUCCESS;
+}
 
 
 //=========================| Functions not for user |==========================
@@ -533,8 +631,8 @@ inline GD_RES_CODE brd_drv_adc_init(void)
   p_adc->MR.prescal = BRD_DRV_ADC_PRESCAL;
   // Turn off sleep mode - by default normal mode
   //p_adc->MR.sleep = 0;
-  // 8 bit resolution is enough
-  p_adc->MR.lowres = 1;
+  // 10 bit resolution
+  p_adc->MR.lowres = 0;
   // Do not enable hardware triggers - by default off
   //p_adc->MR.trgen = 0;
   // Enable selected channels
@@ -550,40 +648,77 @@ inline GD_RES_CODE brd_drv_adc_init(void)
 
 
 
+
+
+
+
 /**
- * \brief Set pins, that control signal direction at digital isolators, to low
- * @return GD_SUCCESS (0) if all OK
+ * \brief Just set all mute and reset_i2s pins as input
+ *
+ * Set mute, mute_btn, reset_i2s, reset_i2s_btn pins as input.
  */
-inline GD_RES_CODE brd_drv_set_isolators_to_HiZ(void)
+inline void brd_drv_set_mute_reset_i2s_pins_as_input(void)
 {
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
-  // Set output enables to low -> disable them by default
-  BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_A_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_RST_EN_A_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_A_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_B_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_RST_EN_B_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_TX_EN_B_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_B_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
 
-
-  // Set MCU some pins as input
+  // Button pins
   BRD_DRV_IO_AS_INPUT(BRD_DRV_MUTE_BTN_PIN);
   BRD_DRV_IO_AS_INPUT(BRD_DRV_RESET_I2S_BTN_PIN);
+
+  // Signal pins
   BRD_DRV_IO_AS_INPUT(BRD_DRV_MUTE_PIN);
   BRD_DRV_IO_AS_INPUT(BRD_DRV_RESET_I2S_PIN);
-
-  return GD_SUCCESS;
 }
 
 
 
+/**
+ * \brief Write message to selected outputs
+ *
+ * Function do not return any return code. Just hope, that everything\n
+ * will work.
+ *
+ * @param p_msg Pointer to message
+ * @param i_write_to_DBG Options: 0 - do not write to debug output ;\n
+ *  1 - write to debug output
+ * @param i_write_to_LCD 0 - do not write to LCD ;\n
+ *  1 - write to LCD
+ * @param i_LCD_line Define on which line should be message placed. If value\n
+ * is 255 (-1), or invalid (higher than 5) then just write message message on\n
+ * the following line.
+ */
+inline void brd_drv_send_msg(
+    const char * p_msg,
+    uint8_t i_write_to_DBG,
+    uint8_t i_write_to_LCD,
+    uint8_t i_LCD_line)
+{
+  // If want write to debug interface
+  if(i_write_to_DBG != 0)
+  {
+    print_dbg(p_msg);
+  }
 
+  // If want write to LCD
+  if(i_write_to_LCD != 0)
+  {
+    // If user want write on defined line
+    if(i_LCD_line < 6)
+    {
+      // Select line
+      LCD_5110_set_line(i_LCD_line);
+      // Clear line
+      LCD_5110_write_to_line(0x00);
+      // Write message
+      LCD_5110_write(p_msg);
+    }
+    else
+    {
+      LCD_5110_write(p_msg);
+    }
+  }
+}
 /**
  * \brief Write error message and turn on ERROR LED
  *

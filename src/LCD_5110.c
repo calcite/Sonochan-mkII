@@ -166,7 +166,15 @@ static uint8_t i_LCD_x_position = 0;
  * written new line. If value is 0, then new message continue on actual line\n
  * is possible.
  */
-static uint8_t i_add_LF_after_write = 1;
+static uint8_t i_add_LF_after_write = LCD_5110_DEFAULT_AUTO_LF;
+
+/**
+ * If is cleared, then after writing text to last line continue on line 0.\n
+ * All old informations stay on display. However in some cases is good idea\n
+ * to clear display before continue again on line 0. Something as book page.\n
+ * So if you want this feature, set this to one.
+ */
+static uint8_t i_auto_clear_display_flag = LCD_5110_DEFAULT_AUTO_CLEAR;
 /// @}
 
 
@@ -317,11 +325,22 @@ e_lcd_5110_status LCD_5110_write(const char * p_txt_to_show)
   // Symbol ASCII number is recalculated
   uint8_t symbol_ascii_number;
 
+  // If user want clear display and if we are on first line
+  if((i_auto_clear_display_flag != 0) && i_LCD_line_counter == 0)
+  {
+    // Clear display and check result
+    e_status = LCD_5110_clear();
+    if(e_status != LCD_5110_OK)
+    {
+      return e_status;
+    }
+  }
+
   // Print symbols, until is found NULL character -> end of string
   while ( *p_txt_to_show != 0x00 )
   {
     /* Test if actual symbol is '\n' -> this means "jump to next line" -> must
-     * change line number
+     * change line number.
      */
     if ( (*(p_txt_to_show) == '\n' ))
     {
@@ -453,13 +472,13 @@ inline e_lcd_5110_status LCD_5110_write_xy(const char * p_txt_to_show,
   //x_position--;	// again, for LCD is begin 0
 
   // Coordinates set, so set them on N5110 LCD
-  e_status = LCD_5110_set_X(i_LCD_x_position);
+  e_status = LCD_5110_set_X(x_position);
   if( e_status != LCD_5110_OK)
   {
     return e_status;
   }
 
-  e_status = LCD_5110_set_line(i_LCD_line_counter);
+  e_status = LCD_5110_set_line(y_line);
   if( e_status != LCD_5110_OK)
   {
     return e_status;
@@ -533,12 +552,56 @@ inline e_lcd_5110_status LCD_5110_set_line(uint8_t y_line)
 }
 
 
+//=============================================================================
+e_lcd_5110_status LCD_5110_write_to_line(uint8_t i_raw_data)
+{
+  // Variable for status value
+  e_lcd_5110_status e_status;;
+
+  // Set X coordinates to 0
+  e_status = LCD_5110_set_X(0);
+  if(e_status != LCD_5110_OK)
+  {
+    return e_status;
+  }
+
+  // Simple counter
+  uint8_t i_cnt;
+
+  for(i_cnt=0 ; i_cnt < 84 ; i_cnt++)
+  {
+    e_status = LCD_5110_send_data_byte(i_raw_data);
+    if(e_status != LCD_5110_OK)
+    {
+      return e_status;
+    }
+  }
+
+  /* OK, we set whole line, but LCD itself changed line number. So, let's set
+   * line back
+   */
+  e_status = LCD_5110_set_line(i_LCD_line_counter);
+  if(e_status != LCD_5110_OK)
+  {
+    return e_status;
+  }
+
+  // Set X coordinates back to 0
+  return LCD_5110_set_X(0);
+}
+
+
+
 //============================| Runtime settings |=============================
 inline void LCD_5110_auto_newline(uint8_t i_auto_LF_flag)
 {
   i_add_LF_after_write = i_auto_LF_flag;
 }
 
+inline void LCD_5110_auto_clear(uint8_t i_auto_clear_flag)
+{
+  i_auto_clear_display_flag = i_auto_clear_flag;
+}
 
 
 //============================| Special functions |============================

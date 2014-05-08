@@ -721,6 +721,17 @@ GD_RES_CODE tlv320aic33_set_headphones_volume_dB(float f_volume)
   // Change setting
   return tlv320aic33_set_headphones_volume(i_vol_raw);
 }
+
+/**
+ * \brief Get real headphones volume
+ * @param p_f_volume Pointer to address where result will be written
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE tlv320aic33_get_headphones_volume_db(float *p_f_volume)
+{
+  *p_f_volume = s_virtual_reg_img.i_headphones_volume_db;
+  return GD_SUCCESS;
+}
 //===========================| Mid level functions |===========================
 /**
  * \brief Set page to 0 and restart codec
