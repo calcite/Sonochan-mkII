@@ -127,12 +127,12 @@
 //! @{
 
 // NOTE:: need to work on these pin assignments
-#define AK5394_FSYNC                     AVR32_PIN_PX26		// with Jumper 1-2 in J302
-#define AK5394_LRCK                      AVR32_PIN_PX36		// with Jumper 3-4 in J302
-#define AK5394_LRCK_IN                   AVR32_PIN_PX26		// with Jumper 2-3 in J302
+#define AK5394_FSYNC                     AVR32_PIN_PX26    // with Jumper 1-2 in J302
+#define AK5394_LRCK                      AVR32_PIN_PX36    // with Jumper 3-4 in J302
+#define AK5394_LRCK_IN                   AVR32_PIN_PX26    // with Jumper 2-3 in J302
 #define AK5394_SDATA                     AVR32_PIN_PX25
-#define AK5394_SCLK                      AVR32_PIN_PX28		// trace on board to PX34  ??
-#define AK5394_AD_MCLK                   AVR32_PIN_PC04		// clock from A/D board
+#define AK5394_SCLK                      AVR32_PIN_PX28    // trace on board to PX34  ??
+#define AK5394_AD_MCLK                   AVR32_PIN_PC04    // clock from A/D board
 
 //! @}
 
@@ -140,11 +140,11 @@
 /*! \name TWI Connections of the Spare TWI Connector
  */
 //! @{
-#define TWIM0                   	(&AVR32_TWIM0)
-#define TWIM0_SCL_PIN           	AVR32_TWIMS0_TWCK_0_0_PIN
-#define TWIM0_SCL_FUNCTION      	AVR32_TWIMS0_TWCK_0_0_FUNCTION
-#define TWIM0_SDA_PIN           	AVR32_TWIMS0_TWD_0_0_PIN
-#define TWIM0_SDA_FUNCTION      	AVR32_TWIMS0_TWD_0_0_FUNCTION
+#define TWIM0                     (&AVR32_TWIM0)
+#define TWIM0_SCL_PIN             AVR32_TWIMS0_TWCK_0_0_PIN
+#define TWIM0_SCL_FUNCTION        AVR32_TWIMS0_TWCK_0_0_FUNCTION
+#define TWIM0_SDA_PIN             AVR32_TWIMS0_TWD_0_0_PIN
+#define TWIM0_SDA_FUNCTION        AVR32_TWIMS0_TWD_0_0_FUNCTION
 //! @}
 
 
@@ -163,29 +163,29 @@
  */
 //! @{
 
-#define SSC_RX_DATA				AVR32_SSC_RX_DATA_0_2_PIN
-#define SSC_RX_DATA_FUNCTION	AVR32_SSC_RX_DATA_0_2_FUNCTION
-#define SSC_RX_FRAME_SYNC		AVR32_SSC_RX_FRAME_SYNC_0_2_PIN
-#define SSC_RX_FRAME_SYNC_FUNCTION	AVR32_SSC_RX_FRAME_SYNC_0_2_FUNCTION
-#define SSC_RX_CLOCK			AVR32_SSC_RX_CLOCK_0_1_PIN
-#define	SSC_RX_CLOCK_FUNCTION	AVR32_SSC_RX_CLOCK_0_1_FUNCTION
-#define SSC_TX_DATA				AVR32_SSC_TX_DATA_0_1_PIN
-#define SSC_TX_DATA_FUNCTION	AVR32_SSC_TX_DATA_0_1_FUNCTION
-#define SSC_TX_FRAME_SYNC		AVR32_SSC_TX_FRAME_SYNC_0_1_PIN
-#define SSC_TX_FRAME_SYNC_FUNCTION	AVR32_SSC_TX_FRAME_SYNC_0_1_FUNCTION
-#define SSC_TX_CLOCK			AVR32_SSC_TX_CLOCK_0_1_PIN
-#define	SSC_TX_CLOCK_FUNCTION	AVR32_SSC_TX_CLOCK_0_1_FUNCTION
+#define SSC_RX_DATA             AVR32_SSC_RX_DATA_0_2_PIN
+#define SSC_RX_DATA_FUNCTION    AVR32_SSC_RX_DATA_0_2_FUNCTION
+#define SSC_RX_FRAME_SYNC       AVR32_SSC_RX_FRAME_SYNC_0_2_PIN
+#define SSC_RX_FRAME_SYNC_FUNCTION  AVR32_SSC_RX_FRAME_SYNC_0_2_FUNCTION
+#define SSC_RX_CLOCK            AVR32_SSC_RX_CLOCK_0_1_PIN
+#define  SSC_RX_CLOCK_FUNCTION  AVR32_SSC_RX_CLOCK_0_1_FUNCTION
+#define SSC_TX_DATA             AVR32_SSC_TX_DATA_0_1_PIN
+#define SSC_TX_DATA_FUNCTION    AVR32_SSC_TX_DATA_0_1_FUNCTION
+#define SSC_TX_FRAME_SYNC       AVR32_SSC_TX_FRAME_SYNC_0_1_PIN
+#define SSC_TX_FRAME_SYNC_FUNCTION  AVR32_SSC_TX_FRAME_SYNC_0_1_FUNCTION
+#define SSC_TX_CLOCK            AVR32_SSC_TX_CLOCK_0_1_PIN
+#define  SSC_TX_CLOCK_FUNCTION  AVR32_SSC_TX_CLOCK_0_1_FUNCTION
 
 /*! \name GCLK Settings for the SDR-Widget boards
  */
 //! @{
 
-#define GCLK0				AVR32_PM_GCLK_0_1_PIN
-#define GCLK0_FUNCTION		AVR32_PM_GCLK_0_1_FUNCTION
-#define	GCLK1				AVR32_PM_GCLK_1_1_PIN
-#define GCLK1_FUNCTION		AVR32_PM_GCLK_1_1_FUNCTION
-#define GCLK2				AVR32_PM_GCLK_2_PIN
-#define GCLK2_FUNCTION		AVR32_PM_GCLK_2_FUNCTION
+#define GCLK0        AVR32_PM_GCLK_0_1_PIN
+#define GCLK0_FUNCTION    AVR32_PM_GCLK_0_1_FUNCTION
+#define  GCLK1        AVR32_PM_GCLK_1_1_PIN
+#define GCLK1_FUNCTION    AVR32_PM_GCLK_1_1_FUNCTION
+#define GCLK2        AVR32_PM_GCLK_2_PIN
+#define GCLK2_FUNCTION    AVR32_PM_GCLK_2_FUNCTION
 
 
 // Inhale list of required modules

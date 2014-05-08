@@ -34,7 +34,7 @@
  * Recommended value: 1
  *
  */
-#define LCD_5110_DEFAULT_AUTO_LF        0
+#define LCD_5110_DEFAULT_AUTO_LF          0
 
 /**
  * \brief Define default behavior of auto clear display (1 enabled ; 0 disabled)
@@ -45,7 +45,18 @@
  * So if you want this feature, set this to one.\n
  * Recommended value: 1
  */
-#define LCD_5110_DEFAULT_AUTO_CLEAR     1
+#define LCD_5110_DEFAULT_AUTO_LCD_CLEAR   1
+
+
+/**
+ * \brief Define default behavior of auto clear line (1 enabled ; 0 disabled)
+ *
+ * If bit is set, then always before writing clear line. In most cases it can\n
+ * be useful, but not every time. So there is option. This can be set also in\n
+ * runtime.
+ */
+#define LCD_5110_DEFAULT_AUTO_LINE_CLEAR        1
+
 
 /**
  * \brief Allow enable FreeRTOS features
@@ -253,7 +264,7 @@ e_lcd_5110_status LCD_5110_write_to_line(uint8_t i_raw_data);
 void LCD_5110_auto_newline(uint8_t i_auto_LF_flag);
 
 /**
- * \brief Allow to set/clear flag which enable/diable auto clear display
+ * \brief Allow to set/clear flag which enable/disable auto clear display
  *
  * When is called LCD_5110_write*() functions, then after last line new text\n
  * is written to line 0. So old messages stay on LCD, but in some cases user\n
@@ -262,7 +273,18 @@ void LCD_5110_auto_newline(uint8_t i_auto_LF_flag);
  *
  * @param i_auto_clear_flag Enable (1) or disable (0) auto clear display
  */
-void LCD_5110_auto_clear(uint8_t i_auto_clear_flag);
+void LCD_5110_auto_clear_display(uint8_t i_auto_clear_flag);
+
+/**
+ * \brief Allow to set/clear flag which enable/disable auto clear line
+ *
+ * When call LCD_5110_write_*() function and this option is enabled, before\n
+ * writing clear actual line. This is useful in most cases, but not at all.\n
+ * So there is option.
+ *
+ * @param i_auto_clear_flag Enable (1) or disable (0) auto clear line
+ */
+void LCD_5110_auto_clear_line(uint8_t i_auto_clear_flag);
 //============================| Special functions |============================
 /**
  * \brief Write given number as 8bit hexadecimal number

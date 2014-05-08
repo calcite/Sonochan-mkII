@@ -102,7 +102,7 @@
 // For testing we can set high value. In real it should be about 1000
 #define MAX_PLL_PPM     50000
 // Define minimum "time delay" between two frequency changes (INC, DEC functions)
-#define PLL_CHANGE_TIME_DIFF    1500
+#define PLL_CHANGE_TIME_DIFF    1000
 
 //_____ D E C L A R A T I O N S ____________________________________________
 

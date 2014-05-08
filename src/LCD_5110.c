@@ -174,7 +174,14 @@ static uint8_t i_add_LF_after_write = LCD_5110_DEFAULT_AUTO_LF;
  * to clear display before continue again on line 0. Something as book page.\n
  * So if you want this feature, set this to one.
  */
-static uint8_t i_auto_clear_display_flag = LCD_5110_DEFAULT_AUTO_CLEAR;
+static uint8_t i_auto_clear_display_flag = LCD_5110_DEFAULT_AUTO_LCD_CLEAR;
+
+/**
+ * If bit is set, then always before writing (LCD_5110_write_*) clear line.\n
+ * In most cases it can be useful, but not every time. So there is option.\n
+ * This can be set also in runtime.
+ */
+static uint8_t i_auto_clear_line_flag = LCD_5110_DEFAULT_AUTO_LINE_CLEAR;
 /// @}
 
 
@@ -335,6 +342,18 @@ e_lcd_5110_status LCD_5110_write(const char * p_txt_to_show)
       return e_status;
     }
   }
+  else
+  {// Check if user want at least clear actual line
+    if(i_auto_clear_line_flag != 0)
+    {
+      // Clear actual line
+      e_status = LCD_5110_clear_line(i_LCD_line_counter);
+      if(e_status != LCD_5110_OK)
+      {
+        return e_status;
+      }
+    }
+  }
 
   // Print symbols, until is found NULL character -> end of string
   while ( *p_txt_to_show != 0x00 )
@@ -376,6 +395,17 @@ e_lcd_5110_status LCD_5110_write(const char * p_txt_to_show)
         // Stop reading new bytes
         break;
       }
+
+      // Check if user want clear line by default
+      if(i_auto_clear_line_flag != 0)
+      {
+        // Clear actual line
+        e_status = LCD_5110_clear_line(i_LCD_line_counter);
+        if(e_status != LCD_5110_OK)
+        {
+          return e_status;
+        }
+      }
     }
 
 
@@ -409,6 +439,17 @@ e_lcd_5110_status LCD_5110_write(const char * p_txt_to_show)
       if(e_status != LCD_5110_OK)
       {
         return e_status;
+      }
+
+      // If user want clear line before writing
+      if(i_auto_clear_line_flag != 0)
+      {
+        // Clear actual line
+        e_status = LCD_5110_clear_line(i_LCD_line_counter);
+        if(e_status != LCD_5110_OK)
+        {
+          return e_status;
+        }
       }
     }
 
@@ -638,11 +679,15 @@ inline void LCD_5110_auto_newline(uint8_t i_auto_LF_flag)
   i_add_LF_after_write = i_auto_LF_flag;
 }
 
-inline void LCD_5110_auto_clear(uint8_t i_auto_clear_flag)
+inline void LCD_5110_auto_clear_display(uint8_t i_auto_clear_flag)
 {
   i_auto_clear_display_flag = i_auto_clear_flag;
 }
 
+inline void LCD_5110_auto_clear_line(uint8_t i_auto_clear_flag)
+{
+  i_auto_clear_line_flag = i_auto_clear_flag;
+}
 
 //============================| Special functions |============================
 

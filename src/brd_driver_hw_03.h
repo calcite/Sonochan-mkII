@@ -173,6 +173,12 @@
 /// @}
 
 
+/**
+ * \brief Define on which line begin write logo
+ *
+ * This should be set to 0 or at least same as BRD_DRV_LCD_WARN_MSG_LINE
+ */
+#define BRD_DRV_LCD_LOGO_LINE                   0
 
 /**
  * \brief Define on which line begin write warning message
@@ -182,6 +188,13 @@
  */
 #define BRD_DRV_LCD_WARN_MSG_LINE               0
 
+/**
+ * \brief Define on which line begin write info message
+ *
+ * It is recommended to leave BRD_DRV_LCD_WARN_MSG_LINE 2 lines and rest\n
+ * for info message. This value define where info message start
+ */
+#define BRD_DRV_LCD_INFO_MSG_LINE               2
 /**
  * \brief Define on which line will be displayed headphone volume
  */
@@ -206,7 +219,7 @@
  * RTOS priority and many other stuff.\n
  * Scan "mute", "reset I2S", ADC volume control, ADC con voltage and so on.
  */
-#define BRD_DRV_BUTTON_REFRESH_PERIOD           3
+#define BRD_DRV_BUTTON_REFRESH_PERIOD           4
 
 
 //============================| Advanced settings |============================
@@ -258,6 +271,10 @@
 // For LCD support
 #include "LCD_5110.h"
 
+// Pin names
+///\todo Move definitions here
+#include "board.h"
+
 // Printing debug messages through UART
 #include "print_funcs.h"
 
@@ -303,7 +320,47 @@ typedef enum{
 #endif
 //===============================| Structures |================================
 
+/**
+ * \brief Connector voltage states
+ *
+ * Generally voltage on connector side can have
+ */
+typedef enum{
+  //!< brd_drv_con_low_vol Isolators turned off
+  brd_drv_con_low_vol = 0,
+  //!< brd_drv_con_save_vol Isolators works with save voltage
+  brd_drv_con_save_vol = 1,
+  //!< brd_drv_con_high_vol Isolators works with high voltage
+  brd_drv_con_high_vol = 2,
+  //!< brd_drv_con_undefined Undefined state. For state machine
+  brd_drv_con_undefined = 3
+}e_brd_drv_con_state;
 
+/**
+ * \brief Pin directions
+ *
+ * Symbolic names for pin directions
+ */
+typedef enum{
+  brd_drv_dir_in = 0,//!< brd_drv_dir_in Input direction
+  brd_drv_dir_out = 1//!< brd_drv_dir_out Output direction
+}e_brd_drv_dir_t;
+
+/**
+ * \brief Mute structure
+ */
+typedef struct{
+  e_brd_drv_dir_t e_mute_dir;
+  uint8_t         i_mute_val;
+}s_brd_drv_mute_t;
+
+/**
+ * \brief Reset I2S structure
+ */
+typedef struct{
+  e_brd_drv_dir_t e_rst_i2s_dir;
+  uint8_t         i_rst_i2s_val;
+}s_brd_drv_rst_i2s_t;
 
 //===============================| Definitions |===============================
 /**
@@ -312,13 +369,9 @@ typedef enum{
  * This is set of error messages, which will be written to debug UART or LCD
  * @{
  */
-/// Can not set isolators I/O
-#define BRD_DRV_MSG_ISOLATOR_FAIL       \
-  {"B.D: init: setting I/O for isolators failed!\n"}
-
 /// Can not initialize LCD display
 #define BRD_DRV_MSG_LCD_INIT_FAIL       \
-  {"B.D: init: LCD initialization failed!\n"}
+  {"LCD initialization failed!\n"}
 
 /// Sonochan mk II
 #define BRD_DRV_MSG_SONOCHAN_MK_II      \
@@ -326,39 +379,63 @@ typedef enum{
 
 /// Can not draw logo
 #define BRD_DRV_MSG_DRAW_LOGO_FAIL      \
-  {"B.D: Write logo failed\n"}
+  {"Write logo failed\n"}
 
 /// Can not initialize ADC
 #define BRD_DRV_MSG_ADC_INIT_FAIL       \
-  {"B.D: Can not initialize internal ADC\n"}
+  {"Can not initialize internal ADC\n"}
 
 /// Can not initialize codec
 #define BRD_DRV_MSG_CODEC_INIT_FAIL     \
-  {"B.D: Can not initialize codec\n"}
+  {"Can not initialize codec\n"}
 
 /// Can not set save flag
 #define BRD_DRV_MSG_PLL_SET_SAVE_FLAG_FAIL      \
-  {"B.D: Can not set save flag at PLL\n"}
+  {"Can not set save flag at PLL\n"}
 
 /// Can not set headphone volume in dB
 #define BRD_DRV_TLV_FAILED_SET_HEADPHONE_VOL_DB \
-  {"B.D: Can not set headphone volume in DB\n"}
+  {"Can not set headphone volume in DB\n"}
 
 /// Can not write to LCD
 #define BRD_DRV_LCD_WRITE_FAIL                  \
-  {"B.D: Can not write to LCD\n"}
+  {"Can not write to LCD\n"}
 
 /// Voltage on connector side is too low or powered off
 #define BRD_DRV_CON_VOL_LOW                     \
-  {"B.D: Con: low voltage\n"}
+  {"Con: low voltage\n"}
 
 /// Voltage on connector side in save range
 #define BRD_DRV_CON_VOL_SAVE                    \
-  {"B.D: Con: save voltage\n"}
+  {"Con: save voltage\n"}
 
 /// Voltage on connector side is too high
 #define BRD_DRV_CON_VOL_HIGH                    \
-  {"B.D: Con: high voltage!\n"}
+  {"Con: high voltage!\n"}
+
+/// MUTE signal is input. Can not set output value
+#define BRD_DRV_MUTE_IS_INPUT_CANT_SET          \
+  {"MUTE is input. Can not set output value\n"}
+
+/// Mute direction IN ; Mute off
+#define BRD_DRV_MUTE_IN_MUTE_OFF                \
+  {"MUTE (IN): OFF\n"}
+
+/// Mute direction IN ; Mute on
+#define BRD_DRV_MUTE_IN_MUTE_ON                 \
+  {"MUTE (IN): ON\n"}
+
+/// Mute direction OUT ; Mute off
+#define BRD_DRV_MUTE_OUT_MUTE_OFF               \
+  {"MUTE (OUT): OFF\n"}
+
+/// Mute direction OUT ; Mute on
+#define BRD_DRV_MUTE_OUT_MUTE_ON                \
+  {"MUTE (OUT): ON\n"}
+
+/// Info that connector is not powered so can not react for buttons
+#define BRD_DRV_CON_NOT_POWERED                 \
+  {"Connector side is not powered\n"}
 /// @}
 
 //=================================| Macros |==================================
@@ -493,16 +570,18 @@ typedef enum{
     gpio_port->oders = 1 << (PIN & 0x1F);                               \
     gpio_port->gpers = 1 << (PIN & 0x1F)
 
+#define BRD_DRV_IO_HIGH(PIN)                    BRD_DRV_IO_HIGH_simple(PIN)
 
-#define BRD_DRV_IO_READ_simple(PIN)                                     \
+
+#define BRD_DRV_IO_READ_simple(VAR,PIN)                                     \
     gpio_port =                                                         \
           &AVR32_GPIO.port[PIN >> 5];                                   \
-    i_pin = (gpio_port->pvr >> (pin & 0x1F)) & 1
+    VAR = (gpio_port->pvr >> (PIN & 0x1F)) & 1
 
-#define BRD_DRV_IO_READ(PIN)                    BRD_DRV_IO_READ_simple(PIN)
+#define BRD_DRV_IO_READ(VAR,PIN)                BRD_DRV_IO_READ_simple(VAR,PIN)
 
 
-#define BRD_DRV_IO_HIGH(PIN)                    BRD_DRV_IO_HIGH_simple(PIN)
+
 //==================| Checks and preprocessor calculations |===================
 // Check sample and hold time
 #if BRD_DRV_ADC_SAMPLE_HOLD_TIME > 15
@@ -579,8 +658,6 @@ void brd_drv_send_msg(
     uint8_t i_write_to_LCD,
     uint8_t i_LCD_line);
 
-void brd_drv_clear_warning_write_logo(void);
-
 void brd_drv_send_warning_msg(
     const char * p_msg,
     uint8_t i_write_to_DBG,
@@ -593,5 +670,10 @@ void brd_drv_send_error_msg(
 //===========================| Low level functions |===========================
 GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);
 
+GD_RES_CODE brd_drv_set_mute_reset_i2s_pins_as_input(void);
+
+GD_RES_CODE brd_drv_set_mute_direction(e_brd_drv_dir_t e_mute_dir);
+
+GD_RES_CODE brd_drv_set_rst_i2s_direction(e_brd_drv_dir_t e_rst_i2s_dir);
 
 #endif

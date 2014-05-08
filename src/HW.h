@@ -44,13 +44,13 @@
 #define DEVICE0         BRD_DRV_metadata
 #include "brd_driver_hw_03.h"
 
-/// \brief Fractional PLL CS2200
-#include "cs2200.h"
-#define DEVICE1         CS2200_metadata
-
 /// \brief TLV320AIC33 codec
 #include "tlv320aic33.h"
 #define DEVICE2         TLV320AIC33_metadata
+
+/// \brief Fractional PLL CS2200
+#include "cs2200.h"
+#define DEVICE1         CS2200_metadata
 
 /// @}
 
