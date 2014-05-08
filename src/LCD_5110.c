@@ -495,6 +495,51 @@ inline e_lcd_5110_status LCD_5110_write_xy(const char * p_txt_to_show,
   return LCD_5110_OK;
 }
 
+//=============================================================================
+e_lcd_5110_status LCD_5110_clear_line(uint8_t y_line)
+{
+  // Variable for status value
+  e_lcd_5110_status e_status;;
+
+  // Set line
+  e_status = LCD_5110_set_line(y_line);
+  if(e_status != LCD_5110_OK)
+  {
+    return e_status;
+  }
+
+  // Set X coordinates to 0
+  e_status = LCD_5110_set_X(0);
+  if(e_status != LCD_5110_OK)
+  {
+    return e_status;
+  }
+
+  // Simple counter
+  uint8_t i_cnt;
+
+  // Clear line
+  for(i_cnt=0 ; i_cnt < 84 ; i_cnt++)
+  {
+    e_status = LCD_5110_send_data_byte(0x00);
+    if(e_status != LCD_5110_OK)
+    {
+      return e_status;
+    }
+  }
+
+  /* OK, we set whole line, but LCD itself changed line number. So, let's set
+   * line back
+   */
+  e_status = LCD_5110_set_line(y_line);
+  if(e_status != LCD_5110_OK)
+  {
+    return e_status;
+  }
+
+  // Set X coordinates back to 0
+  return LCD_5110_set_X(0);
+}
 
 //=============================================================================
 
@@ -532,9 +577,6 @@ inline e_lcd_5110_status LCD_5110_set_X(uint8_t X_address)
 
 inline e_lcd_5110_status LCD_5110_set_line(uint8_t y_line)
 {
-  // Variable for status value - default value as error - just for case
-  e_lcd_5110_status e_status = LCD_5110_ERROR;
-
   // Save information about Y position. Then program will work just with "i_LCD_line_counter"
   i_LCD_line_counter = y_line;
 
@@ -546,9 +588,9 @@ inline e_lcd_5110_status LCD_5110_set_line(uint8_t y_line)
 
 
   // Set Y-address, command is 0x40 -> result command is (0x40 | X_address)
-  e_status = LCD_5110_send_command_byte(i_LCD_line_counter | 0x40);
+  return LCD_5110_send_command_byte(i_LCD_line_counter | 0x40);
 
-  return LCD_5110_OK;
+
 }
 
 
@@ -589,8 +631,6 @@ e_lcd_5110_status LCD_5110_write_to_line(uint8_t i_raw_data)
   // Set X coordinates back to 0
   return LCD_5110_set_X(0);
 }
-
-
 
 //============================| Runtime settings |=============================
 inline void LCD_5110_auto_newline(uint8_t i_auto_LF_flag)

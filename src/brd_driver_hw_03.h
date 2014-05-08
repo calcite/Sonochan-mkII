@@ -175,9 +175,19 @@
 
 
 /**
+ * \brief Define on which line begin write warning message
+ *
+ * This should be set to 0, because when warning message disappear logo is\n
+ * written on these lines.
+ */
+#define BRD_DRV_LCD_WARN_MSG_LINE               0
+
+/**
  * \brief Define on which line will be displayed headphone volume
  */
 #define BRD_DRV_LCD_HP_VOLUME_LINE              5
+
+
 
 /**
  * \brief Define when volume is updated (how much must be value on ADC\n
@@ -304,11 +314,11 @@ typedef enum{
  */
 /// Can not set isolators I/O
 #define BRD_DRV_MSG_ISOLATOR_FAIL       \
-  {"BRD DRV init: setting I/O for isolators failed!\n"}
+  {"B.D: init: setting I/O for isolators failed!\n"}
 
 /// Can not initialize LCD display
 #define BRD_DRV_MSG_LCD_INIT_FAIL       \
-  {"BRD DRV init: LCD initialization failed!\n"}
+  {"B.D: init: LCD initialization failed!\n"}
 
 /// Sonochan mk II
 #define BRD_DRV_MSG_SONOCHAN_MK_II      \
@@ -316,27 +326,39 @@ typedef enum{
 
 /// Can not draw logo
 #define BRD_DRV_MSG_DRAW_LOGO_FAIL      \
-  {"BRD DRV: Write logo failed\n"}
+  {"B.D: Write logo failed\n"}
 
 /// Can not initialize ADC
 #define BRD_DRV_MSG_ADC_INIT_FAIL       \
-  {"BRD DRV: Can not initialize internal ADC\n"}
+  {"B.D: Can not initialize internal ADC\n"}
 
 /// Can not initialize codec
 #define BRD_DRV_MSG_CODEC_INIT_FAIL     \
-  {"BRD DRV: Can not initialize codec\n"}
+  {"B.D: Can not initialize codec\n"}
 
 /// Can not set save flag
 #define BRD_DRV_MSG_PLL_SET_SAVE_FLAG_FAIL      \
-  {"BRD DRV: Can not set save flag at PLL\n"}
+  {"B.D: Can not set save flag at PLL\n"}
 
 /// Can not set headphone volume in dB
 #define BRD_DRV_TLV_FAILED_SET_HEADPHONE_VOL_DB \
-  {"BRD DRV: Can not set headphone volume in DB\n"}
+  {"B.D: Can not set headphone volume in DB\n"}
 
 /// Can not write to LCD
 #define BRD_DRV_LCD_WRITE_FAIL                  \
-  {"BRD DRV: Can not write to LCD\n"}
+  {"B.D: Can not write to LCD\n"}
+
+/// Voltage on connector side is too low or powered off
+#define BRD_DRV_CON_VOL_LOW                     \
+  {"B.D: Con: low voltage\n"}
+
+/// Voltage on connector side in save range
+#define BRD_DRV_CON_VOL_SAVE                    \
+  {"B.D: Con: save voltage\n"}
+
+/// Voltage on connector side is too high
+#define BRD_DRV_CON_VOL_HIGH                    \
+  {"B.D: Con: high voltage!\n"}
 /// @}
 
 //=================================| Macros |==================================
@@ -551,7 +573,23 @@ GD_RES_CODE brd_drv_init(void);
 
 void brd_drv_task(void);
 //===========================| Mid level functions |===========================
+void brd_drv_send_msg(
+    const char * p_msg,
+    uint8_t i_write_to_DBG,
+    uint8_t i_write_to_LCD,
+    uint8_t i_LCD_line);
 
+void brd_drv_clear_warning_write_logo(void);
+
+void brd_drv_send_warning_msg(
+    const char * p_msg,
+    uint8_t i_write_to_DBG,
+    uint8_t i_write_to_LCD);
+
+void brd_drv_send_error_msg(
+    const char * p_msg,
+    uint8_t i_write_to_DBG,
+    uint8_t i_write_to_LCD);
 //===========================| Low level functions |===========================
 GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);
 

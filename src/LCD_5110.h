@@ -176,6 +176,18 @@ e_lcd_5110_status LCD_5110_init(void);
  e_lcd_5110_status LCD_5110_write_xy(const char * p_txt_to_show,
                                      int x_position, int y_line);
 
+ /**
+  * \brief Clear selected line and set cursor to X position 0
+  *
+  * User select line which will be cleared. Function clear that line and set\n
+  * cursor on the line begin.
+  *
+  * \param y_line Line index on LCD. Accepted value 0~5 else is set
+  * to 0
+  * @return LCD_5110_OK (0) if all OK
+  */
+ e_lcd_5110_status LCD_5110_clear_line(uint8_t y_line);
+
 /**
  * \brief Only set X coordinate on LCD nokia 5510
  *
@@ -205,6 +217,7 @@ e_lcd_5110_status LCD_5110_set_line(uint8_t y_line);
  * @return LCD_5110_OK (0) if all OK
  */
 e_lcd_5110_status LCD_5110_write_to_line(uint8_t i_raw_data);
+
 
 
 /**

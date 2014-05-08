@@ -175,7 +175,7 @@ to exclude the API function. */
                                 ((const signed portCHAR *)"Board driver")
 #define configTSK_brd_drv_STACK_SIZE            1024
 #define configTSK_brd_drv_PRIORITY              (tskIDLE_PRIORITY + 0)
-#define configTSK_brd_drv_PERIOD                600
+#define configTSK_brd_drv_PERIOD                1000
 
 
 

@@ -51,6 +51,12 @@ const gd_metadata BRD_DRV_metadata =
         0x0F    // Serial number (0~255)
 };
 #endif
+//=================| Definitions that user should not change |=================
+/// Define ADC level when on connector side is save voltage (minimum)
+#define BRD_DRV_ADC_SAVE_VOL_MIN                320
+
+/// Define ADC level when on connector side is high voltage
+#define BRD_DRV_ADC_HIGH_VOL_MIN                42
 
 //====================| Function prototypes not for user |=====================
 
@@ -67,16 +73,7 @@ GD_RES_CODE brd_drv_adc_init(void);
 
 void brd_drv_set_mute_reset_i2s_pins_as_input(void);
 
-void brd_drv_send_msg(
-    const char * p_msg,
-    uint8_t i_write_to_DBG,
-    uint8_t i_write_to_LCD,
-    uint8_t i_LCD_line);
 
-void brd_drv_send_error_msg(
-    const char * p_msg,
-    uint8_t i_write_to_DBG,
-    uint8_t i_write_to_LCD);
 //=============================| FreeRTOS stuff |==============================
 // If RTOS support is enabled, create this
 #if BRD_DRV_SUPPORT_RTOS != 0
@@ -289,19 +286,30 @@ GD_RES_CODE brd_drv_init(void)
  */
 void brd_drv_task(void)
 {
-  // Error messages
+  // Error/warning/info messages
   const char msg_tlv_failed_set_headphone_volume_dB[] =
       BRD_DRV_TLV_FAILED_SET_HEADPHONE_VOL_DB;
 
-
-  // For saving status
-  GD_RES_CODE e_status;
+  const char msg_con_vol_low[] = BRD_DRV_CON_VOL_LOW;
+  const char msg_con_vol_save[] = BRD_DRV_CON_VOL_SAVE;
+  const char msg_con_vol_high[] = BRD_DRV_CON_VOL_HIGH;
 
   // Simple time counter
   static uint32_t i_time_cnt = 0;
 
   // Store ADC volume value
-  static uint16_t  i_saved_volume_value = 0;
+  static uint16_t i_saved_volume_value = 0;
+
+
+  enum{
+    brd_drv_con_low_vol = 0,
+    brd_drv_con_save_vol = 1,
+    brd_drv_con_high_vol = 2,
+    brd_drv_con_undefined = 3
+  }static e_con_vol = brd_drv_con_undefined;// Set undefined state as default
+
+  // For saving status
+  GD_RES_CODE e_status;
 
   // Variable for store actual volume value
   uint16_t i_actual_volume;
@@ -369,7 +377,7 @@ void brd_drv_task(void)
         // Get real volume value - do not need check error code.
         tlv320aic33_get_headphones_volume_db(&f_volume);
         sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
-        brd_drv_send_msg(&c[0], 1, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
+        brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
       }
     }
     else
@@ -388,10 +396,78 @@ void brd_drv_task(void)
         // Get real volume value - do not need check error code.
         tlv320aic33_get_headphones_volume_db(&f_volume);
         sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
-        brd_drv_send_msg(&c[0], 1, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
+        brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
       }
     }// Test if volume value has been changed
 
+
+
+
+
+
+
+    // Process mute and reset_i2s signals
+
+    // Check CON_VOLTAGE value
+    if(i_voltage_connector_side >= BRD_DRV_ADC_SAVE_VOL_MIN)
+    {
+      // Power off or very low voltage. Do not scan mute and reset_i2s signals
+      // Check if state is different and not high voltage
+      if((e_con_vol != brd_drv_con_low_vol) &&
+         (e_con_vol != brd_drv_con_high_vol))
+      {
+        // If actual status is not same -> change
+        e_con_vol = brd_drv_con_low_vol;
+
+        // Send message
+        brd_drv_send_msg(&msg_con_vol_low[0], 1, 0, -1);
+
+        // Nothing more to do
+      }// Check if state is different
+    }// Check CON_VOLTAGE value
+    else if(i_voltage_connector_side >BRD_DRV_ADC_HIGH_VOL_MIN)
+    {
+      // Connector side is powered and voltage is in save area
+      // Check if state is not high voltage (previous state) and save voltage
+      if((e_con_vol != brd_drv_con_high_vol) &&
+         (e_con_vol != brd_drv_con_save_vol))
+      {
+        // Save actual state
+        e_con_vol = brd_drv_con_save_vol;
+
+        // Send message
+        brd_drv_send_msg(&msg_con_vol_save[0], 1, 0, -1);
+
+        // Process buttons
+      }
+    }// Check CON_VOLTAGE value
+    else
+    {
+      // Connector side is powered by high voltage!
+      // Check if state is different
+      if(e_con_vol != brd_drv_con_high_vol)
+      {
+        // Save actual state
+        e_con_vol = brd_drv_con_high_vol;
+
+        // Send warning message
+        brd_drv_send_warning_msg(&msg_con_vol_high[0], 1, 1);
+
+        // Process buttons
+      }
+    }
+
+    /* If previous state was high voltage and voltage is much
+     * lower (approx. +5.0 V)
+     */
+    if((e_con_vol == brd_drv_con_high_vol) &&
+            ((i_voltage_connector_side >(BRD_DRV_ADC_HIGH_VOL_MIN+1) )))
+    {
+      // Clear lines if voltage is in save range
+      brd_drv_clear_warning_write_logo();
+      // Set status to undefined. Next "round" check voltage again...
+      e_con_vol = brd_drv_con_undefined;
+    }// Check CON_VOLTAGE value
 
 
 
@@ -406,7 +482,145 @@ void brd_drv_task(void)
 
 
 //===========================| Mid level functions |===========================
+/**
+ * \brief Write message to selected outputs
+ *
+ * Function do not return any return code. Just hope, that everything\n
+ * will work.
+ *
+ * @param p_msg Pointer to message
+ * @param i_write_to_DBG Options: 0 - do not write to debug output ;\n
+ *  1 - write to debug output
+ * @param i_write_to_LCD 0 - do not write to LCD ;\n
+ *  1 - write to LCD
+ * @param i_LCD_line Define on which line should be message placed. If value\n
+ * is 255 (-1), or invalid (higher than 5) then just write message message on\n
+ * the following line.
+ */
+inline void brd_drv_send_msg(
+    const char * p_msg,
+    uint8_t i_write_to_DBG,
+    uint8_t i_write_to_LCD,
+    uint8_t i_LCD_line)
+{
+  // If want write to debug interface
+  if(i_write_to_DBG != 0)
+  {
+    print_dbg(p_msg);
+  }
 
+  // If want write to LCD
+  if(i_write_to_LCD != 0)
+  {
+    // If user want write on defined line
+    if(i_LCD_line < 6)
+    {
+      // Clear line
+      LCD_5110_clear_line(i_LCD_line);
+      // Write message
+      LCD_5110_write(p_msg);
+    }
+    else
+    {
+      LCD_5110_write(p_msg);
+    }
+  }
+}
+
+
+/**
+ * \brief Clear warning message and write logo
+ */
+inline void brd_drv_clear_warning_write_logo(void)
+{
+  // Clear lines
+  LCD_5110_clear_line(BRD_DRV_LCD_WARN_MSG_LINE+1);
+  LCD_5110_clear_line(BRD_DRV_LCD_WARN_MSG_LINE);
+  // Disable auto clear LCD when writing again to line 0
+  LCD_5110_auto_clear(0);
+  brd_drv_draw_logo();
+  // Enable auto clear LCD when writing again to line 0
+  LCD_5110_auto_clear(1);
+}
+
+/**
+ * \brief Write warning message
+ *
+ * When writing warning message on LCD, then is there reserved 2 lines for\n
+ * message. It can be longer, but 2 lines will be cleared. First line is\n
+ * defined in .h file as BRD_DRV_LCD_WARN_MSG_LINE
+ *
+ * @param p_msg Pointer to message
+ * @param i_write_to_DBG Options: 0 - do not write to debug output ;\n
+ *  1 - write to debug output
+ * @param i_write_to_LCD 0 - do not write to LCD ;\n
+ *  1 - write to LCD
+ */
+inline void brd_drv_send_warning_msg(
+    const char * p_msg,
+    uint8_t i_write_to_DBG,
+    uint8_t i_write_to_LCD)
+{
+  // Blink LCD backlight - turn off
+  LCD_5110_backlight_off();
+
+  if(i_write_to_DBG != 0)
+  {
+    print_dbg(p_msg);
+  }
+  if(i_write_to_LCD != 0)
+  {
+    // Clear defined 2 lines
+    LCD_5110_clear_line(BRD_DRV_LCD_WARN_MSG_LINE+1);
+    LCD_5110_clear_line(BRD_DRV_LCD_WARN_MSG_LINE);
+    // Disable auto clear LCD when writing again to line 0
+    LCD_5110_auto_clear(0);
+    LCD_5110_write(p_msg);
+    // Enable auto clear LCD when writing again to line 0
+    LCD_5110_auto_clear(1);
+  }
+
+  // Turn on
+  LCD_5110_backlight_on();
+}
+
+
+/**
+ * \brief Write error message and turn on ERROR LED
+ *
+ * Function do not return any return code. Just hope, that everything else\n
+ * will work.
+ *
+ * @param p_msg Pointer to message
+ * @param i_write_to_DBG Options: 0 - do not write to debug output ;\n
+ *  1 - write to debug output
+ * @param i_write_to_LCD 0 - do not write to LCD ;\n
+ *  1 - write to LCD
+ */
+inline void brd_drv_send_error_msg(
+    const char * p_msg,
+    uint8_t i_write_to_DBG,
+    uint8_t i_write_to_LCD)
+{
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+  // Turn-ON ERROR LED
+  BRD_DRV_IO_HIGH(BRD_DRV_ERROR_INDICATION_PIN);
+
+  // If want write to debug interface
+  if(i_write_to_DBG != 0)
+  {
+    print_dbg(p_msg);
+  }
+
+  // If want write to LCD
+  if(i_write_to_LCD != 0)
+  {
+    // Because of LCD dimensions it should be cleaned first
+    LCD_5110_clear();
+    LCD_5110_write(p_msg);
+  }
+}
 
 //===========================| Low level functions |===========================
 /**
@@ -673,85 +887,4 @@ inline void brd_drv_set_mute_reset_i2s_pins_as_input(void)
 
 
 
-/**
- * \brief Write message to selected outputs
- *
- * Function do not return any return code. Just hope, that everything\n
- * will work.
- *
- * @param p_msg Pointer to message
- * @param i_write_to_DBG Options: 0 - do not write to debug output ;\n
- *  1 - write to debug output
- * @param i_write_to_LCD 0 - do not write to LCD ;\n
- *  1 - write to LCD
- * @param i_LCD_line Define on which line should be message placed. If value\n
- * is 255 (-1), or invalid (higher than 5) then just write message message on\n
- * the following line.
- */
-inline void brd_drv_send_msg(
-    const char * p_msg,
-    uint8_t i_write_to_DBG,
-    uint8_t i_write_to_LCD,
-    uint8_t i_LCD_line)
-{
-  // If want write to debug interface
-  if(i_write_to_DBG != 0)
-  {
-    print_dbg(p_msg);
-  }
 
-  // If want write to LCD
-  if(i_write_to_LCD != 0)
-  {
-    // If user want write on defined line
-    if(i_LCD_line < 6)
-    {
-      // Select line
-      LCD_5110_set_line(i_LCD_line);
-      // Clear line
-      LCD_5110_write_to_line(0x00);
-      // Write message
-      LCD_5110_write(p_msg);
-    }
-    else
-    {
-      LCD_5110_write(p_msg);
-    }
-  }
-}
-/**
- * \brief Write error message and turn on ERROR LED
- *
- * Function do not return any return code. Just hope, that everything else\n
- * will work.
- *
- * @param p_msg Pointer to message
- * @param i_write_to_DBG Options: 0 - do not write to debug output ;\n
- *  1 - write to debug output
- * @param i_write_to_LCD 0 - do not write to LCD ;\n
- *  1 - write to LCD
- */
-inline void brd_drv_send_error_msg(
-    const char * p_msg,
-    uint8_t i_write_to_DBG,
-    uint8_t i_write_to_LCD)
-{
-  // Pointer to GPIO memory
-  volatile avr32_gpio_port_t *gpio_port;
-  // Turn-ON ERROR LED
-  BRD_DRV_IO_HIGH(BRD_DRV_ERROR_INDICATION_PIN);
-
-  // If want write to debug interface
-  if(i_write_to_DBG != 0)
-  {
-    print_dbg(p_msg);
-  }
-
-  // If want write to LCD
-  if(i_write_to_LCD != 0)
-  {
-    // Because of LCD dimensions it should be cleaned first
-    LCD_5110_clear();
-    LCD_5110_write(p_msg);
-  }
-}
