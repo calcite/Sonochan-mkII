@@ -9,6 +9,9 @@
 *.elf
 widget-control
 widget-control.bin
+.gitignore
 src/.directory
 src/tmp/
 readme2test.sh
+DOC_VUT/my_doc_files
+DOC_VUT/tmp
