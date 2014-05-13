@@ -413,10 +413,6 @@ typedef struct{
 #define BRD_DRV_CON_VOL_HIGH                    \
   {"Con: high voltage!\n"}
 
-/// MUTE signal is input. Can not set output value
-#define BRD_DRV_MUTE_IS_INPUT_CANT_SET          \
-  {"MUTE is input. Can not set output value\n"}
-
 /// Mute direction IN ; Mute off
 #define BRD_DRV_MUTE_IN_MUTE_OFF                \
   {"MUTE (IN): OFF\n"}
@@ -432,6 +428,14 @@ typedef struct{
 /// Mute direction OUT ; Mute on
 #define BRD_DRV_MUTE_OUT_MUTE_ON                \
   {"MUTE (OUT): ON\n"}
+
+/// Mute direction IN ; Button pressed ; Mute on
+#define BRD_DRV_MSG_MUTE_BTN_PRESSED            \
+  {"MUTE BTN pressed: MUTE ON\n"}
+
+/// Mute direction IN ; Button released ; Mute off
+#define BRD_DRV_MSG_MUTE_BTN_RELEASED           \
+  {"MUTE BTN released: MUTE OFF\n"}
 
 /// Info that connector is not powered so can not react for buttons
 #define BRD_DRV_CON_NOT_POWERED                 \

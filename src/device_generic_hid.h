@@ -57,7 +57,7 @@
 #include "conf_usb.h"
 
 #if USB_DEVICE_FEATURE == DISABLED
-  #error "device_mouse_hid_task.h is #included although USB_DEVICE_FEATURE\
+  #error "device_generic_hid.h is #included although USB_DEVICE_FEATURE\
  is disabled!"
 #endif
 
@@ -93,7 +93,7 @@
  #define UNI_PIPE0_FUNC_TASK
 #else
  #define UNI_PIPE0_FUNC_TASK     \
-   device_gneric_hid()
+   device_gneric_hid_task()
 #endif
 // Universal protocol header file
 #include "uniprot.h"
@@ -103,9 +103,9 @@
 
 extern void device_generic_HID_init(U8 ep_hid_rx, U8 ep_hid_tx);
 #ifdef FREERTOS_USED
-extern void device_gneric_hid(void *pvParameters);
+extern void device_gneric_hid_task(void *pvParameters);
 #else
-extern void device_gneric_hid(void);
+extern void device_gneric_hid_task(void);
 #endif
 
 

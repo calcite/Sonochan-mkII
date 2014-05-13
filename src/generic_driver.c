@@ -9,9 +9,9 @@
  * \a http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=93874
  *
  * Created  26.08.2013\n
- * Modified 26.04.2014
+ * Modified 12.05.2014
  *
- * \version 1.3
+ * \version 1.3.1
  * \author Martin Stejskal
  */
 

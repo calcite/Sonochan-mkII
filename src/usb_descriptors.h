@@ -122,7 +122,8 @@
 #define EP_CONTROL_LENGTH     64
 
 #define AUDIO_VENDOR_ID      0x16d0    //!  Audio device
-#define AUDIO_PRODUCT_ID_1    0x0761    //!  UAC1 PID
+//#define AUDIO_PRODUCT_ID_1    0x0761    //!  UAC1 PID
+#define AUDIO_PRODUCT_ID_1    0x0763    //!  Sonochan mk II UAC1 PID
 #define AUDIO_PRODUCT_ID_2    0x0762    //!  UAC2 PID
 
 #define RELEASE_NUMBER        0x1000

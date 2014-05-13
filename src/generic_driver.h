@@ -9,9 +9,9 @@
  * \a http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=93874
  *
  * Created  26.08.2013\n
- * Modified 26.04.2014
+ * Modified 12.05.2014
  *
- * \version 1.3
+ * \version 1.3.1
  * \author Martin Stejskal
  */
 
@@ -32,7 +32,7 @@
 /**
  * \brief Maximal size of text array for descriptors
  *
- * Due to SRAM limitations it is recommended set this value to 60. However on\n
+ * Due to SRAM limitations it is recommended set this value to 80. However on\n
  * more powerful AVR it could be more.
  */
 #define GD_MAX_STRING_SIZE    80

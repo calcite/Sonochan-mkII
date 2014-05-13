@@ -102,7 +102,7 @@
 // For testing we can set high value. In real it should be about 1000
 #define MAX_PLL_PPM     50000
 // Define minimum "time delay" between two frequency changes (INC, DEC functions)
-#define PLL_CHANGE_TIME_DIFF    1000
+#define PLL_CHANGE_TIME_DIFF    500
 
 //_____ D E C L A R A T I O N S ____________________________________________
 
@@ -361,6 +361,11 @@ void uac1_device_audio_task(void *pvParameters)
           if  (gap < AUDIO_BUFFER_SIZE/2) {
             num_samples--;
             //[Martin] Check number of samples
+            /**\todo [Martin] It that code really needed?
+             * It looks like that num_samples is changed only by 1. Try and add
+             * more conditions -> set more proper num_samples
+             *
+             */
             if(num_samples < 1) // 1kHz is really low rate
             {
               num_samples = 1;

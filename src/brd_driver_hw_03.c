@@ -510,9 +510,6 @@ void brd_drv_task(void)
     if((e_con_vol == brd_drv_con_save_vol) ||
        (e_con_vol == brd_drv_con_high_vol))
     {
-      // Mute button
-      brd_drv_process_mute();
-
       // Reset button
       brd_drv_process_reset_i2s();
     }
@@ -527,11 +524,13 @@ void brd_drv_task(void)
 
       if(i_mute_btn != 0)
       {
-        // Mute button pressed - write only to LCD info
+        // Mute button pressed - write to LCD info
         brd_drv_send_msg(&msg_con_not_powered[0],0,1,
             BRD_DRV_LCD_INFO_MSG_LINE);
       }
     }
+    // Anyway process mute button. Maybe user set up volume too high
+    brd_drv_process_mute();
 
   }/* Check if all ADC conversions are done and if there is "time" for some
     * data processing
@@ -1013,7 +1012,8 @@ inline GD_RES_CODE brd_drv_adc_init(void)
 inline void brd_drv_process_mute(void)
 {
   // Error/warning/info messages
-  const char msg_mute_is_input_cant_set[] = BRD_DRV_MUTE_IS_INPUT_CANT_SET;
+  const char msg_mute_btn_pressed[] =       BRD_DRV_MSG_MUTE_BTN_PRESSED;
+  const char msg_mute_btn_released[] =      BRD_DRV_MSG_MUTE_BTN_RELEASED;
   const char msg_mute_in_off[] =            BRD_DRV_MUTE_IN_MUTE_OFF;
   const char msg_mute_in_on[] =             BRD_DRV_MUTE_IN_MUTE_ON;
   const char msg_mute_out_off[] =           BRD_DRV_MUTE_OUT_MUTE_OFF;
@@ -1021,6 +1021,9 @@ inline void brd_drv_process_mute(void)
 
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
+
+  // Previous MUTE_BTN state
+  static uint8_t i_mute_btn_previous = 0;
 
   // Load mute button value
   uint8_t i_mute;
@@ -1031,15 +1034,30 @@ inline void brd_drv_process_mute(void)
   // First check if MUTE_BTN is input or output
   if(s_brd_drv_mute.e_mute_dir == brd_drv_dir_in)
   {// MUTE_BTN input
-    // Check if MUTE_BTN is pressed.
-    if(i_mute_btn != 0)
+    // Check if MUTE_BTN is pressed (only changes are processed)
+    if((i_mute_btn != 0) &&
+       (i_mute_btn_previous == 0))
     {
-      /* MUTE_BTN pressed, but MUTE is set as input. So at least write user
-       * info message, that we can not set MUTE value.
-       */
-      brd_drv_send_msg(&msg_mute_is_input_cant_set[0], 1, 1,
-          BRD_DRV_LCD_INFO_MSG_LINE);
+      // MUTE_BTN pressed
+      // Mute on - set pin to low
+      BRD_DRV_IO_LOW(SSC_TX_DATA);
+      // Send message
+      brd_drv_send_msg(&msg_mute_btn_pressed[0], 1, 0, -1);
+      // Save actual button state
+      i_mute_btn_previous = i_mute_btn;
     }// Check if MUTE_BTN is pressed.
+    // Check if MUTE_BTN is released (only changes are processed)
+    else if((i_mute_btn == 0) &&
+            (i_mute_btn_previous != 0))
+    {
+      // Mute button released
+      // Mute off
+      gpio_enable_module_pin(SSC_TX_DATA,SSC_TX_DATA_FUNCTION);
+      // Send message
+      brd_drv_send_msg(&msg_mute_btn_released[0], 1, 0, -1);
+      // Save actual button state
+      i_mute_btn_previous = i_mute_btn;
+    }
 
     // Now check if MUTE value is different with saved value
     if(i_mute != s_brd_drv_mute.i_mute_val)
