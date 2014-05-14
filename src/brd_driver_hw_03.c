@@ -58,10 +58,76 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_init                    /* Function, that should be
                                        * called
                                        */
-    }
+    },
+    {
+      1,
+      "Reset I2S",
+      "Set all signals to Hi-Z. Codec on board will work.",
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      (GD_DATA_VALUE*)&gd_void_value,
+      brd_drv_reset_i2s
+    },
+    {
+      2,
+      "MUTE direction",
+      "0 - input ; 1 - output",
+      uint32_type,      // Cause it is enum and 32 bit system
+      {.data_uint32 = 0},
+      {.data_uint32 = 1},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 1},
+      (GD_DATA_VALUE*)&s_brd_drv_mute.e_mute_dir,
+      brd_drv_set_mute_direction
+    },
+    {
+      3,
+      "Set mute flag",
+      "0 - mute off ; 1 - mute on",
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      (GD_DATA_VALUE*)&s_brd_drv_mute.i_mute_val,
+      brd_drv_set_mute
+    },
+    {
+      4,
+      "Set RESET_I2S direction",
+      "0 - input ; 1 - output",
+      uint32_type,      // Cause it is enum and 32 bit system
+      {.data_uint32 = 0},
+      {.data_uint32 = 1},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 1},
+      (GD_DATA_VALUE*)&s_brd_drv_rst_i2s.e_rst_i2s_dir,
+      brd_drv_set_rst_i2s_direction
+    },
+    {
+      5,
+      "Set reset I2S flag",
+      "0 - off ; 1 - on",
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      (GD_DATA_VALUE*)&s_brd_drv_rst_i2s.i_rst_i2s_val,
+      brd_drv_set_rst_i2s
+    },
+
   };
 /// \brief Maximum command ID (is defined by last command)
-#define BRD_DRV_MAX_CMD_ID          0
+#define BRD_DRV_MAX_CMD_ID          5
 
 
 const gd_metadata BRD_DRV_metadata =
@@ -80,18 +146,17 @@ const gd_metadata BRD_DRV_metadata =
 #define BRD_DRV_ADC_HIGH_VOL_MIN                42
 
 //====================| Function prototypes not for user |=====================
-
-GD_RES_CODE brd_drv_draw_logo(void);
-
-
 GD_RES_CODE brd_drv_TLV_default(void);
-
 
 GD_RES_CODE brd_drv_adc_init(void);
 
-void brd_drv_process_mute(void);
+void brd_drv_process_mute_button(void);
 
-void brd_drv_process_reset_i2s(void);
+void brd_drv_process_mute_signal(void);
+
+void brd_drv_process_rst_i2s_button(void);
+
+void brd_drv_process_rst_i2s_signal(void);
 
 //=============================| FreeRTOS stuff |==============================
 // If RTOS support is enabled, create this
@@ -269,18 +334,6 @@ GD_RES_CODE brd_drv_init(void)
 
 
 
-  // Show actual headphone volume settings
-  // Volume as float value
-  float f_volume;
-  // Temporary string for text
-  char c[20];
-  tlv320aic33_get_headphones_volume_db(&f_volume);
-  sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
-  brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
-
-
-
-
 
   brd_drv_set_mute_direction(brd_drv_dir_in);
   brd_drv_set_rst_i2s_direction(brd_drv_dir_in);
@@ -357,11 +410,6 @@ void brd_drv_task(void)
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
 
-  // For sprintf(). LCD capable show 84 Bytes
-  char c[84];
-
-
-
 
   /* Check if all ADC conversions are done and if there is "time" for some
    * data processing
@@ -413,10 +461,8 @@ void brd_drv_task(void)
           // Print do debug output and LCD
           brd_drv_send_error_msg(&msg_tlv_failed_set_headphone_volume_dB[0],1,1);
         }
-        // Get real volume value - do not need check error code.
-        tlv320aic33_get_headphones_volume_db(&f_volume);
-        sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
-        brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
+        // Show volume value
+        brd_drv_show_volume();
       }
     }
     else
@@ -432,10 +478,8 @@ void brd_drv_task(void)
         {
           brd_drv_send_error_msg(&msg_tlv_failed_set_headphone_volume_dB[0],1,1);
         }
-        // Get real volume value - do not need check error code.
-        tlv320aic33_get_headphones_volume_db(&f_volume);
-        sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
-        brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
+        // Show volume value
+        brd_drv_show_volume();
       }
     }// Test if volume value has been changed
 
@@ -505,13 +549,16 @@ void brd_drv_task(void)
     }// Check CON_VOLTAGE value
 
 
-    //=============================| Process buttons |=========================
+    //=============================| Process signals |=========================
     // Process only if connector side is powered
     if((e_con_vol == brd_drv_con_save_vol) ||
        (e_con_vol == brd_drv_con_high_vol))
     {
-      // Reset button
-      brd_drv_process_reset_i2s();
+      // Mute signal
+      brd_drv_process_mute_signal();
+
+      // Reset signal
+      brd_drv_process_rst_i2s_signal();
     }
     // Process when connector side is not powered
     if(e_con_vol == brd_drv_con_low_vol)
@@ -530,7 +577,11 @@ void brd_drv_task(void)
       }
     }
     // Anyway process mute button. Maybe user set up volume too high
-    brd_drv_process_mute();
+    brd_drv_process_mute_button();
+
+    // Reset button process
+    brd_drv_process_rst_i2s_button();
+
 
   }/* Check if all ADC conversions are done and if there is "time" for some
     * data processing
@@ -542,8 +593,50 @@ void brd_drv_task(void)
 }
 
 
-//===========================| Mid level functions |===========================
 
+
+
+
+
+/**
+ * \brief Preset I2S connector to default state. Also reset codec.
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_reset_i2s(void)
+{
+  const char msg_restart_i2s_done[] = BRD_DRV_MSG_RESET_I2S_DONE;
+
+  ///\todo Complete this function. it need functions to set I/O for isolators
+
+  brd_drv_set_isolators_to_HiZ();
+  brd_drv_set_mute_reset_i2s_pins_as_input();
+  brd_drv_TLV_default();
+
+  // Send message to debug interface
+  brd_drv_send_msg(&msg_restart_i2s_done[0], 1, 0, -1);
+
+  return GD_SUCCESS;
+}
+//===========================| Mid level functions |===========================
+/**
+ * \brief Show volume value on LCD
+ * @return GD_SUCCESS (0) if all right
+ */
+inline GD_RES_CODE brd_drv_show_volume(void)
+{
+  // Show actual headphone volume settings
+  // Volume as float value
+  float f_volume;
+  /* Temporary string for text. Assume that text will not be longer than one
+   * line on LCD
+   */
+  char c[15];
+  tlv320aic33_get_headphones_volume_db(&f_volume);
+  sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
+  brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
+
+  return GD_SUCCESS;
+}
 
 
 /**
@@ -590,6 +683,35 @@ inline void brd_drv_send_msg(
     }
   }
 }
+
+
+
+
+/**
+ * \brief Draw Sonochan mk II logo on display
+ *
+ * Function assume, that LCD_init() od LCD_clear() was called
+ *
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE brd_drv_draw_logo(void)
+{
+  // For return result code
+  GD_RES_CODE e_status;
+
+  const char snchn_txt[] = BRD_DRV_MSG_SONOCHAN_MK_II;
+  // Select line
+  e_status = LCD_5110_set_line(BRD_DRV_LCD_LOGO_LINE);
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+
+  e_status = LCD_5110_write(&snchn_txt[0]);
+
+  return e_status;
+}
+
 
 
 /**
@@ -650,7 +772,7 @@ inline void brd_drv_send_error_msg(
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
   // Turn-ON ERROR LED
-  BRD_DRV_IO_HIGH(BRD_DRV_ERROR_INDICATION_PIN);
+  BRD_DRV_IO_HIGH(BRD_DRV_ERROR_SIG_PIN);
 
   // Error - increase counter
   i_error_occurred++;
@@ -744,6 +866,8 @@ GD_RES_CODE brd_drv_set_mute_direction(e_brd_drv_dir_t e_mute_dir)
     BRD_DRV_IO_AS_INPUT(BRD_DRV_MUTE_PIN);
     // Set MUTE_EN_A - enable RX mute data
     BRD_DRV_IO_HIGH(BRD_DRV_MUTE_EN_A_PIN);
+
+    s_brd_drv_mute.e_mute_dir = brd_drv_dir_in;
   }
   else
   {// OUT
@@ -753,12 +877,88 @@ GD_RES_CODE brd_drv_set_mute_direction(e_brd_drv_dir_t e_mute_dir)
     BRD_DRV_IO_LOW(BRD_DRV_MUTE_PIN);
     // Set MUTE_EN_B - enable TX mute
     BRD_DRV_IO_HIGH(BRD_DRV_MUTE_EN_B_PIN);
+
+    s_brd_drv_mute.e_mute_dir = brd_drv_dir_out;
   }
 
   return GD_SUCCESS;
 }
 
 
+/**
+ * \brief Set mute flag
+ *
+ * If signal MUTE is input, then just MUTE MCU output. If MUTE signal is\n
+ * output then set MUTE signal and MUTE MCU output.
+ *
+ * @param i_mute_flag 0 - mute off ; 1 - mute on
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag)
+{
+  // Error/warning/info messages
+  const char msg_mute_in_off[] =            BRD_DRV_MUTE_IN_MUTE_OFF;
+  const char msg_mute_in_on[] =             BRD_DRV_MUTE_IN_MUTE_ON;
+  const char msg_mute_out_off[] =           BRD_DRV_MUTE_OUT_MUTE_OFF;
+  const char msg_mute_out_on[] =            BRD_DRV_MUTE_OUT_MUTE_ON;
+
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+
+  if(s_brd_drv_mute.e_mute_dir == brd_drv_dir_in)
+  {
+    // Input direction
+    if(i_mute_flag == 0)
+    {
+      // Mute off
+      gpio_enable_module_pin(SSC_TX_DATA,SSC_TX_DATA_FUNCTION);
+      // Send message
+      brd_drv_send_msg(&msg_mute_in_off[0], 1, 0, -1);
+    }
+    else
+    {
+      // Mute on - set pin to low
+      BRD_DRV_IO_LOW(SSC_TX_DATA);
+      // Send message
+      brd_drv_send_msg(&msg_mute_in_on[0], 1, 0, -1);
+    }
+  }
+  else
+  {
+    // Output direction
+    if(i_mute_flag == 0)
+    {
+      // Mute off
+      gpio_enable_module_pin(SSC_TX_DATA,SSC_TX_DATA_FUNCTION);
+      // Set signal
+      BRD_DRV_IO_LOW(BRD_DRV_MUTE_PIN);
+      // Send message
+      brd_drv_send_msg(&msg_mute_out_off[0], 1, 0, -1);
+    }
+    else
+    {
+      // Mute on - set pin to low
+      BRD_DRV_IO_LOW(SSC_TX_DATA);
+      // Set signal
+      BRD_DRV_IO_HIGH(BRD_DRV_MUTE_PIN);
+      // Send message
+      brd_drv_send_msg(&msg_mute_out_on[0], 1, 0, -1);
+    }
+  }
+
+  // Save value
+  s_brd_drv_mute.i_mute_val = i_mute_flag;
+
+  return GD_SUCCESS;
+}
+
+
+
+/**
+ * \brief Allow set RESET_I2S pin direction
+ * @param e_rst_i2s_dir Options: 0 (input) ; 1 (output)
+ * @return GD_SUCCESS (0) if all right
+ */
 GD_RES_CODE brd_drv_set_rst_i2s_direction(e_brd_drv_dir_t e_rst_i2s_dir)
 {
   // Pointer to GPIO memory
@@ -772,6 +972,8 @@ GD_RES_CODE brd_drv_set_rst_i2s_direction(e_brd_drv_dir_t e_rst_i2s_dir)
     BRD_DRV_IO_AS_INPUT(BRD_DRV_RESET_I2S_PIN);
     // Set RST_EN_A - enable RX mute data
     BRD_DRV_IO_HIGH(BRD_DRV_RST_EN_A_PIN);
+
+    s_brd_drv_rst_i2s.e_rst_i2s_dir = brd_drv_dir_in;
   }
   else
   {// OUT
@@ -781,36 +983,94 @@ GD_RES_CODE brd_drv_set_rst_i2s_direction(e_brd_drv_dir_t e_rst_i2s_dir)
     BRD_DRV_IO_LOW(BRD_DRV_RESET_I2S_PIN);
     // Set RST_EN_B - enable TX mute
     BRD_DRV_IO_HIGH(BRD_DRV_RST_EN_B_PIN);
+
+    s_brd_drv_rst_i2s.e_rst_i2s_dir = brd_drv_dir_out;
   }
 
   return GD_SUCCESS;
 }
 
-//=========================| Functions not for user |==========================
-/**
- * \brief Draw Sonochan mk II logo on display
- *
- * Function assume, that LCD_init() od LCD_clear() was called
- *
- * @return GD_SUCCESS (0) if all OK
- */
-inline GD_RES_CODE brd_drv_draw_logo(void)
-{
-  // For return result code
-  GD_RES_CODE e_status;
 
-  const char snchn_txt[] = BRD_DRV_MSG_SONOCHAN_MK_II;
-  // Select line
-  e_status = LCD_5110_set_line(BRD_DRV_LCD_LOGO_LINE);
-  if(e_status != GD_SUCCESS)
+
+/**
+ * \brief Set RESET_I2S pin if configured as output.
+ *
+ * If signal RESET_I2S is set as output, then just set signal RESET_I2S.\n
+ * If signal RESET_I2S is set as input, then reset I2S bus on AVR side.
+ *
+ * @param i_reset_i2s_flag 0 - disable ; 1 - enable reset
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag)
+{
+  // Messages
+  const char msg_reset_i2s_high[] = BRD_DRV_MSG_RESET_I2S_SET_TO_HIGH;
+  const char msg_reset_i2s_low[]  = BRD_DRV_MSG_RESET_I2S_SET_TO_LOW;
+  const char msg_reset_i2s_in_off[] = BRD_DRV_MSG_RESET_I2S_INPUT_OFF;
+  const char msg_reset_i2s_in_on[] = BRD_DRV_MSG_RESET_I2S_INPUT_ON;
+
+
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+
+
+  // Check direction
+  if(s_brd_drv_rst_i2s.e_rst_i2s_dir == brd_drv_dir_in)
   {
-    return e_status;
+    // Input
+    // Perform some activity only if set to 1
+    if(i_reset_i2s_flag != 0)
+    {
+      brd_drv_send_msg(&msg_reset_i2s_in_on[0], 1, 0, -1);
+      s_brd_drv_rst_i2s.i_rst_i2s_val = 1;
+      // Perform operations
+      brd_drv_reset_i2s();
+      // Operation done
+      s_brd_drv_rst_i2s.i_rst_i2s_val = 0;
+    }
+    else
+    {
+      // Set to 0 - turn off
+      s_brd_drv_rst_i2s.i_rst_i2s_val = 0;
+      brd_drv_send_msg(&msg_reset_i2s_in_off[0], 1, 0, -1);
+    }
+  }
+  else
+  {
+    // Output
+    // Just set RESET_I2S pin
+    if(i_reset_i2s_flag == 0)
+    {
+      BRD_DRV_IO_LOW(BRD_DRV_RESET_I2S_PIN);
+      s_brd_drv_rst_i2s.i_rst_i2s_val = 0;
+      brd_drv_send_msg(&msg_reset_i2s_low[0], 1, 0, -1);
+    }
+    else
+    {
+      BRD_DRV_IO_HIGH(BRD_DRV_RESET_I2S_PIN);
+      s_brd_drv_rst_i2s.i_rst_i2s_val = 1;
+      brd_drv_send_msg(&msg_reset_i2s_high[0], 1, 0, 0);
+    }
   }
 
-  e_status = LCD_5110_write(&snchn_txt[0]);
-
-  return e_status;
+  return GD_SUCCESS;
 }
+
+
+
+
+
+
+
+
+
+
+//=========================| Functions not for user |==========================
+
+
+
+
+
 
 
 /**
@@ -903,7 +1163,9 @@ inline GD_RES_CODE brd_drv_TLV_default(void)
     return e_status;
   }
 
-  return e_status;
+
+  // Show actual headphone volume settings
+  return brd_drv_show_volume();
 }
 
 
@@ -1007,113 +1269,218 @@ inline GD_RES_CODE brd_drv_adc_init(void)
 
 
 /**
- * \brief Process all mute signals
+ * \brief Easily process MUTE_BTN signal
+ *
+ * Process only if changes on button (rising/falling edge)
  */
-inline void brd_drv_process_mute(void)
+inline void brd_drv_process_mute_button(void)
 {
   // Error/warning/info messages
-  const char msg_mute_btn_pressed[] =       BRD_DRV_MSG_MUTE_BTN_PRESSED;
-  const char msg_mute_btn_released[] =      BRD_DRV_MSG_MUTE_BTN_RELEASED;
-  const char msg_mute_in_off[] =            BRD_DRV_MUTE_IN_MUTE_OFF;
-  const char msg_mute_in_on[] =             BRD_DRV_MUTE_IN_MUTE_ON;
-  const char msg_mute_out_off[] =           BRD_DRV_MUTE_OUT_MUTE_OFF;
-  const char msg_mute_out_on[] =            BRD_DRV_MUTE_OUT_MUTE_ON;
+  const char msg_mute_btn_pressed[] =  BRD_DRV_MSG_MUTE_BTN_PRESSED;
+  const char msg_mute_btn_released[] = BRD_DRV_MSG_MUTE_BTN_RELEASED;
 
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
 
-  // Previous MUTE_BTN state
+  // Previous value of MUTE_BTN
   static uint8_t i_mute_btn_previous = 0;
 
-  // Load mute button value
-  uint8_t i_mute;
+  // Actual value of MUTE_BTN
   uint8_t i_mute_btn;
-  BRD_DRV_IO_READ(i_mute, BRD_DRV_MUTE_PIN);
+
   BRD_DRV_IO_READ(i_mute_btn, BRD_DRV_MUTE_BTN_PIN);
 
-  // First check if MUTE_BTN is input or output
-  if(s_brd_drv_mute.e_mute_dir == brd_drv_dir_in)
-  {// MUTE_BTN input
-    // Check if MUTE_BTN is pressed (only changes are processed)
-    if((i_mute_btn != 0) &&
-       (i_mute_btn_previous == 0))
-    {
-      // MUTE_BTN pressed
-      // Mute on - set pin to low
-      BRD_DRV_IO_LOW(SSC_TX_DATA);
-      // Send message
-      brd_drv_send_msg(&msg_mute_btn_pressed[0], 1, 0, -1);
-      // Save actual button state
-      i_mute_btn_previous = i_mute_btn;
-    }// Check if MUTE_BTN is pressed.
-    // Check if MUTE_BTN is released (only changes are processed)
-    else if((i_mute_btn == 0) &&
-            (i_mute_btn_previous != 0))
-    {
-      // Mute button released
-      // Mute off
-      gpio_enable_module_pin(SSC_TX_DATA,SSC_TX_DATA_FUNCTION);
-      // Send message
-      brd_drv_send_msg(&msg_mute_btn_released[0], 1, 0, -1);
-      // Save actual button state
-      i_mute_btn_previous = i_mute_btn;
-    }
+  // Check for rising edge
+  if((i_mute_btn != 0) && (i_mute_btn_previous == 0))
+  {
+    // Pressed button
+    brd_drv_send_msg(&msg_mute_btn_pressed[0], 1, 0, -1);
+    brd_drv_set_mute(1);
+  }
 
-    // Now check if MUTE value is different with saved value
-    if(i_mute != s_brd_drv_mute.i_mute_val)
-    {
-      // Save actual value
-      s_brd_drv_mute.i_mute_val = i_mute;
+  // Check for falling edge
+  if((i_mute_btn == 0) && (i_mute_btn_previous != 0))
+  {
+    // Released button
+    brd_drv_send_msg(&msg_mute_btn_released[0], 1, 0, -1);
+    brd_drv_set_mute(0);
+  }
 
-      // According to actual MUTE value do processing
-      if(i_mute == 0)
-      {
-        // Mute off
-        gpio_enable_module_pin(SSC_TX_DATA,SSC_TX_DATA_FUNCTION);
-        // Send message
-        brd_drv_send_msg(&msg_mute_in_off[0], 1, 0, -1);
-      }
-      else
-      {
-        // Mute on - set pin to low
-        BRD_DRV_IO_LOW(SSC_TX_DATA);
-        // Send message
-        brd_drv_send_msg(&msg_mute_in_on[0], 1, 0, -1);
-      }
-    }
-
-  }// First check if MUTE_BTN is input or output
-  else
-  {// MUTE_BTN output
-    // Check if MUTE_BTN value is different from saved value
-    if(i_mute_btn != s_brd_drv_mute.i_mute_val)
-    {
-      // There is difference -> process
-      // Save actual value
-      s_brd_drv_mute.i_mute_val = i_mute_btn;
-      if(i_mute_btn == 0)
-      {
-        // Mute off
-        gpio_enable_module_pin(SSC_TX_DATA,SSC_TX_DATA_FUNCTION);
-        // Send message
-        brd_drv_send_msg(&msg_mute_out_off[0], 1, 0, -1);
-      }
-      else
-      {
-        // Mute on - set pin to low
-        BRD_DRV_IO_LOW(SSC_TX_DATA);
-        // Send message
-        brd_drv_send_msg(&msg_mute_out_on[0], 1, 0, -1);
-      }
-    }
-
-  }// First check if MUTE_BTN is input or output (else)
+  // Save actual button value
+  i_mute_btn_previous = i_mute_btn;
 }
 
 
 
-
-void brd_drv_process_reset_i2s(void)
+/**
+ * \brief Scan MUTE signal
+ *
+ * Process only if rising/falling edge
+ */
+inline void brd_drv_process_mute_signal(void)
 {
+  // Error/warning/info messages
+  const char msg_mute_signal_rising[] =  BRD_DRV_MSG_MUTE_RISING_EDGE;
+  const char msg_mute_signal_falling[] = BRD_DRV_MSG_MUTE_FALLING_EDGE;
+
+
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+
+  // Previous value of MUTE
+  static uint8_t i_mute_previous = 0;
+
+  // Actual MUTE value
+  uint8_t i_mute;
+
+  BRD_DRV_IO_READ(i_mute, BRD_DRV_MUTE_PIN);
+
+  // Check rising edge
+  if((i_mute != 0) && (i_mute_previous == 0))
+  {
+    brd_drv_send_msg(&msg_mute_signal_rising[0], 1, 0, -1);
+    // Mute on
+    brd_drv_set_mute(1);
+  }
+
+  // Check falling edge
+  if((i_mute == 0) && (i_mute_previous != 0))
+  {
+    brd_drv_send_msg(&msg_mute_signal_falling[0], 1, 0, -1);
+    // Mute off
+    brd_drv_set_mute(0);
+  }
+
+  // Save actual MUTE value
+  i_mute_previous = i_mute;
+}
+
+
+
+/**
+ * \brief Scan RESET_I2S_BTN and set/clear reset I2S signals
+ */
+inline void brd_drv_process_rst_i2s_button(void)
+{
+  // Error/warning/info messages
+  const char msg_rst_i2s_btn_pressed[] =  BRD_DRV_MSG_RST_I2S_BTN_PRESSED;
+  const char msg_rst_i2s_btn_released[] = BRD_DRV_MSG_RST_I2S_BTN_RELEASED;
+  const char msg_rst_i2s_err_cleared[] =  BRD_DRV_MSG_ERROR_CLEANED;
+
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+
+  // Previous value of RESET_I2S_BTN
+  static uint8_t i_rst_i2s_btn_previous = 0;
+
+  // For measuring "time"
+  static uint32_t i_time = 0;
+
+  // Flag that show, that reset was already set
+  static uint8_t i_rst_i2s_already_set = 0;
+
+  // Actual value of RESET_I2S_BTN
+  uint8_t i_rst_i2s_btn;
+
+  BRD_DRV_IO_READ(i_rst_i2s_btn, BRD_DRV_RESET_I2S_BTN_PIN);
+
+  // Check if button is still pressed - measure time
+  if(i_rst_i2s_btn != 0)
+  {
+    i_time++;
+  }
+
+  // Check for rising edge - pressed button
+  if((i_rst_i2s_btn != 0) && (i_rst_i2s_btn_previous == 0))
+  {
+    brd_drv_send_msg(&msg_rst_i2s_btn_pressed[0], 1, 0, -1);
+  }
+
+
+  // Check for falling edge - released button
+  if((i_rst_i2s_btn == 0) && (i_rst_i2s_btn_previous != 0))
+  {
+    // Falling edge
+    brd_drv_send_msg(&msg_rst_i2s_btn_released[0], 1, 0, -1);
+
+    if(i_time < BRD_DRV_SHORT_PRESS)
+    {
+      // Short press - just clean LCD
+      LCD_5110_clear();
+      brd_drv_draw_logo();
+      brd_drv_show_volume();
+
+      // Turn off ERROR_SIG LED
+      BRD_DRV_IO_LOW(BRD_DRV_ERROR_SIG_PIN);
+
+      brd_drv_send_msg(&msg_rst_i2s_err_cleared[0], 1, 0, -1);
+    }// Short button press
+    else
+    {
+      // Long button press
+      // Reset I2S set to 0 (clear)
+      brd_drv_set_rst_i2s(0);
+      i_rst_i2s_already_set = 0;
+    }// Long button press
+    // Reset timer
+    i_time = 0;
+  }// Falling edge
+
+  // Time > short? If yes, then perform reset
+  if((i_time > BRD_DRV_SHORT_PRESS) && (i_rst_i2s_already_set == 0))
+  {
+    brd_drv_set_rst_i2s(1);
+    i_rst_i2s_already_set = 1;
+  }
+
+
+  // Save actual button value
+  i_rst_i2s_btn_previous = i_rst_i2s_btn;
+}
+
+/**
+ * \brief Scan RESET_I2S signal
+ *
+ * Process only if rising/falling edge
+ */
+inline void brd_drv_process_rst_i2s_signal(void)
+{
+  // Error/warning/info messages
+  const char msg_rst_i2s_signal_rising[] =  BRD_DRV_MSG_RST_I2S_RISING_EDGE;
+  const char msg_rst_i2s_signal_falling[] = BRD_DRV_MSG_RST_I2S_FALLING_EDGE;
+
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+
+  // Previous value of RESET_I2S
+  static uint8_t i_rst_i2s_previous = 0;
+
+  // Actual RESET_I2S value
+  uint8_t i_rst_i2s;
+
+  // Check if pin is set as input
+  if(s_brd_drv_rst_i2s.e_rst_i2s_dir == brd_drv_dir_in)
+  {
+    BRD_DRV_IO_READ(i_rst_i2s, BRD_DRV_RESET_I2S_PIN);
+
+    // Check rising edge
+    if((i_rst_i2s != 0) && (i_rst_i2s_previous == 0))
+    {
+      brd_drv_send_msg(&msg_rst_i2s_signal_rising[0], 1, 0, -1);
+      // Reset on
+      brd_drv_set_rst_i2s(1);
+    }
+
+    // Check falling edge
+    if((i_rst_i2s == 0) && (i_rst_i2s_previous != 0))
+    {
+      brd_drv_send_msg(&msg_rst_i2s_signal_falling[0], 1, 0, -1);
+      // Reset off
+      brd_drv_set_rst_i2s(0);
+    }
+
+    // Save actual RESET_I2S value
+    i_rst_i2s_previous = i_rst_i2s;
+  }// Check if pin is set as input
 }
 

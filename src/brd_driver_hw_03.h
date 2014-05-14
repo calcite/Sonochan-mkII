@@ -159,7 +159,7 @@
 #define BRD_DRV_MUTE_BTN_PIN                    AVR32_PIN_PX10
 
 ///\brief Reset I2S button
-#define BRD_DRV_RESET_I2S_BTN_PIN               AVR32_PIN_PA25
+#define BRD_DRV_RESET_I2S_BTN_PIN               AVR32_PIN_PA28
 
 ///\brief Reset I2S signal
 #define BRD_DRV_RESET_I2S_PIN                   AVR32_PIN_PX07
@@ -168,11 +168,58 @@
 #define BRD_DRV_MUTE_PIN                        AVR32_PIN_PX38
 
 ///\brief Error indication
-#define BRD_DRV_ERROR_INDICATION_PIN            AVR32_PIN_PC00
+#define BRD_DRV_ERROR_SIG_PIN                   AVR32_PIN_PC00
 
 /// @}
 
 
+
+
+/**
+ * \name
+ *
+ * @{
+ */
+/**
+ * \brief Define when volume is updated (how much must be value on ADC\n
+ * different from previous value on ADC)
+ *
+ * Because of noise on ADC it is recommended to set value 3. Enough for\n
+ * user, no I2C bandwidth wasting because of ADC noise. But it depends on\n
+ * board and environs. For 8 bit ADC resolution is recommended 1 or 2.
+ */
+#define BRD_DRV_ADC_UPDATE_THRESHOLD            3
+
+/**
+ * \brief Define "period" in which will be input buttons, ADC and so on scanned
+ *
+ * Period is set by experimental. It depends on system load, if used RTOS,
+ * RTOS priority and many other stuff.\n
+ * Scan "mute", "reset I2S", ADC volume control, ADC con voltage and so on.
+ */
+#define BRD_DRV_BUTTON_REFRESH_PERIOD           4
+
+
+/**
+ * \brief Define "period" in which will be button press evaluated as short
+ *
+ * Short RESET_I2S_BTN press clean error message, long reset I2S bus and\n
+ * connector.
+ */
+#define BRD_DRV_SHORT_PRESS                     5
+
+/**
+ * \brief When RESET_I2S is output, this define period in high level
+ */
+#define BRD_DRV_RESET_I2S_PERIOD                1
+///@}
+
+
+/**
+ * \name Display configuration
+ *
+ * @{
+ */
 /**
  * \brief Define on which line begin write logo
  *
@@ -200,26 +247,8 @@
  */
 #define BRD_DRV_LCD_HP_VOLUME_LINE              5
 
+///@}
 
-
-/**
- * \brief Define when volume is updated (how much must be value on ADC\n
- * different from previous value on ADC)
- *
- * Because of noise on ADC it is recommended to set value 3. Enough for\n
- * user, no I2C bandwidth wasting because of ADC noise. But it depends on\n
- * board and environs. For 8 bit ADC resolution is recommended 1 or 2.
- */
-#define BRD_DRV_ADC_UPDATE_THRESHOLD            3
-
-/**
- * \brief Define "period" in which will be input buttons, ADC and so on scanned
- *
- * Period is set by experimental. It depends on system load, if used RTOS,
- * RTOS priority and many other stuff.\n
- * Scan "mute", "reset I2S", ADC volume control, ADC con voltage and so on.
- */
-#define BRD_DRV_BUTTON_REFRESH_PERIOD           4
 
 
 //============================| Advanced settings |============================
@@ -431,15 +460,68 @@ typedef struct{
 
 /// Mute direction IN ; Button pressed ; Mute on
 #define BRD_DRV_MSG_MUTE_BTN_PRESSED            \
-  {"MUTE BTN pressed: MUTE ON\n"}
+  {"MUTE_BTN pressed\n"}
 
 /// Mute direction IN ; Button released ; Mute off
 #define BRD_DRV_MSG_MUTE_BTN_RELEASED           \
-  {"MUTE BTN released: MUTE OFF\n"}
+  {"MUTE_BTN released\n"}
+
+/// Signal MUTE - rising edge
+#define BRD_DRV_MSG_MUTE_RISING_EDGE            \
+  {"MUTE: rising edge\n"}
+
+/// Signal MUTE - falling edge
+#define BRD_DRV_MSG_MUTE_FALLING_EDGE           \
+  {"MUTE: falling edge\n"}
 
 /// Info that connector is not powered so can not react for buttons
 #define BRD_DRV_CON_NOT_POWERED                 \
   {"Connector side is not powered\n"}
+
+/// Error message was cleaned from LCD
+#define BRD_DRV_MSG_ERR_MSG_CLEARED             \
+  {"Error message cleared\n"}
+
+/// Info that restart I2S was occurred
+#define BRD_DRV_MSG_RESET_I2S_DONE              \
+  {"Reset I2S done\n"}
+
+/// Info that RESET_I2S_PIN was set to HIGH
+#define BRD_DRV_MSG_RESET_I2S_SET_TO_HIGH       \
+  {"Reset I2S (OUT) set to HIGH\n"}
+
+/// Info that RESET_I2S_PIN was set to LOW
+#define BRD_DRV_MSG_RESET_I2S_SET_TO_LOW        \
+  {"Reset I2S (OUT) set to LOW\n"}
+
+/// RESET_I2S_PIN is input and there is require to turn off reset I2S
+#define BRD_DRV_MSG_RESET_I2S_INPUT_OFF         \
+  {"Reset I2S (IN) off\n"}
+
+/// RESET_I2S_PIN is input and there is require to turn on reset I2S
+#define BRD_DRV_MSG_RESET_I2S_INPUT_ON          \
+  {"Reset I2S (IN) on\n"}
+
+/// Info that rising edge was detected on RESET_I2S_PIN
+#define BRD_DRV_MSG_RST_I2S_RISING_EDGE         \
+  {"RESET_I2S: rising edge\n"}
+
+/// Info that falling edge was detected on RESET_I2S_PIN
+#define BRD_DRV_MSG_RST_I2S_FALLING_EDGE        \
+  {"RESET_I2S: falling edge\n"}
+
+/// RESET_I2S_BTN was pressed
+#define BRD_DRV_MSG_RST_I2S_BTN_PRESSED         \
+  {"RESET_I2S_BTN pressed\n"}
+
+/// RESET_I2S_BTN was released
+#define BRD_DRV_MSG_RST_I2S_BTN_RELEASED        \
+  {"RESET_I2S_BTN released\n"}
+
+/// Error message was removed
+#define BRD_DRV_MSG_ERROR_CLEANED               \
+  {"ERROR message deleted\n\n\n"}
+
 /// @}
 
 //=================================| Macros |==================================
@@ -655,7 +737,13 @@ GD_RES_CODE brd_drv_pre_init(void);
 GD_RES_CODE brd_drv_init(void);
 
 void brd_drv_task(void);
+
+GD_RES_CODE brd_drv_reset_i2s(void);
 //===========================| Mid level functions |===========================
+GD_RES_CODE brd_drv_show_volume(void);
+
+GD_RES_CODE brd_drv_draw_logo(void);
+
 void brd_drv_send_msg(
     const char * p_msg,
     uint8_t i_write_to_DBG,
@@ -678,6 +766,10 @@ GD_RES_CODE brd_drv_set_mute_reset_i2s_pins_as_input(void);
 
 GD_RES_CODE brd_drv_set_mute_direction(e_brd_drv_dir_t e_mute_dir);
 
+GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag);
+
 GD_RES_CODE brd_drv_set_rst_i2s_direction(e_brd_drv_dir_t e_rst_i2s_dir);
+
+GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag);
 
 #endif
