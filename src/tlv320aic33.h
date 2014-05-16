@@ -4,7 +4,7 @@
  * \brief Driver for codec TLV320AIC33
  *
  * Created:  02.04.2014\n
- * Modified: 21.04.2014
+ * Modified: 15.05.2014
  *
  * \version 0.1a
  * \author Martin Stejskal
@@ -772,6 +772,12 @@ typedef struct{
 
   // Headphone driver output
   uint8_t i_headphones_output_single_ended;
+
+  // DAC mute
+  uint8_t i_dac_mute;
+
+  // DAC power
+  uint8_t i_dac_power;
 }tlv320aic33_virtual_reg_img_t;
 
 #endif
@@ -840,8 +846,8 @@ GD_RES_CODE tlv320aic33_set_DAC_volume(uint8_t i_volume);
 GD_RES_CODE tlv320aic33_set_headphones_volume(uint8_t i_volume);
 //===========================| Low level functions |===========================
 GD_RES_CODE tlv320aic33_write_data(
-    uint8_t i_register_number,
-    uint8_t i_value);
+    const uint8_t i_register_number,
+    const uint8_t i_value);
 GD_RES_CODE tlv320aic33_read_data(
     uint8_t i_register_number,
     uint8_t *p_data);

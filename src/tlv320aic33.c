@@ -4,7 +4,7 @@
  * \brief Driver for codec TLV320AIC33
  *
  * Created:  02.04.2014\n
- * Modified: 21.04.2014
+ * Modified: 15.05.2014
  *
  * \version 0.1a
  * \author Martin Stejskal
@@ -164,10 +164,36 @@ const gd_config_struct TLV320AIC33_config_table[] =
         {.data_uint8 = 1},
         (GD_DATA_VALUE*)&s_virtual_reg_img.i_headphones_output_single_ended,
         tlv320aic33_set_headphones_single_ended
+      },
+      {
+        7,
+        "DAC mute",
+        "Options: 0 - disable mute ; 1 - enable mute",
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 1},
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 1},
+        (GD_DATA_VALUE*)&s_virtual_reg_img.i_dac_mute,
+        tlv320aic33_set_DAC_mute
+      },
+      {
+        8,
+        "DAC power",
+        "Options: 0 - disable power ; 1 -enable power",
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 1},
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 1},
+        (GD_DATA_VALUE*)&s_virtual_reg_img.i_dac_power,
+        tlv320aic33_set_DAC_power
       }
   };
 /// \brief Maximum command ID (is defined by last command)
-#define TLV320AIC33_MAX_CMD_ID          6
+#define TLV320AIC33_MAX_CMD_ID          8
 
 
 const gd_metadata TLV320AIC33_metadata =
@@ -485,7 +511,14 @@ GD_RES_CODE tlv320aic33_set_DAC_power(uint8_t enable_DACs)
     p0_r37.s.RightDACPower = 1;
   }
   // Set register
-  return tlv320aic33_write_data(37, p0_r37.i_reg);
+  e_status = tlv320aic33_write_data(37, p0_r37.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  // Save info
+  s_virtual_reg_img.i_dac_power = enable_DACs & 0x01;
+
+  return e_status;
 }
 
 
@@ -608,7 +641,14 @@ GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag)
   e_status = tlv320aic33_write_data(51, p0_r51.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
-  return tlv320aic33_write_data(65, p0_r65.i_reg);
+  e_status = tlv320aic33_write_data(65, p0_r65.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  // Save mute value
+  s_virtual_reg_img.i_dac_mute = i_mute_flag & 0x01;
+
+  return e_status;
 }
 
 
@@ -947,8 +987,8 @@ GD_RES_CODE tlv320aic33_set_headphones_volume(uint8_t i_volume)
  * @return GD_SUCCESS (0) if all OK
  */
 inline GD_RES_CODE tlv320aic33_write_data(
-    uint8_t i_register_number,
-    uint8_t i_value)
+    const uint8_t i_register_number,
+    const uint8_t i_value)
 {
   // If RTOS support enable, then "lock" TWI module
   TLV320AIC33_LOCK_TWI_MODULE_IF_RTOS

@@ -146,11 +146,14 @@
 ///\brief TX enable on CON side
 #define BRD_DRV_TX_EN_B_PIN                     AVR32_PIN_PX58
 
+///\brief RX enable on MCU side
+#define BRD_DRV_RX_EN_B_PIN                     AVR32_PIN_PX00
+
 ///\brief Master clock enable on CON side
 #define BRD_DRV_MCLK_EN_B_PIN                   AVR32_PIN_PX41
 
 ///\brief Bit clock enable on CON side
-#define BRD_DRV_BCLK_EN_B_PIN                   AVR32_PIN_PX33
+#define BRD_DRV_BCLK_EN_B_PIN                   AVR32_PIN_PX22
 
 ///\brief Frame sync enable on CON side
 #define BRD_DRV_FS_EN_B_PIN                     AVR32_PIN_PX45
@@ -371,8 +374,9 @@ typedef enum{
  * Symbolic names for pin directions
  */
 typedef enum{
-  brd_drv_dir_in = 0,//!< brd_drv_dir_in Input direction
-  brd_drv_dir_out = 1//!< brd_drv_dir_out Output direction
+  brd_drv_dir_in = 0, //!< brd_drv_dir_in Input direction
+  brd_drv_dir_out = 1,//!< brd_drv_dir_out Output direction
+  brd_drv_dir_hiz = 2 //!< brd_drv_dir_hiz Hi-Z ("input" from both sides)
 }e_brd_drv_dir_t;
 
 /**
@@ -391,6 +395,19 @@ typedef struct{
   uint8_t         i_rst_i2s_val;
 }s_brd_drv_rst_i2s_t;
 
+
+/**
+ * \brief Directions for pure I2S signals
+ *
+ * Direction for: MCLK, BCLK, FRAME_SYNC, TX_DATA, RX_DATA
+ */
+typedef struct{
+  e_brd_drv_dir_t e_mclk_dir;
+  e_brd_drv_dir_t e_bclk_dir;
+  e_brd_drv_dir_t e_frame_sync_dir;
+  e_brd_drv_dir_t e_tx_data_dir;
+  e_brd_drv_dir_t e_rx_data_dir;
+}s_brd_drv_pure_i2s_dir_t;
 //===============================| Definitions |===============================
 /**
  * \name Error messages
@@ -762,14 +779,24 @@ void brd_drv_send_error_msg(
 //===========================| Low level functions |===========================
 GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);
 
-GD_RES_CODE brd_drv_set_mute_reset_i2s_pins_as_input(void);
+GD_RES_CODE brd_drv_set_mclk_dir(e_brd_drv_dir_t e_mclk_dir);
 
-GD_RES_CODE brd_drv_set_mute_direction(e_brd_drv_dir_t e_mute_dir);
+GD_RES_CODE brd_drv_set_bclk_dir(e_brd_drv_dir_t e_bclk_dir);
+
+GD_RES_CODE brd_drv_set_frame_sync_dir(e_brd_drv_dir_t e_frame_sync_dir);
+
+GD_RES_CODE brd_drv_set_tx_data_dir(e_brd_drv_dir_t e_tx_data_dir);
+
+GD_RES_CODE brd_drv_set_rx_data_dir(e_brd_drv_dir_t e_rx_data_dir);
+
+GD_RES_CODE brd_drv_set_mute_dir(e_brd_drv_dir_t e_mute_dir);
 
 GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag);
 
-GD_RES_CODE brd_drv_set_rst_i2s_direction(e_brd_drv_dir_t e_rst_i2s_dir);
+GD_RES_CODE brd_drv_set_rst_i2s_dir(e_brd_drv_dir_t e_rst_i2s_dir);
 
 GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag);
+
+
 
 #endif

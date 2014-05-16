@@ -19,14 +19,19 @@
  *
  * Contains mute direction and mute value
  */
-s_brd_drv_mute_t s_brd_drv_mute;
+static s_brd_drv_mute_t s_brd_drv_mute;
 
 /**
  * \brief Reset I2S structure
  *
  * Contains reset I2S direction and value
  */
-s_brd_drv_rst_i2s_t s_brd_drv_rst_i2s;
+static s_brd_drv_rst_i2s_t s_brd_drv_rst_i2s;
+
+/**
+ * \brief Store directions for MCLK, BCLK, FRAME_SYNC, TX_DATA, RX_DATA
+ */
+static s_brd_drv_pure_i2s_dir_t s_brd_drv_pure_i2s_dir;
 
 /**
  * \brief Store information if error occurred
@@ -34,7 +39,7 @@ s_brd_drv_rst_i2s_t s_brd_drv_rst_i2s;
  * Values: 0 - not error  ; else error occurred
  *
  */
-uint8_t i_error_occurred;
+static uint8_t i_error_occurred;
 //=========================| Generic driver support |==========================
 #if BRD_DRV_SUPPORT_GENERIC_DRIVER == 1
 /**
@@ -74,8 +79,47 @@ const gd_config_struct BRD_DRV_config_table[] =
     },
     {
       2,
+      "MCLK direction",
+      "0 - input ; 1 - output ; 2 - Hi-Z",
+      uint32_type,      // Cause it is enum and 32 bit system
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      (GD_DATA_VALUE*)&s_brd_drv_pure_i2s_dir.e_mclk_dir,
+      brd_drv_set_mclk_dir
+    },
+    {
+      3,
+      "BCLK direction",
+      "0 - input ; 1 - output ; 2 - Hi-Z",
+      uint32_type,      // Cause it is enum and 32 bit system
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      (GD_DATA_VALUE*)&s_brd_drv_pure_i2s_dir.e_bclk_dir,
+      brd_drv_set_bclk_dir
+    },
+    {
+      4,
+      "FRAME_SYNC direction",
+      "0 - input ; 1 - output ; 2 - Hi-Z",
+      uint32_type,      // Cause it is enum and 32 bit system
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      (GD_DATA_VALUE*)&s_brd_drv_pure_i2s_dir.e_frame_sync_dir,
+      brd_drv_set_frame_sync_dir
+    },
+    {
+      5,
       "MUTE direction",
-      "0 - input ; 1 - output",
+      "0 - input ; 1 - output ; 2 - Hi-Z",
       uint32_type,      // Cause it is enum and 32 bit system
       {.data_uint32 = 0},
       {.data_uint32 = 1},
@@ -83,10 +127,10 @@ const gd_config_struct BRD_DRV_config_table[] =
       {.data_uint32 = 0},
       {.data_uint32 = 1},
       (GD_DATA_VALUE*)&s_brd_drv_mute.e_mute_dir,
-      brd_drv_set_mute_direction
+      brd_drv_set_mute_dir
     },
     {
-      3,
+      6,
       "Set mute flag",
       "0 - mute off ; 1 - mute on",
       uint8_type,
@@ -99,9 +143,9 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_mute
     },
     {
-      4,
+      7,
       "Set RESET_I2S direction",
-      "0 - input ; 1 - output",
+      "0 - input ; 1 - output ; 2 - Hi-Z",
       uint32_type,      // Cause it is enum and 32 bit system
       {.data_uint32 = 0},
       {.data_uint32 = 1},
@@ -109,10 +153,10 @@ const gd_config_struct BRD_DRV_config_table[] =
       {.data_uint32 = 0},
       {.data_uint32 = 1},
       (GD_DATA_VALUE*)&s_brd_drv_rst_i2s.e_rst_i2s_dir,
-      brd_drv_set_rst_i2s_direction
+      brd_drv_set_rst_i2s_dir
     },
     {
-      5,
+      8,
       "Set reset I2S flag",
       "0 - off ; 1 - on",
       uint8_type,
@@ -124,10 +168,36 @@ const gd_config_struct BRD_DRV_config_table[] =
       (GD_DATA_VALUE*)&s_brd_drv_rst_i2s.i_rst_i2s_val,
       brd_drv_set_rst_i2s
     },
+    {
+      9,
+      "Set TX_DATA direction",
+      "1 - output ; 2 - HiZ",
+      uint32_type,      // Cause it is enum and 32 bit system
+      {.data_uint32 = 1},
+      {.data_uint32 = 2},
+      uint32_type,
+      {.data_uint32 = 1},
+      {.data_uint32 = 2},
+      (GD_DATA_VALUE*)&s_brd_drv_pure_i2s_dir.e_tx_data_dir,
+      brd_drv_set_tx_data_dir
+    },
+    {
+      10,
+      "Set RX_DATA direction",
+      "0- input ; 1 - not allowed ; 2 - HiZ",
+      uint32_type,      // Cause it is enum and 32 bit system
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      (GD_DATA_VALUE*)&s_brd_drv_pure_i2s_dir.e_rx_data_dir,
+      brd_drv_set_rx_data_dir
+    }
 
   };
 /// \brief Maximum command ID (is defined by last command)
-#define BRD_DRV_MAX_CMD_ID          5
+#define BRD_DRV_MAX_CMD_ID          10
 
 
 const gd_metadata BRD_DRV_metadata =
@@ -202,7 +272,6 @@ GD_RES_CODE brd_drv_pre_init(void)
   GD_RES_CODE e_status;
 
   // Set I/O - this should be OK
-  brd_drv_set_mute_reset_i2s_pins_as_input();
   brd_drv_set_isolators_to_HiZ();
 
 
@@ -257,8 +326,6 @@ GD_RES_CODE brd_drv_init(void)
   // So far so good
   i_error_occurred = 0;
 
-  // Set all mute and reset_i2s pins as input (recommended default)
-  brd_drv_set_mute_reset_i2s_pins_as_input();
   // Set isolators I/O (recommended default)
   brd_drv_set_isolators_to_HiZ();
 
@@ -335,8 +402,8 @@ GD_RES_CODE brd_drv_init(void)
 
 
 
-  brd_drv_set_mute_direction(brd_drv_dir_in);
-  brd_drv_set_rst_i2s_direction(brd_drv_dir_in);
+  brd_drv_set_mute_dir(brd_drv_dir_in);
+  brd_drv_set_rst_i2s_dir(brd_drv_dir_in);
 
 
 
@@ -609,7 +676,6 @@ GD_RES_CODE brd_drv_reset_i2s(void)
   ///\todo Complete this function. it need functions to set I/O for isolators
 
   brd_drv_set_isolators_to_HiZ();
-  brd_drv_set_mute_reset_i2s_pins_as_input();
   brd_drv_TLV_default();
 
   // Send message to debug interface
@@ -801,59 +867,38 @@ GD_RES_CODE brd_drv_set_isolators_to_HiZ(void)
 {
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
+
+  //================================| Pure I2S |===============================
   // Set output enables to low -> disable them by default
-  BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_A_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_RST_EN_A_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_A_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_B_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_RST_EN_B_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_TX_EN_B_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_B_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
-  BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
+  brd_drv_set_mclk_dir(brd_drv_dir_hiz);
+  brd_drv_set_bclk_dir(brd_drv_dir_hiz);
+  brd_drv_set_frame_sync_dir(brd_drv_dir_hiz);
+  brd_drv_set_tx_data_dir(brd_drv_dir_hiz);
+  brd_drv_set_rx_data_dir(brd_drv_dir_hiz);
+  //=============================| Reset and mute |============================
+  brd_drv_set_mute_dir(brd_drv_dir_hiz);
+  brd_drv_set_rst_i2s_dir(brd_drv_dir_hiz);
 
-  return GD_SUCCESS;
-}
-
-/**
- * \brief Just set all mute and reset_i2s pins as input
- *
- * Set mute, mute_btn, reset_i2s, reset_i2s_btn pins as input.
- *
- * @return GD_SUCCESS (0) if all OK
- */
-GD_RES_CODE brd_drv_set_mute_reset_i2s_pins_as_input(void)
-{
-  // Pointer to GPIO memory
-  volatile avr32_gpio_port_t *gpio_port;
-
-  // Button pins
+  // Button pins - it is set as input after reset but just for sure
   BRD_DRV_IO_AS_INPUT(BRD_DRV_MUTE_BTN_PIN);
   BRD_DRV_IO_AS_INPUT(BRD_DRV_RESET_I2S_BTN_PIN);
 
-  // Signal pins
+  // Signal pins - it is set as input after reset but just for sure
   BRD_DRV_IO_AS_INPUT(BRD_DRV_MUTE_PIN);
   BRD_DRV_IO_AS_INPUT(BRD_DRV_RESET_I2S_PIN);
 
-  // Set values in mute and reset I2S structures
-  s_brd_drv_mute.e_mute_dir = brd_drv_dir_in;
-  s_brd_drv_mute.i_mute_val = 0;        // brd_drv_task() rewrite if needed
-
-  s_brd_drv_rst_i2s.e_rst_i2s_dir = brd_drv_dir_in;
-  s_brd_drv_rst_i2s.i_rst_i2s_val = 0;  // brd_drv_task() rewrite if needed
 
   return GD_SUCCESS;
 }
+
 
 
 /**
  * \brief Allow set MUTE pin direction
- * @param e_mute_dir Options: 0 (input) ; 1 (output)
+ * @param e_mute_dir Options: 0 (input) ; 1 (output) ; 2 (Hi-Z)
  * @return GD_SUCCESS (0) if all right
  */
-GD_RES_CODE brd_drv_set_mute_direction(e_brd_drv_dir_t e_mute_dir)
+GD_RES_CODE brd_drv_set_mute_dir(e_brd_drv_dir_t e_mute_dir)
 {
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
@@ -869,7 +914,7 @@ GD_RES_CODE brd_drv_set_mute_direction(e_brd_drv_dir_t e_mute_dir)
 
     s_brd_drv_mute.e_mute_dir = brd_drv_dir_in;
   }
-  else
+  else if(e_mute_dir == brd_drv_dir_out)
   {// OUT
     // Clear MUTE_EN_A - disable RX mute
     BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_A_PIN);
@@ -880,6 +925,24 @@ GD_RES_CODE brd_drv_set_mute_direction(e_brd_drv_dir_t e_mute_dir)
 
     s_brd_drv_mute.e_mute_dir = brd_drv_dir_out;
   }
+  else if(e_mute_dir == brd_drv_dir_hiz)
+  {
+    // Clear MUTE_EN_B - disable TX mute
+    BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_B_PIN);
+    // MUTE as input
+    BRD_DRV_IO_AS_INPUT(BRD_DRV_MUTE_PIN);
+    // Clear MUTE_EN_A - enable RX mute data
+    BRD_DRV_IO_LOW(BRD_DRV_MUTE_EN_A_PIN);
+
+    s_brd_drv_mute.e_mute_dir = brd_drv_dir_hiz;
+  }
+  else
+  {// Unknown
+    return GD_INCORRECT_PARAMETER;
+  }
+
+  // Default value is 0
+  s_brd_drv_mute.i_mute_val = 0;
 
   return GD_SUCCESS;
 }
@@ -905,9 +968,10 @@ GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag)
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
 
-  if(s_brd_drv_mute.e_mute_dir == brd_drv_dir_in)
+  if((s_brd_drv_mute.e_mute_dir == brd_drv_dir_in) ||
+     (s_brd_drv_mute.e_mute_dir == brd_drv_dir_hiz))
   {
-    // Input direction
+    // Input direction or Hi-Z
     if(i_mute_flag == 0)
     {
       // Mute off
@@ -923,7 +987,7 @@ GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag)
       brd_drv_send_msg(&msg_mute_in_on[0], 1, 0, -1);
     }
   }
-  else
+  else if(s_brd_drv_mute.e_mute_dir == brd_drv_dir_out)
   {
     // Output direction
     if(i_mute_flag == 0)
@@ -945,6 +1009,10 @@ GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag)
       brd_drv_send_msg(&msg_mute_out_on[0], 1, 0, -1);
     }
   }
+  else
+  {// Unknown direction
+    return GD_INCORRECT_PARAMETER;
+  }
 
   // Save value
   s_brd_drv_mute.i_mute_val = i_mute_flag;
@@ -956,10 +1024,10 @@ GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag)
 
 /**
  * \brief Allow set RESET_I2S pin direction
- * @param e_rst_i2s_dir Options: 0 (input) ; 1 (output)
+ * @param e_rst_i2s_dir Options: 0 (input) ; 1 (output) ; 2 (Hi-Z)
  * @return GD_SUCCESS (0) if all right
  */
-GD_RES_CODE brd_drv_set_rst_i2s_direction(e_brd_drv_dir_t e_rst_i2s_dir)
+GD_RES_CODE brd_drv_set_rst_i2s_dir(e_brd_drv_dir_t e_rst_i2s_dir)
 {
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
@@ -975,7 +1043,7 @@ GD_RES_CODE brd_drv_set_rst_i2s_direction(e_brd_drv_dir_t e_rst_i2s_dir)
 
     s_brd_drv_rst_i2s.e_rst_i2s_dir = brd_drv_dir_in;
   }
-  else
+  else if(e_rst_i2s_dir == brd_drv_dir_out)
   {// OUT
     // Clear RST_EN_A - disable RX mute
     BRD_DRV_IO_LOW(BRD_DRV_RST_EN_A_PIN);
@@ -986,7 +1054,24 @@ GD_RES_CODE brd_drv_set_rst_i2s_direction(e_brd_drv_dir_t e_rst_i2s_dir)
 
     s_brd_drv_rst_i2s.e_rst_i2s_dir = brd_drv_dir_out;
   }
+  else if(e_rst_i2s_dir == brd_drv_dir_hiz)
+  {// Hi-Z
+    // Clear RST_EN_B - disable TX mute
+    BRD_DRV_IO_LOW(BRD_DRV_RST_EN_B_PIN);
+    // RESET_I2S as input
+    BRD_DRV_IO_AS_INPUT(BRD_DRV_RESET_I2S_PIN);
+    // Clear RST_EN_A - enable RX mute data
+    BRD_DRV_IO_LOW(BRD_DRV_RST_EN_A_PIN);
 
+    s_brd_drv_rst_i2s.e_rst_i2s_dir = brd_drv_dir_hiz;
+  }
+  else
+  {// Undefined
+    return GD_INCORRECT_PARAMETER;
+  }
+
+  // Dfault value is 0
+  s_brd_drv_rst_i2s.i_rst_i2s_val = 0;
   return GD_SUCCESS;
 }
 
@@ -1015,9 +1100,10 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag)
 
 
   // Check direction
-  if(s_brd_drv_rst_i2s.e_rst_i2s_dir == brd_drv_dir_in)
+  if((s_brd_drv_rst_i2s.e_rst_i2s_dir == brd_drv_dir_in) ||
+     (s_brd_drv_rst_i2s.e_rst_i2s_dir == brd_drv_dir_hiz))
   {
-    // Input
+    // Input or Hi-Z
     // Perform some activity only if set to 1
     if(i_reset_i2s_flag != 0)
     {
@@ -1035,7 +1121,7 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag)
       brd_drv_send_msg(&msg_reset_i2s_in_off[0], 1, 0, -1);
     }
   }
-  else
+  else if(s_brd_drv_rst_i2s.e_rst_i2s_dir == brd_drv_dir_out)
   {
     // Output
     // Just set RESET_I2S pin
@@ -1052,17 +1138,199 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag)
       brd_drv_send_msg(&msg_reset_i2s_high[0], 1, 0, 0);
     }
   }
+  else
+  {// Unknown direction
+    return GD_INCORRECT_PARAMETER;
+  }
 
   return GD_SUCCESS;
 }
 
 
 
+/**
+ * \brief Set TX_DATA direction (OUT/Hi-Z)
+ *
+ * Long story short: allow set as output or Hi-Z.
+ *
+ * @param e_tx_data_dir Options: 1 (output) ; 2 (Hi-Z)
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_set_tx_data_dir(e_brd_drv_dir_t e_tx_data_dir)
+{
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+
+  // Check direction
+  if(e_tx_data_dir == brd_drv_dir_out)
+  {
+    BRD_DRV_IO_HIGH(BRD_DRV_TX_EN_B_PIN);
+  }
+  else if(e_tx_data_dir == brd_drv_dir_hiz)
+  {
+    BRD_DRV_IO_LOW(BRD_DRV_TX_EN_B_PIN);
+  }
+  else
+  {// Unsupported option
+    return GD_INCORRECT_PARAMETER;
+  }
+
+  // If parameter correct, then save it
+  s_brd_drv_pure_i2s_dir.e_tx_data_dir = e_tx_data_dir;
+
+  return GD_SUCCESS;
+}
 
 
 
+/**
+ * \brief Set RX_DATA direction (IN/Hi-Z)
+ * @param e_rx_data_dir Options: 0 (input) ; 2 (Hi-Z)
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_set_rx_data_dir(e_brd_drv_dir_t e_rx_data_dir)
+{
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+
+  // Check direction
+  if(e_rx_data_dir == brd_drv_dir_in)
+  {
+    BRD_DRV_IO_HIGH(BRD_DRV_RX_EN_B_PIN);
+  }
+  else if(e_rx_data_dir == brd_drv_dir_hiz)
+  {
+    BRD_DRV_IO_LOW(BRD_DRV_RX_EN_B_PIN);
+  }
+  else
+  {
+    return GD_INCORRECT_PARAMETER;
+  }
+
+  // If parameter correct, then save it
+  s_brd_drv_pure_i2s_dir.e_rx_data_dir = e_rx_data_dir;
+
+  return GD_SUCCESS;
+}
 
 
+/**
+ * \brief Set direction of MCLK
+ * @param e_mclk_dir Options: 0 (input) ; 1 (output) ; 2 (Hi-Z)
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_set_mclk_dir(e_brd_drv_dir_t e_mclk_dir)
+{
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+  switch(e_mclk_dir)
+  {
+  case brd_drv_dir_in:
+    BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_B_PIN);
+    BRD_DRV_IO_AS_INPUT(GCLK0);
+    BRD_DRV_IO_HIGH(BRD_DRV_MCLK_EN_A_PIN);
+    break;
+  case brd_drv_dir_out:
+    BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_A_PIN);
+    gpio_enable_module_pin(GCLK0, GCLK0_FUNCTION);
+    BRD_DRV_IO_HIGH(BRD_DRV_MCLK_EN_B_PIN);
+    break;
+  case brd_drv_dir_hiz:
+    /* Not easy to define "right" option. So disconnect signals from connector
+     * side, but allow transmit signals, so codec will work
+     */
+    BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_A_PIN);
+    BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_B_PIN);
+    gpio_enable_module_pin(GCLK0, GCLK0_FUNCTION);
+    break;
+  default:
+    return GD_INCORRECT_PARAMETER;
+  }
+
+  // If all OK, save state
+  s_brd_drv_pure_i2s_dir.e_mclk_dir = e_mclk_dir;
+
+  return GD_SUCCESS;
+}
+
+
+/**
+ * \brief Set BCLK direction
+ * @param e_bclk_dir Options: 0 (input) ; 1 (output) ; 2 (Hi-Z)
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_set_bclk_dir(e_brd_drv_dir_t e_bclk_dir)
+{
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+  switch(e_bclk_dir)
+  {
+  case brd_drv_dir_in:
+    BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
+    BRD_DRV_IO_AS_INPUT(GCLK1);
+    BRD_DRV_IO_HIGH(BRD_DRV_BCLK_EN_A_PIN);
+    break;
+  case brd_drv_dir_out:
+    BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
+    gpio_enable_module_pin(GCLK1, GCLK1_FUNCTION);
+    BRD_DRV_IO_HIGH(BRD_DRV_BCLK_EN_B_PIN);
+    break;
+  case brd_drv_dir_hiz:
+    BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
+    gpio_enable_module_pin(GCLK1, GCLK1_FUNCTION);
+    BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
+    break;
+  default:
+    return GD_INCORRECT_PARAMETER;
+  }
+
+  // If all OK, save state
+  s_brd_drv_pure_i2s_dir.e_bclk_dir = e_bclk_dir;
+
+  return GD_SUCCESS;
+}
+
+
+
+/**
+ * \brief Set direction of FRAME_SYNC
+ * @param e_frame_sync_dir Options: 0 (input) ; 1 (output) ; 2 (Hi-Z)
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_set_frame_sync_dir(e_brd_drv_dir_t e_frame_sync_dir)
+{
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+
+  // Pointer to SSC memory
+  volatile avr32_ssc_t *ssc = &AVR32_SSC;
+
+  switch(e_frame_sync_dir)
+  {
+  case brd_drv_dir_in:
+    BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
+    // SSC as slave. So TX module will not generate FRAME_SYNC
+    ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_INPUT_ONLY;
+    BRD_DRV_IO_HIGH(BRD_DRV_FS_EN_A_PIN);
+    break;
+  case brd_drv_dir_out:
+    BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
+    ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
+    BRD_DRV_IO_HIGH(BRD_DRV_FS_EN_B_PIN);
+    break;
+  case brd_drv_dir_hiz:
+    BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
+    BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
+    ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
+    break;
+  default:
+    return GD_INCORRECT_PARAMETER;
+  }
+
+  s_brd_drv_pure_i2s_dir.e_frame_sync_dir = e_frame_sync_dir;
+
+  return GD_SUCCESS;
+}
 
 
 //=========================| Functions not for user |==========================
@@ -1105,7 +1373,7 @@ inline GD_RES_CODE brd_drv_TLV_default(void)
   }
 
   // Set word length to 32 bit
-  e_status = tlv320aic33_set_word_length(32);
+  e_status = tlv320aic33_set_word_length(24);
   if(e_status != GD_SUCCESS)
   {
     return e_status;
@@ -1135,7 +1403,7 @@ inline GD_RES_CODE brd_drv_TLV_default(void)
 
   // Set output driver delay
   e_status = tlv320aic33_set_output_driver_power_on_delay(
-      driver_power_on_time_10ms);
+      driver_power_on_time_800ms);
   if(e_status != GD_SUCCESS)
   {
     return e_status;
@@ -1143,7 +1411,7 @@ inline GD_RES_CODE brd_drv_TLV_default(void)
 
   // Set ramp-up step timing
   e_status = tlv320aic33_set_driver_ramp_up_step_time(
-      driver_ramp_up_step_time_1ms);
+      driver_ramp_up_step_time_2ms);
   if(e_status != GD_SUCCESS)
   {
     return e_status;
@@ -1162,7 +1430,6 @@ inline GD_RES_CODE brd_drv_TLV_default(void)
   {
     return e_status;
   }
-
 
   // Show actual headphone volume settings
   return brd_drv_show_volume();
