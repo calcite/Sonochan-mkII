@@ -93,7 +93,7 @@
  #define UNI_PIPE0_FUNC_TASK
 #else
  #define UNI_PIPE0_FUNC_TASK     \
-   device_gneric_hid_task()
+   device_generic_hid_task()
 #endif
 // Universal protocol header file
 #include "uniprot.h"
@@ -103,9 +103,9 @@
 
 extern void device_generic_HID_init(U8 ep_hid_rx, U8 ep_hid_tx);
 #ifdef FREERTOS_USED
-extern void device_gneric_hid_task(void *pvParameters);
+extern void device_generic_hid_task(void *pvParameters);
 #else
-extern void device_gneric_hid_task(void);
+extern void device_generic_hid_task(void);
 #endif
 
 

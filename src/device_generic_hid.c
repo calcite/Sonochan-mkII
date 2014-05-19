@@ -97,7 +97,7 @@ void device_generic_HID_init(uint8_t ep_rx, uint8_t ep_tx)
 #endif  // FREERTOS_USED
 
 #ifdef FREERTOS_USED
-  xTaskCreate(device_gneric_hid_task,
+  xTaskCreate(device_generic_hid_task,
         configTSK_USB_DHID_NAME,
         configTSK_USB_DHID_STACK_SIZE,
         NULL,
@@ -112,9 +112,9 @@ void device_generic_HID_init(uint8_t ep_rx, uint8_t ep_tx)
 //! @brief Entry point of the device gneric HID task management
 //!
 #ifdef FREERTOS_USED
-void device_gneric_hid_task(void *pvParameters)
+void device_generic_hid_task(void *pvParameters)
 #else
-void device_gneric_hid_task(void)
+void device_generic_hid_task(void)
 #endif
 {
   uint8_t i_data_length;
