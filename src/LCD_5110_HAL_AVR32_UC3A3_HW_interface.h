@@ -116,7 +116,7 @@
  * #define LCD_5110_SPI_CLK_SOURCE 115000UL
  * \endcode
  */
-#define LCD_5110_SPI_CLK_SOURCE    33000000UL
+#define LCD_5110_SPI_CLK_SOURCE    66000000UL
 
 //! @}
 
