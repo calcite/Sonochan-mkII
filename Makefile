@@ -22,9 +22,6 @@ sdr-widget::
 	rm -f Release/widget.elf Release/src/features.o
 	CFLAGS=-DFEATURE_DEFAULT_BOARD=feature_board_usbi2s ./make-widget
 
-widget-control: widget-control.c src/features.h
-	gcc -o widget-control widget-control.c -lusb-1.0
-
 clean::
 	cd Release && make clean
 	rm -f widget-control

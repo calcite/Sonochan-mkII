@@ -421,7 +421,7 @@ typedef struct{
 
 /// Sonochan mk II
 #define BRD_DRV_MSG_SONOCHAN_MK_II      \
-  {"Sonochan mk II\n > Beta\n"}
+  {"Sonochan mk II\n > v0.1\n"}
 
 /// Can not draw logo
 #define BRD_DRV_MSG_DRAW_LOGO_FAIL      \
