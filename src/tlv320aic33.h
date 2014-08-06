@@ -785,7 +785,7 @@ typedef struct{
 //===============================| Definitions |===============================
 //=================================| Macros |==================================
 // If AVR8 architecture
-#ifdef __AVR_ARCH__
+#if defined(__AVR_ARCH__) || defined(__AVR__)
 #define tlv320aic33_read_byte_ro_mem(p_address)     pgm_read_byte(p_address)
 #define tlv320aic33_read_word_ro_mem(p_address)     pgm_read_word(p_address)
 #define tlv320aic33_read_dword_ro_mem(p_address)    pgm_read_dword(p_address)

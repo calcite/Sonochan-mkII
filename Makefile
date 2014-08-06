@@ -7,7 +7,8 @@
 ## to point to the directory containing avr32-gcc
 
 # [Martin] Let's give AVR32BIN path directly thru Makefile to make it clear
-# AVR32BIN_path=/opt/non-portage/avr32-tools/bin/
+# AVR32BIN=/opt/non-portage/avr32-tools/bin/
+#AVR32BIN=C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR32 GCC\Native\3.4.2.1002\avr32-gnu-toolchain\avr32\bin
 
 all:: Release/widget.elf
 

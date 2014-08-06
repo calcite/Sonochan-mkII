@@ -17,5 +17,6 @@ REM atprogram -v -t jtagicemkii -i JTAG -d at32uc3a0512 erase
 
 echo ---------------------
 
+REM 
 atprogram -v -t jtagicemkii -i JTAG -d at32uc3a32556 -cl 10khz --timeout 0 program -f widget.elf
 

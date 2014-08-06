@@ -370,15 +370,34 @@ void uac1_device_audio_task(void *pvParameters)
             {
               num_samples = 1;
             }
+            //[Martin] More processing
+            if(gap < AUDIO_BUFFER_SIZE/4)
+            {
+              num_samples--;
+            }
+            if(gap < AUDIO_BUFFER_SIZE/8)
+            {
+              num_samples--;
+            }
           } else {
             // speed up
             if  (gap > (AUDIO_BUFFER_SIZE + AUDIO_BUFFER_SIZE/2)) {
               num_samples++;
-              //[Martin] Check if number of samples fit to buffer
-              if(num_samples >= (48+10))
-              {
-                num_samples = 48+9;
-              }
+            }
+            //[Martin]
+            if(gap > (AUDIO_BUFFER_SIZE + AUDIO_BUFFER_SIZE/2 + AUDIO_BUFFER_SIZE/8))
+            {
+              num_samples++;
+            }
+            if(gap > (AUDIO_BUFFER_SIZE + AUDIO_BUFFER_SIZE/2 + AUDIO_BUFFER_SIZE/4))
+            {
+              num_samples++;
+            }
+
+            //[Martin] Check if number of samples fit to buffer
+            if(num_samples >= (48+10))
+            {
+              num_samples = 48+9;
             }
           }
 
