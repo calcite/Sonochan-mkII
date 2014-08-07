@@ -3,12 +3,13 @@
  *
  * \brief Board driver for "Sonochan mkII" HW version 03
  *
- * Allow set basic settings on board. Also support "generic driver"
+ * Allow set basic settings on board. Also support "generic driver".
+ * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 07.05.2014
+ * Modified: 07.08.2014
  *
- * \version 0.1
+ * \version 0.2
  * \author  Martin Stejskal
  */
 
@@ -303,6 +304,9 @@
 // For LCD support
 #include "LCD_5110.h"
 
+// Operations with flash memory
+#include "flashc.h"
+
 // Pin names
 ///\todo Move definitions here
 #include "board.h"
@@ -408,6 +412,31 @@ typedef struct{
   e_brd_drv_dir_t e_tx_data_dir;
   e_brd_drv_dir_t e_rx_data_dir;
 }s_brd_drv_pure_i2s_dir_t;
+
+
+/**
+ * \brief Structure for "EEPROM" settings
+ *
+ * In this structure are all variables, that should be saved to EEPROM like\n
+ * memory when user want to keep settings.
+ */
+typedef struct{
+  // MUTE direction
+  e_brd_drv_dir_t e_mute_dir;
+  // RESET I2S direction
+  e_brd_drv_dir_t e_rst_i2s_dir;
+  // MCLK direction
+  e_brd_drv_dir_t e_mclk_dir;
+  // BCLK direction
+  e_brd_drv_dir_t e_bclk_dir;
+  // FRAME SYNC direction
+  e_brd_drv_dir_t e_frame_sync_dir;
+  // TX DATA direction
+  e_brd_drv_dir_t e_tx_data_dir;
+  // RX DATA direction
+  e_brd_drv_dir_t e_rx_data_dir;
+}s_brd_drv_user_settings_t;
+
 //===============================| Definitions |===============================
 /**
  * \name Error messages
@@ -421,7 +450,7 @@ typedef struct{
 
 /// Sonochan mk II
 #define BRD_DRV_MSG_SONOCHAN_MK_II      \
-  {"Sonochan mk II\n > v0.1\n"}
+  {"Sonochan mk II\n > v0.2\n"}
 
 /// Can not draw logo
 #define BRD_DRV_MSG_DRAW_LOGO_FAIL      \
@@ -541,6 +570,13 @@ typedef struct{
 
 /// @}
 
+
+/**
+ * \brief Check code which allow detect correct settings in user flash
+ *
+ * It should be in range 2 - 254 (0, 1 amd 255 are excluded for safety reasons)
+ */
+#define BRD_DRV_FLASH_CHECK_CODE                38
 //=================================| Macros |==================================
 
 /**
@@ -756,6 +792,10 @@ GD_RES_CODE brd_drv_init(void);
 void brd_drv_task(void);
 
 GD_RES_CODE brd_drv_reset_i2s(void);
+
+GD_RES_CODE brd_drv_save_all_settings(void);
+
+GD_RES_CODE brd_drv_restore_all_settings(void);
 //===========================| Mid level functions |===========================
 GD_RES_CODE brd_drv_show_volume(void);
 

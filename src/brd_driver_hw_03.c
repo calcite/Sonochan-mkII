@@ -3,12 +3,13 @@
  *
  * \brief Board driver for "Sonochan mkII" HW version 03
  *
- * Allow set basic settings on board. Also support "generic driver"
+ * Allow set basic settings on board. Also support "generic driver".
+ * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 07.05.2014
+ * Modified: 07.08.2014
  *
- * \version 0.1
+ * \version 0.2
  * \author  Martin Stejskal
  */
 
@@ -40,6 +41,26 @@ static s_brd_drv_pure_i2s_dir_t s_brd_drv_pure_i2s_dir;
  *
  */
 static uint8_t i_error_occurred;
+
+//===========================| "EEPROM" variables |============================
+// Set up NVRAM (EEPROM) storage
+#if defined (__GNUC__)
+__attribute__((__section__(".userpage")))
+#endif
+/**
+ * \brief Structure for saving and restoring settings
+ */
+s_brd_drv_user_settings_t s_brd_drv_user_settings;
+
+/**
+ * \brief Variable that allow detect correct or incorrect settings in user\n
+ * flash
+ */
+#if defined (__GNUC__)
+__attribute__((__section__(".userpage")))
+#endif
+uint8_t i_brd_drv_settings_check;
+
 //=========================| Generic driver support |==========================
 #if BRD_DRV_SUPPORT_GENERIC_DRIVER == 1
 /**
@@ -193,17 +214,43 @@ const gd_config_struct BRD_DRV_config_table[] =
       {.data_uint32 = 2},
       (GD_DATA_VALUE*)&s_brd_drv_pure_i2s_dir.e_rx_data_dir,
       brd_drv_set_rx_data_dir
-    }
+    },
+    {
+      11,
+      "Restore saved settings",
+      "Load and apply saved settings",
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      (GD_DATA_VALUE*)&gd_void_value,
+      brd_drv_restore_all_settings
+    },
+    {
+      12,
+      "Save all settings",
+      "Just save variables to flash memory",
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      (GD_DATA_VALUE*)&gd_void_value,
+      brd_drv_save_all_settings
+    },
 
   };
 /// \brief Maximum command ID (is defined by last command)
-#define BRD_DRV_MAX_CMD_ID          10
+#define BRD_DRV_MAX_CMD_ID          12
 
 
 const gd_metadata BRD_DRV_metadata =
 {
         BRD_DRV_MAX_CMD_ID,              // Max CMD ID
-        "Board driver for Sonochan mkII v0.1",     // Description
+        "Board driver for Sonochan mkII v0.2",     // Description
         (gd_config_struct*)&BRD_DRV_config_table[0],
         0x0F    // Serial number (0~255)
 };
@@ -349,7 +396,7 @@ GD_RES_CODE brd_drv_init(void)
    */
   LCD_5110_auto_newline(0);
 
-  // Draw logo
+  // Draw logo (function, easy to change in future)
   e_status = brd_drv_draw_logo();
   if(e_status != GD_SUCCESS)
   {
@@ -401,9 +448,13 @@ GD_RES_CODE brd_drv_init(void)
 
 
 
-
-  brd_drv_set_mute_dir(brd_drv_dir_in);
-  brd_drv_set_rst_i2s_dir(brd_drv_dir_in);
+  /* Try to restore pin direction. If fail (invalid setting in user flash),
+   * then keep all pins in Hi-Z. Do not care about return code, because in
+   * default we set all pins to Hi-Z, so if in memory will be invalid settings,
+   * nothing will be changed and nothing happnes.
+   * If you doubt, this code is correct and move on.
+   */
+  brd_drv_restore_all_settings();
 
 
 
@@ -673,8 +724,7 @@ GD_RES_CODE brd_drv_reset_i2s(void)
 {
   const char msg_restart_i2s_done[] = BRD_DRV_MSG_RESET_I2S_DONE;
 
-  ///\todo Complete this function. it need functions to set I/O for isolators
-
+  // Reset to fail save mode -> Hi-Z
   brd_drv_set_isolators_to_HiZ();
   brd_drv_TLV_default();
 
@@ -683,6 +733,178 @@ GD_RES_CODE brd_drv_reset_i2s(void)
 
   return GD_SUCCESS;
 }
+
+
+
+
+
+
+
+
+/**
+ * \brief Save all needed settings to EEPROM like memory
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_save_all_settings(void){
+  // Save settings
+
+  // MUTE direction
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.e_mute_dir,      // Where to write
+      s_brd_drv_mute.e_mute_dir,                        // From where
+      sizeof(s_brd_drv_mute.e_mute_dir),                // Number of Bytes
+      1);                                               // Erase?
+
+  // RESET direction
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.e_rst_i2s_dir,
+      s_brd_drv_rst_i2s.e_rst_i2s_dir,
+      sizeof(s_brd_drv_rst_i2s.e_rst_i2s_dir),
+      1);
+
+  // MCLK direction
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.e_mclk_dir,
+      s_brd_drv_pure_i2s_dir.e_mclk_dir,
+      sizeof(s_brd_drv_pure_i2s_dir.e_mclk_dir),
+      1);
+
+  // BCLK direction
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.e_bclk_dir,
+      s_brd_drv_pure_i2s_dir.e_bclk_dir,
+      sizeof(s_brd_drv_pure_i2s_dir.e_bclk_dir),
+      1);
+
+  // FRAME SYNC direction
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.e_frame_sync_dir,
+      s_brd_drv_pure_i2s_dir.e_frame_sync_dir,
+      sizeof(s_brd_drv_pure_i2s_dir.e_frame_sync_dir),
+      1);
+
+  // TX DATA direction
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.e_tx_data_dir,
+      s_brd_drv_pure_i2s_dir.e_rx_data_dir,
+      sizeof(s_brd_drv_pure_i2s_dir.e_rx_data_dir),
+      1);
+
+  // RX DATA direction
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.e_rx_data_dir,
+      s_brd_drv_pure_i2s_dir.e_rx_data_dir,
+      sizeof(s_brd_drv_pure_i2s_dir.e_rx_data_dir),
+      1);
+
+
+  // Save information (code), that settings was saved
+  flashc_memset8(
+      (void *)&i_brd_drv_settings_check,
+      BRD_DRV_FLASH_CHECK_CODE,
+      sizeof(BRD_DRV_FLASH_CHECK_CODE),
+      1);
+
+  return GD_SUCCESS;
+}
+
+
+
+
+
+
+
+
+/**
+ * \brief Load all needed settings to SRAM memory and apply settings
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_restore_all_settings(void){
+  // For storing status
+  GD_RES_CODE e_status;
+
+  // Check if settings in user flash is valid (BRD_DRV_FLASH_CHECK_CODE)
+  if(i_brd_drv_settings_check != BRD_DRV_FLASH_CHECK_CODE)
+  {
+    // Not equal -> can not restore settings
+    return GD_FAIL;
+  }
+
+  // Apply settings
+
+
+  // MUTE direction
+  e_status = brd_drv_set_mute_dir(
+      (uint8_t)s_brd_drv_user_settings.e_mute_dir);
+  if(e_status != GD_SUCCESS)    // Check status
+  {
+    return e_status;
+  }
+
+  // RESET direction
+  e_status = brd_drv_set_rst_i2s_dir(
+      (uint8_t)s_brd_drv_user_settings.e_rst_i2s_dir);
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+
+  // MCLK direction
+  e_status = brd_drv_set_mclk_dir(
+      (uint8_t)s_brd_drv_user_settings.e_mclk_dir);
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+
+  // BCLK direction
+  e_status = brd_drv_set_bclk_dir(
+      (uint8_t)s_brd_drv_user_settings.e_bclk_dir);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg("BCLK dir fail");
+    return e_status;
+  }
+
+  // FRAME SYNC direction
+  e_status=brd_drv_set_frame_sync_dir(
+      (uint8_t)s_brd_drv_user_settings.e_frame_sync_dir);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg("FS dir fail");
+    return e_status;
+  }
+
+  // TX DATA
+  e_status = brd_drv_set_tx_data_dir(
+      (uint8_t)s_brd_drv_user_settings.e_tx_data_dir);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg("TXD dir fail");
+    return e_status;
+  }
+
+  // RX DATA
+  e_status = brd_drv_set_rx_data_dir(
+      (uint8_t)s_brd_drv_user_settings.e_rx_data_dir);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg("RXD dir fail");
+    return e_status;
+  }
+
+  // Just return status of last function
+  return e_status;
+}
+
+
+
+
+
+
+
+
+
 //===========================| Mid level functions |===========================
 /**
  * \brief Show volume value on LCD
