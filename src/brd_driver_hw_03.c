@@ -7,7 +7,7 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 07.08.2014
+ * Modified: 08.08.2014
  *
  * \version 0.2
  * \author  Martin Stejskal
@@ -1302,7 +1302,8 @@ GD_RES_CODE brd_drv_set_rst_i2s_dir(e_brd_drv_dir_t e_rst_i2s_dir)
 /**
  * \brief Set RESET_I2S pin if configured as output.
  *
- * If signal RESET_I2S is set as output, then just set signal RESET_I2S.\n
+ * If signal RESET_I2S is set as output and flag is set, then send RESET_I2S\n
+ * pulse and perform reset I2S bus on AVR side too.\n
  * If signal RESET_I2S is set as input, then reset I2S bus on AVR side.
  *
  * @param i_reset_i2s_flag 0 - disable ; 1 - enable reset
@@ -1319,7 +1320,6 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag)
 
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
-
 
   // Check direction
   if((s_brd_drv_rst_i2s.e_rst_i2s_dir == brd_drv_dir_in) ||
@@ -1349,15 +1349,45 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag)
     // Just set RESET_I2S pin
     if(i_reset_i2s_flag == 0)
     {
+      // Set RESET I2S signal to 0 - not needed reset I2S connector on AVR side
       BRD_DRV_IO_LOW(BRD_DRV_RESET_I2S_PIN);
       s_brd_drv_rst_i2s.i_rst_i2s_val = 0;
       brd_drv_send_msg(&msg_reset_i2s_low[0], 1, 0, -1);
     }
     else
     {
+      // Reset flag = 1
+
+      // Store status value
+      GD_RES_CODE e_status;
+
+      // Set RESET I2S signal to 1
       BRD_DRV_IO_HIGH(BRD_DRV_RESET_I2S_PIN);
       s_brd_drv_rst_i2s.i_rst_i2s_val = 1;
+
+      // Keep RESET_I2S in HIGH little bit longer
+      volatile uint32_t i_cnt = 0;
+      while(i_cnt < 5000UL)
+      {
+        i_cnt++;
+      }
+
+      // Do reset I2S bus on AVR side
+      e_status = brd_drv_reset_i2s();
       brd_drv_send_msg(&msg_reset_i2s_high[0], 1, 0, 0);
+
+      // Anyway set RESET I2S to low
+      /* Note: Already done by brd_drv_reset_i2s(), so it is commented, but
+       * developer saw this code and will know what happens
+       */
+      //BRD_DRV_IO_LOW(BRD_DRV_RESET_I2S_PIN);
+      s_brd_drv_rst_i2s.i_rst_i2s_val = 0;
+
+      // Check if reset function was done without errors
+      if(e_status != GD_SUCCESS)
+      {
+        return e_status;
+      }
     }
   }
   else
