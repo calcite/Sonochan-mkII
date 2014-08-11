@@ -1,0 +1,13 @@
+@startuml
+
+skinparam monochrome true
+
+
+ title Universal protocol: DEV1 <---> DEV2 (Success)
+
+DEV1 -> DEV2: Header + payload + tail + CRC
+note over DEV2: Response (Data valid)
+DEV2 -> DEV1: ACK
+
+
+@enduml

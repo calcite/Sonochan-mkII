@@ -1,0 +1,41 @@
+@startuml
+
+skinparam monochrome true
+
+ title Bridge: PC_app <--> AVR - get metadata (invalid device ID)
+
+participant PC_app 
+box "AVR"
+    participant Uniprot
+    participant Bridge
+    participant HW
+    participant DEV_X_driver
+end box
+
+
+
+
+PC_app -> Uniprot: Command "Get metadata from device X"
+activate PC_app
+
+activate Uniprot
+Uniprot -> Bridge: Command "Get metadata from device X"
+activate Bridge
+
+Bridge -> HW: Get metadata from device X
+activate HW
+note over HW: Device ID X not exist
+
+
+HW -> Bridge: Result code
+deactivate HW
+Bridge -> Uniprot: Result code
+ 
+
+deactivate Bridge
+
+Uniprot -> PC_app: Result code
+deactivate Uniprot
+
+deactivate PC_app
+@enduml

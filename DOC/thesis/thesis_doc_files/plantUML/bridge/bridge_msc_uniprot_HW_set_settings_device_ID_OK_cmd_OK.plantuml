@@ -1,0 +1,48 @@
+@startuml
+
+skinparam monochrome true
+
+ title Bridge: PC_app <--> AVR - set setting (success)
+
+participant PC_app 
+box "AVR"
+    participant Uniprot
+    participant Bridge
+    participant HW
+    participant DEV_X_driver
+end box
+
+
+
+
+PC_app -> Uniprot: Command\n"Set setting of command Y\n to device X + value (4B)"
+activate PC_app
+
+activate Uniprot
+Uniprot -> Bridge: Command\n"Set setting of command Y\n to device X + value (4B)"
+activate Bridge
+
+Bridge -> HW: Set setting of command Y\n to device X + value (4B)
+activate HW
+note over HW: Device ID X exist
+
+
+HW -> DEV_X_driver: Set setting of command Y + value
+activate DEV_X_driver
+note over DEV_X_driver: Command Y exist\nData processing
+ 
+
+DEV_X_driver -> HW: Result code
+note right: Return 0 if SUCCESS
+deactivate DEV_X_driver
+
+HW -> Bridge: Result code
+deactivate HW
+Bridge -> Uniprot: Result code
+deactivate Bridge
+
+Uniprot -> PC_app: Result code
+deactivate Uniprot
+
+deactivate PC_app
+@enduml

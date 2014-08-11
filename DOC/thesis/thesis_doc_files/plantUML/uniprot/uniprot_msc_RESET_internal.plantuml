@@ -1,0 +1,16 @@
+@startuml
+
+skinparam monochrome true
+
+ title Universal protocol: DEV1 <---> DEV2 (Internal error -> Reset bus)
+
+participant DEV1
+participant DEV2
+
+note over DEV2: Internal error
+
+DEV2 -> DEV1: Reset command
+
+note over DEV2: Reset bus and\nsettings to\ndefault
+note over DEV1: Reset bus and\nsettings to\ndefault
+@enduml

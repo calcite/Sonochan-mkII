@@ -6,15 +6,9 @@
 *~
 *.o
 *.d
-*.elf
-widget-control
-widget-control.bin
+# Sometimes is usefull to have also binary file
+# *.elf
 .gitignore
-src/.directory
-src/tmp/
-readme2test.sh
-DOC_VUT/my_doc_files
-DOC_VUT/tmp
-DOC_VUT/foto
-DOC_VUT/polymorfni_usb_i2s_rozhrani*
+HW/*.?#?
+DOC/__Doxy_DOC/
 .~lock.*#

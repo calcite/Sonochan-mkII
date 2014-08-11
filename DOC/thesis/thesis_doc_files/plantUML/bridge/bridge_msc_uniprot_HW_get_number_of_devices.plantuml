@@ -1,0 +1,31 @@
+@startuml
+
+skinparam monochrome true
+
+ title Bridge: PC_app <--> AVR - get number of devices (success)
+
+participant PC_app 
+box "AVR"
+    participant Uniprot
+    participant Bridge
+    participant HW
+    participant DEV_X_driver
+end box
+
+
+PC_app -> Uniprot: Command "Get number of devices"
+activate PC_app
+
+activate Uniprot
+Uniprot -> Bridge: Command "Get number of devices"
+activate Bridge
+
+
+Bridge -> Uniprot: Result code + number of devices
+deactivate Bridge
+
+Uniprot -> PC_app: Result code + number of devices
+deactivate Uniprot
+
+deactivate PC_app
+@enduml
