@@ -1,0 +1,16 @@
+@startuml
+
+skinparam monochrome true
+
+ title Host set sampling frequency
+
+
+Host -> Device: request: get descriptors
+Host <- Device: response: send descriptors
+
+Host -> Device: request: set frequency
+note over Device: Detect request type\nCall audio_set_cur()
+
+
+
+@enduml

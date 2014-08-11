@@ -1,0 +1,16 @@
+@startuml
+
+skinparam monochrome true
+
+ title Universal protocol: DEV1 <---> DEV2 (Fail)
+
+DEV1 -> DEV2: Header + payload + tail + CRC
+note over DEV2: Data corruption
+DEV2 -> DEV1: NACK
+
+note over DEV1: Send data again
+DEV1 -> DEV2: Header + payload + tail + CRC
+note over DEV2: Data OK
+DEV2 -> DEV1: ACK
+
+@enduml
