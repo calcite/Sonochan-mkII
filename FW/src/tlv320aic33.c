@@ -4,7 +4,7 @@
  * \brief Driver for codec TLV320AIC33
  *
  * Created:  02.04.2014\n
- * Modified: 15.05.2014
+ * Modified: 23.06.2014
  *
  * \version 0.1a
  * \author Martin Stejskal
@@ -12,9 +12,6 @@
 
 #include "tlv320aic33.h"
 
-///todo REMOVE
-#include <stdio.h>
-#include "print_funcs.h"
 //===============================| Structures |================================
 
 //============================| Global variables |=============================
@@ -201,7 +198,7 @@ const gd_metadata TLV320AIC33_metadata =
   TLV320AIC33_MAX_CMD_ID,              // Max CMD ID
   "Audio codec TLV320AIC33 v0.1a",     // Description
   (gd_config_struct*)&TLV320AIC33_config_table[0],      // Pointer to table
-  0x66    // Serial number (0~255)
+  0x12    // Serial number (0~255)
 };
 #endif
 
@@ -308,6 +305,11 @@ GD_RES_CODE tlv320aic33_set_DAC_play_input_data(uint8_t i_play_stereo)
   p0_r47_DAC_L1_To_HPLOUT_Volume_Control_t p0_r47;
   // Page 0, register 64 structure
   p0_r64_DAC_R1_To_HPROUT_Volume_Control_t p0_r64;
+  // Page 0, register 82 structure
+  p0_r82_DAC_L1_To_LEFT_LOPM_Volume_Control_t p0_r82;
+  // Page 0, register 92 structure
+  p0_r92_DAC_R1_To_RIGHT_LOPM_Volume_Control_t p0_r92;
+
 
 
 
@@ -320,20 +322,55 @@ GD_RES_CODE tlv320aic33_set_DAC_play_input_data(uint8_t i_play_stereo)
   e_status = tlv320aic33_read_data(64, &p0_r64.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
+  e_status = tlv320aic33_read_data(82, &p0_r82.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+  e_status = tlv320aic33_read_data(92, &p0_r92.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
   // Configure
   p0_r41.s.LeftDACOutputSwitchingControl = left_DAC_output_DAC_L1_path;
   p0_r41.s.RightDACOutputSwitchingControl = right_DAC_output_DAC_R1_path;
 
   p0_r47.s.DACL1RouteToHPLOUTEnable = 1;
   p0_r64.s.DACR1RouteToHPROUTEnable = 1;
-  // Set register
+
+  p0_r82.s.DAC_L1OutputRoutingControl = DAC_L1_routed_to_LEFT_LOPM;
+  p0_r92.s.DAC_R1OutputRoutingControl = DAC_R1_routed_to_RIGHT_LOPM;
+
+
+  // Set registers
   e_status = tlv320aic33_write_data(41, p0_r41.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
   e_status = tlv320aic33_write_data(47, p0_r47.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
-  return tlv320aic33_write_data(64, p0_r64.i_reg);
+  e_status = tlv320aic33_write_data(64, p0_r64.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+  e_status = tlv320aic33_write_data(82, p0_r82.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+  e_status = tlv320aic33_write_data(92, p0_r92.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+  // If all OK, jut write to virtual register
+  if(i_play_stereo == 0)
+  {
+    s_virtual_reg_img.i_dac_play_stereo = 0;
+  }
+  else
+  {
+    s_virtual_reg_img.i_dac_play_stereo = 1;
+  }
+#endif
+  // Else just return status
+  return e_status;
 }
 
 
@@ -595,6 +632,11 @@ GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag)
   p0_r51_HPLOUT_Output_Level_Control_t p0_r51;
   p0_r65_HPROUT_Output_Level_Control_t p0_r65;
 
+  // Page 0, register 86 (LEFT_LOPM)
+  p0_r86_LEFT_LOPM_Output_Level_Control_Register p0_r86;
+  // Page 0, register 93 (RIGHT_LOPM)
+  p0_r93_RIGHT_LOPM_Output_Level_Control_Register p0_r93;
+
   // Get settings from codec
   e_status = tlv320aic33_read_data(43, &p0_r43.i_reg);
   if(e_status != GD_SUCCESS)
@@ -608,6 +650,15 @@ GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag)
   e_status = tlv320aic33_read_data(65, &p0_r65.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
+  e_status = tlv320aic33_read_data(86, &p0_r86.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+  e_status = tlv320aic33_read_data(93, &p0_r93.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+
+
 
   // Configure registers
   if(i_mute_flag == 0)
@@ -619,6 +670,13 @@ GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag)
     p0_r65.s.HPROUTMute = 1;
     p0_r51.s.HPLOUTFullyPoweredUp = 1;
     p0_r65.s.HPROUTFullyPoweredUp = 1;
+
+    // Again. Do not know who develop this chip....
+    p0_r86.s.LEFT_LOPMMute = 1;
+    p0_r93.s.RIGHT_LOPMMute = 1;
+
+    p0_r86.s.LEFT_LOPMPowerControl  =  LEFT_LOPM_fully_powered_up;
+    p0_r93.s.RIGHT_LOPMPowerControl = RIGHT_LOPM_fully_powered_up;
   }
   else
   {
@@ -629,6 +687,12 @@ GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag)
     p0_r65.s.HPROUTMute = 0;
     p0_r51.s.HPLOUTFullyPoweredUp = 1;
     p0_r65.s.HPROUTFullyPoweredUp = 1;
+
+    p0_r86.s.LEFT_LOPMMute = 0;
+    p0_r93.s.RIGHT_LOPMMute = 0;
+
+    p0_r86.s.LEFT_LOPMPowerControl  =  LEFT_LOPM_fully_powered_up;
+    p0_r93.s.RIGHT_LOPMPowerControl = RIGHT_LOPM_fully_powered_up;
   }
 
   // Set registers
@@ -644,6 +708,13 @@ GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag)
   e_status = tlv320aic33_write_data(65, p0_r65.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
+  e_status = tlv320aic33_write_data(86, p0_r65.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+  e_status = tlv320aic33_write_data(93, p0_r65.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
 
   // Save mute value
   s_virtual_reg_img.i_dac_mute = i_mute_flag & 0x01;
@@ -803,16 +874,20 @@ inline GD_RES_CODE tlv320aic33_reset(void)
 
   // Reset codec. 1) Set page to 0  2) Set self cleaning software reset
   p0_r0_Page_Select_t p0_r0_Page_Select;
+  p0_r0_Page_Select.i_reg = 0;	// Reset all values
   p0_r0_Page_Select.s.PageSelect = 0;   // Set page to 0
 
   // Save status and check it
-  e_status = tlv320aic33_write_data(0, p0_r0_Page_Select.i_reg);
+  e_status = tlv320aic33_write_data(0,
+ 
+   p0_r0_Page_Select.i_reg);
   if(e_status != GD_SUCCESS)
   {
     return e_status;
   }
 
   p0_r1_Software_Reset_t p0_r1_SW_res;
+  p0_r1_SW_res.i_reg = 0;	// Reset all bits
   p0_r1_SW_res.s.SoftwareReset = 1;     // Set reset to 1
 
   // Save status and return it
@@ -1068,7 +1143,7 @@ GD_RES_CODE tlv320aic33_find_raw_volume_value(
       i++)      // Action
   {
     // Try to find out closest value
-    if(tlv320aic33_read_byte_ro_mem(&TLV320AIC33_volume_table_float[i])
+    if(tlv320aic33_read_float_ro_mem(&TLV320AIC33_volume_table_float[i])
         < f_value)
     {
       *p_raw_volume = i;
@@ -1112,7 +1187,7 @@ GD_RES_CODE tlv320aic33_find_float_volume_value(
     /* Else there is some value. Let's find correct float value
      * This will be easy, because index of array is basicly raw volume value
      */
-    *p_float = tlv320aic33_read_dword_ro_mem(
+    *p_float = tlv320aic33_read_float_ro_mem(
         &TLV320AIC33_volume_table_float[i_raw_volume]);
     return GD_SUCCESS;
   }

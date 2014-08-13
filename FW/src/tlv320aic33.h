@@ -4,7 +4,7 @@
  * \brief Driver for codec TLV320AIC33
  *
  * Created:  02.04.2014\n
- * Modified: 15.05.2014
+ * Modified: 23.06.2014
  *
  * \version 0.1a
  * \author Martin Stejskal
@@ -136,7 +136,13 @@ extern xSemaphoreHandle mutexI2C;
  * @{
  */
 
+// Note, that bit field is endian (and compiler) dependent. So at least try...
+#define TLV320AIC33_BIG_ENDIAN_CONDITION                                      \
+  ((defined(__BYTE_ORDER__) &&                                                \
+   (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)) ||                               \
+  defined(__AVR32__))
 
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t                       :7;
@@ -195,6 +201,66 @@ typedef union{
   uint8_t i_reg;
 }p0_r6_PLL_Programming_D_t;
 
+#else
+typedef union{
+  struct{
+    uint8_t PageSelect            :1;
+    uint8_t                       :7;
+  }s;
+  uint8_t i_reg;
+}p0_r0_Page_Select_t;
+
+
+typedef union{
+  struct
+  {
+    uint8_t                       :7;
+    uint8_t SoftwareReset         :1;
+  }s;
+  uint8_t i_reg;
+}p0_r1_Software_Reset_t;
+
+typedef union{
+  struct{
+    uint8_t DACSampleRateSelect   :4;
+    uint8_t ADCSampleRateSelect   :4;
+  }s;
+  uint8_t i_reg;
+}p0_r2_Codec_Sample_Rate_Select_t;
+
+typedef union{
+  struct{
+    uint8_t PValue                :3;
+    uint8_t QValue                :4;
+    uint8_t Control               :1;
+  }s;
+  uint8_t i_reg;
+}p0_r3_PLL_Programming_A_t;
+
+typedef union{
+  struct{
+    uint8_t                       :2;
+    uint8_t JValue                :6;
+  }s;
+  uint8_t i_reg;
+}p0_r4_PLL_Programming_B_t;
+
+typedef union{
+  struct{
+    uint8_t DValueMSB             :8;
+  }s;
+  uint8_t i_reg;
+}p0_r5_PLL_Programming_C_t;
+
+typedef union{
+  struct{
+    uint8_t                       :2;
+    uint8_t DValueLSB             :6;
+  }s;
+  uint8_t i_reg;
+}p0_r6_PLL_Programming_D_t;
+#endif
+
 
 
 
@@ -225,6 +291,8 @@ typedef enum
   right_dac_datapath_plays_mono_mix_left_and_right_channel_input_data = 3
 }e_RightDACDatapathControl;
 
+
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_FsrefSetting FsrefSetting                         :1;
@@ -236,7 +304,19 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r7_Codec_Datapath_Setup_t;
-
+#else
+typedef union{
+  struct{
+    uint8_t                                             :1;
+    e_RightDACDatapathControl RightDACDatapathControl   :2;
+    e_LeftDACDatapathControl LeftDACDatapathControl     :2;
+    e_DACDualRateControl DACDualRateControl             :1;
+    e_ADCDualRateControl ADCDualRateControl             :1;
+    e_FsrefSetting FsrefSetting                         :1;
+  }s;
+  uint8_t i_reg;
+}p0_r7_Codec_Datapath_Setup_t;
+#endif
 
 
 
@@ -267,21 +347,39 @@ typedef enum{
   digital_mic_support_enabled_oversampling_64 = 2,
   digital_mic_support_enabled_oversampling_32 = 3
 }e_DigitalMicrophoneFunctionalityControl;
+
+
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_BitClockDirectionalControl BitClockDirectionalControl     :1;
     e_WordClockDirectionalControl WordClockDirectionalControl   :1;
     e_SerialOutputDataDriver3StateControl
-      SerialOutputDataDriver3StateControl   :1;
-    e_BitWordClockDriveControl BitWordClockDriveControl              :1;
-    uint8_t                                       :1;
-    e_3DEffectControl _3DEffectControl                      :1;
+      SerialOutputDataDriver3StateControl                       :1;
+    e_BitWordClockDriveControl BitWordClockDriveControl         :1;
+    uint8_t                                                     :1;
+    e_3DEffectControl _3DEffectControl                          :1;
     e_DigitalMicrophoneFunctionalityControl
-      DigitalMicrophoneFunctionalityControl :2;
+      DigitalMicrophoneFunctionalityControl                     :2;
   }s;
   uint8_t i_reg;
 }p0_r8_Audio_Serial_Interface_Control_A_t;
-
+#else
+typedef union{
+  struct{
+    e_DigitalMicrophoneFunctionalityControl
+      DigitalMicrophoneFunctionalityControl                     :2;
+    e_3DEffectControl _3DEffectControl                          :1;
+    uint8_t                                                     :1;
+    e_BitWordClockDriveControl BitWordClockDriveControl         :1;
+    e_SerialOutputDataDriver3StateControl
+      SerialOutputDataDriver3StateControl                       :1;
+    e_WordClockDirectionalControl WordClockDirectionalControl   :1;
+    e_BitClockDirectionalControl BitClockDirectionalControl     :1;
+  }s;
+  uint8_t i_reg;
+}p0_r8_Audio_Serial_Interface_Control_A_t;
+#endif
 
 
 
@@ -310,19 +408,36 @@ typedef enum{
   re_sync_without_soft_muting = 0,
   re_sync_with_soft_muting = 1
 }e_ReSyncMuteBehavior;
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_AudioSerialDataInterfaceTransferMode
-      AudioSerialDataInterfaceTransferMode  :2;
+      AudioSerialDataInterfaceTransferMode                      :2;
     e_AudioSerialDataWordLengthControl
-      AudioSerialDataWordLengthControl      :2;
+      AudioSerialDataWordLengthControl                          :2;
     e_BitClockRateControl BitClockRateControl                   :1;
-    uint8_t DACReSync                             :1;
-    uint8_t ADCReSync                             :1;
-    e_ReSyncMuteBehavior ReSyncMuteBehavior                    :1;
+    uint8_t DACReSync                                           :1;
+    uint8_t ADCReSync                                           :1;
+    e_ReSyncMuteBehavior ReSyncMuteBehavior                     :1;
   }s;
   uint8_t i_reg;
 }p0_r9_Audio_Serial_Interface_Control_B_t;
+#else
+typedef union{
+  struct{
+    e_ReSyncMuteBehavior ReSyncMuteBehavior                     :1;
+    uint8_t ADCReSync                                           :1;
+    uint8_t DACReSync                                           :1;
+    e_BitClockRateControl BitClockRateControl                   :1;
+    e_AudioSerialDataWordLengthControl
+      AudioSerialDataWordLengthControl                          :2;
+    e_AudioSerialDataInterfaceTransferMode
+      AudioSerialDataInterfaceTransferMode                      :2;
+  }s;
+  uint8_t i_reg;
+}p0_r9_Audio_Serial_Interface_Control_B_t;
+
+#endif
 ///@}
 
 
@@ -333,6 +448,7 @@ typedef union{
   uint8_t i_reg;
 }p0_r10_Audio_Serial_Interface_Control_C_t;
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftADCOverflowFlag                   :1;
@@ -343,7 +459,20 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r11_Audio_Codec_Overflow_Flag_t;
+#else
+typedef union{
+  struct{
+    uint8_t PLLRValue                             :4;
+    uint8_t RightDACOverflowFlag                  :1;
+    uint8_t LeftDACOverflowFlag                   :1;
+    uint8_t RightADCOverflowFlag                  :1;
+    uint8_t LeftADCOverflowFlag                   :1;
+  }s;
+  uint8_t i_reg;
+}p0_r11_Audio_Codec_Overflow_Flag_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftADCHighpassFilterControl          :2;
@@ -355,7 +484,21 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r12_Audio_Codec_Digital_Filter_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t RightDACDeEmphasisFilterControl       :1;
+    uint8_t RightDACDigitalEffectsFilterControl   :1;
+    uint8_t LeftDACDeEmphasisFilterControl        :1;
+    uint8_t LeftDACDigitalEffectsFilterControl    :1;
+    uint8_t RightADCHighpassFilterControl         :2;
+    uint8_t LeftADCHighpassFilterControl          :2;
+  }s;
+  uint8_t i_reg;
+}p0_r12_Audio_Codec_Digital_Filter_Control_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t HeadsetDetectionControl                                       :1;
@@ -365,7 +508,19 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r13_Headset_Button_Press_Detection_A_t;
+#else
+typedef union{
+  struct{
+    uint8_t HeadsetGlitchSuppressionDebounceControlForButtonPress         :2;
+    uint8_t HeadsetGlitchSuppressionDebounceControlForJackDetection       :3;
+    uint8_t HeadsetTypeDetectionResults                                   :2;
+    uint8_t HeadsetDetectionControl                                       :1;
+  }s;
+  uint8_t i_reg;
+}p0_r13_Headset_Button_Press_Detection_A_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t DriverCapacitiveCoupling              :1;
@@ -377,7 +532,21 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r14_Headset_Button_Press_Detection_B_t;
+#else
+typedef union{
+  struct{
+    uint8_t                                       :3;
+    uint8_t StereoOutputDriverConfigurationB      :1;
+    uint8_t HeadsetDetectionFlag                  :1;
+    uint8_t ButtonPressDetectionFlag              :1;
+    uint8_t StereoOutputDriverConfigurationA      :1;
+    uint8_t DriverCapacitiveCoupling              :1;
+  }s;
+  uint8_t i_reg;
+}p0_r14_Headset_Button_Press_Detection_B_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftADCPGAMute                        :1;
@@ -385,7 +554,18 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r15_Left_ADC_PGA_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t LeftADCPGAGainSetting                 :7;
+    uint8_t LeftADCPGAMute                        :1;
+  }s;
+  uint8_t i_reg;
+}p0_r15_Left_ADC_PGA_Control_t;
 
+#endif
+
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftADCPGAMute                        :1;
@@ -393,7 +573,17 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r16_Right_ADC_PGA_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t LeftADCPGAGainSetting                 :7;
+    uint8_t LeftADCPGAMute                        :1;
+  }s;
+  uint8_t i_reg;
+}p0_r16_Right_ADC_PGA_Control_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t MIC3LInputLevelControlForLeftADCPGAMix        :4;
@@ -401,7 +591,17 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r17_MIC3L_R_To_Left_ADC_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t MIC3RInputLevelControlForLeftADCPGAMix        :4;
+    uint8_t MIC3LInputLevelControlForLeftADCPGAMix        :4;
+  }s;
+  uint8_t i_reg;
+}p0_r17_MIC3L_R_To_Left_ADC_Control_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t MIC3LInputLevelControlForRightADCPGAMix       :4;
@@ -409,7 +609,17 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r18_MIC3L_R_To_Right_ADC_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t MIC3RInputLevelControlForRightADCPGAMix       :4;
+    uint8_t MIC3LInputLevelControlForRightADCPGAMix       :4;
+  }s;
+  uint8_t i_reg;
+}p0_r18_MIC3L_R_To_Right_ADC_Control_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE1LSingleEndedVsFullyDifferentialControl   :1;
@@ -419,7 +629,19 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r19_LINE1LToLeftADCControl_t;
+#else
+typedef union{
+  struct{
+    uint8_t LeftADCPGASoftSteppingControl                 :2;
+    uint8_t LeftADCChannelPowerControl                    :1;
+    uint8_t LINE1LInputLevelControlForLeftADCPGAMix       :4;
+    uint8_t LINE1LSingleEndedVsFullyDifferentialControl   :1;
+  }s;
+  uint8_t i_reg;
+}p0_r19_LINE1LToLeftADCControl_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE2LSingleEndedVsFullyDifferentialControl   :1;
@@ -429,7 +651,19 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r20_LINE2L_To_Left_ADC_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t                                               :2;
+    uint8_t LeftADCChannelWeakCommonModeBiasControl       :1;
+    uint8_t LINE2LInputLevelControlForADCPGAMix           :4;
+    uint8_t LINE2LSingleEndedVsFullyDifferentialControl   :1;
+  }s;
+  uint8_t i_reg;
+}p0_r20_LINE2L_To_Left_ADC_Control_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE1RSingleEndedVsFullyDifferentialControl   :1;
@@ -438,7 +672,18 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r21_LINE1R_To_Left_ADC_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t                                               :3;
+    uint8_t LINE1RInputLevelControlForLeftADCPGAMix       :4;
+    uint8_t LINE1RSingleEndedVsFullyDifferentialControl   :1;
+  }s;
+  uint8_t i_reg;
+}p0_r21_LINE1R_To_Left_ADC_Control_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE1RSingleEndedVsFullyDifferentialControl   :1;
@@ -448,7 +693,19 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r22_LINE1R_To_Right_ADC_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t RightADCPGASoftSteppingControl                :2;
+    uint8_t RightADCChannelPowerControl                   :1;
+    uint8_t LINE1RInputLevelControlForRightADCPGAMix      :4;
+    uint8_t LINE1RSingleEndedVsFullyDifferentialControl   :1;
+  }s;
+  uint8_t i_reg;
+}p0_r22_LINE1R_To_Right_ADC_Control_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE2RSingleEndedVsFullyDifferentialControl   :1;
@@ -458,7 +715,20 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r23_LINE2R_To_Right_ADC_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t                                               :2;
+    uint8_t RightADCChannelWeakCommonModeBiasControl      :1;
+    uint8_t LINE2RInputLevelControlForRightADCPGAMix      :4;
+    uint8_t LINE2RSingleEndedVsFullyDifferentialControl   :1;
+  }s;
+  uint8_t i_reg;
+}p0_r23_LINE2R_To_Right_ADC_Control_t;
 
+#endif
+
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE1LSingleEndedVsFullyDifferential          :1;
@@ -467,7 +737,18 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r24_LINE1L_To_Right_ADC_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t                                               :3;
+    uint8_t LINE1LInputLevelControlForRightADCPGAMix      :4;
+    uint8_t LINE1LSingleEndedVsFullyDifferential          :1;
+  }s;
+  uint8_t i_reg;
+}p0_r24_LINE1L_To_Right_ADC_Control_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t MICBIASLevelControl                           :2;
@@ -476,7 +757,16 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r25_MICBIAS_Control_t;
-
+#else
+typedef union{
+  struct{
+    uint8_t                                               :3;
+    uint8_t                                               :3;
+    uint8_t MICBIASLevelControl                           :2;
+  }s;
+  uint8_t i_reg;
+}p0_r25_MICBIAS_Control_t;
+#endif
 
 
 
@@ -488,6 +778,8 @@ typedef enum{
   HPLCOM_is_constant_VCM = 1,
   HPLCOM_is_single_ended = 2
 }e_HPLCOMOutputDriverConfigurationControl;
+
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftDACPower                                  :1;
@@ -498,7 +790,18 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r37_DAC_Power_And_Output_Driver_Control_t;
-
+#else
+typedef union{
+  struct{
+    uint8_t                                               :4;
+    e_HPLCOMOutputDriverConfigurationControl
+      HPLCOMOutputDriverConfigurationControl              :2;
+    uint8_t RightDACPower                                 :1;
+    uint8_t LeftDACPower                                  :1;
+  }s;
+  uint8_t i_reg;
+}p0_r37_DAC_Power_And_Output_Driver_Control_t;
+#endif
 
 
 
@@ -515,6 +818,7 @@ typedef enum{
   if_short_protect_en_limit_max_current = 0,
   if_short_protect_en_power_down_when_short = 1
 }e_ShortCorcuitProtectionModeControl;
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t                                               :2;
@@ -527,6 +831,20 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r38_High_Power_Output_Driver_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t                                               :1;
+    e_ShortCorcuitProtectionModeControl
+      ShortCorcuitProtectionModeControl                   :1;
+    uint8_t ShortCircuitProtection                        :1;
+    e_HPRCOMOutputDriverConfigurationControl
+      HPRCOMOutputDriverConfigurationControl              :3;
+    uint8_t                                               :2;
+  }s;
+  uint8_t i_reg;
+}p0_r38_High_Power_Output_Driver_Control_t;
+#endif
 
 typedef union{
   struct{
@@ -535,6 +853,8 @@ typedef union{
   uint8_t i_reg;
 }p0_r39_Reserved_t;
 
+
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t OutputCommonModeVoltageControl                :2;
@@ -544,7 +864,17 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r40_High_Power_Output_Stage_Control_t;
-
+#else
+typedef union{
+  struct{
+    uint8_t OutputVolumeControlSoftStepping               :2;
+    uint8_t LINE2RBypassPathControl                       :2;
+    uint8_t LINE2LBypassPathControl                       :2;
+    uint8_t OutputCommonModeVoltageControl                :2;
+  }s;
+  uint8_t i_reg;
+}p0_r40_High_Power_Output_Stage_Control_t;
+#endif
 
 
 
@@ -563,6 +893,7 @@ typedef enum{
   left_DAC_channel_follows_right_channel = 1,
   right_DAC_channel_follows_left_channel = 2
 }e_DACDigitalVolumeControlFunctionality;
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_LeftDACOutputSwitchingControl
@@ -575,7 +906,20 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r41_DAC_Output_Switching_Control_t;
-
+#else
+typedef union{
+  struct{
+    e_DACDigitalVolumeControlFunctionality
+      DACDigitalVolumeControlFunctionality                :2;
+    uint8_t                                               :2;
+    e_RightDACOutputSwitchingControl
+      RightDACOutputSwitchingControl                      :2;
+    e_LeftDACOutputSwitchingControl
+      LeftDACOutputSwitchingControl                       :2;
+  }s;
+  uint8_t i_reg;
+}p0_r41_DAC_Output_Switching_Control_t;
+#endif
 
 
 
@@ -605,6 +949,8 @@ typedef enum{
   common_output_voltage_generated_from_resistor_divider = 0,
   common_output_voltage_generated_from_bandgap_reference = 1
 }e_WeakOutputCommonModeVoltageControl;
+
+#if BIG_ENDIAN_CONDITION
 typedef union
 {
   struct{
@@ -618,10 +964,25 @@ typedef union
   }s;
   uint8_t i_reg;
 }p0_r42_Output_Driver_Pop_Reduction_t;
+#else
+typedef union
+{
+  struct{
+    uint8_t                                               :1;
+    e_WeakOutputCommonModeVoltageControl
+      WeakOutputCommonModeVoltageControl                  :1;
+    e_DriverRampUpStepTimingControl
+        DriverRampUpStepTimingControl                       :2;
+    e_OutputDriverPowerOnDelayControl
+      OutputDriverPowerOnDelayControl                     :4;
+  }s;
+  uint8_t i_reg;
+}p0_r42_Output_Driver_Pop_Reduction_t;
+
+#endif
 
 
-
-
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftDACDigitalMute                            :1;
@@ -629,7 +990,17 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r43_Left_DAC_Digital_Volume_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t LeftDACDigitalVolumeControlSetting            :7;
+    uint8_t LeftDACDigitalMute                            :1;
+  }s;
+  uint8_t i_reg;
+}p0_r43_Left_DAC_Digital_Volume_Control_t;
+#endif
 
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t RightDACDigitalMute                           :1;
@@ -637,13 +1008,21 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r44_Right_DAC_Digital_Volume_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t RightDACDigitalVolumeControlSetting           :7;
+    uint8_t RightDACDigitalMute                           :1;
+  }s;
+  uint8_t i_reg;
+}p0_r44_Right_DAC_Digital_Volume_Control_t;
+#endif
 
 
 
 
 
-
-
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t DACL1RouteToHPLOUTEnable                    :1;
@@ -651,7 +1030,15 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r47_DAC_L1_To_HPLOUT_Volume_Control_t;
-
+#else
+typedef union{
+  struct{
+    uint8_t DACL1RouteToHPLOUTVolume                    :7;
+    uint8_t DACL1RouteToHPLOUTEnable                    :1;
+  }s;
+  uint8_t i_reg;
+}p0_r47_DAC_L1_To_HPLOUT_Volume_Control_t;
+#endif
 
 
 
@@ -667,6 +1054,7 @@ typedef enum{
   all_programmed_gains_to_HPLOUT_have_been_applied_yet = 0,
   not_all_programmed_gains_to_HPLOUT_have_been_applied_yet = 1
 }e_HPLOUTVolumeControlStatus;
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t HPLOUTOutputLevelControl                    :4;
@@ -679,10 +1067,23 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r51_HPLOUT_Output_Level_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t HPLOUTFullyPoweredUp                        :1;
+    e_HPLOUTVolumeControlStatus
+      HPLOUTVolumeControlStatus                         :1;
+    e_HPLOUTPowerDownDriveControl
+      HPLOUTPowerDownDriveControl                       :1;
+    uint8_t HPLOUTMute                                  :1;
+    uint8_t HPLOUTOutputLevelControl                    :4;
+  }s;
+  uint8_t i_reg;
+}p0_r51_HPLOUT_Output_Level_Control_t;
+#endif
 
 
-
-
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t DACR1RouteToHPROUTEnable                    :1;
@@ -690,7 +1091,16 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r64_DAC_R1_To_HPROUT_Volume_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t DACR1RouteToHPROUTVolume                    :7;
+    uint8_t DACR1RouteToHPROUTEnable                    :1;
+  }s;
+  uint8_t i_reg;
+}p0_r64_DAC_R1_To_HPROUT_Volume_Control_t;
 
+#endif
 
 
 
@@ -708,6 +1118,8 @@ typedef enum{
   all_programmed_gains_to_HPROUT_have_been_applied_yet = 0,
   not_all_programmed_gains_to_HPROUT_have_been_applied_yet = 1
 }e_HPROUTVolumeControlStatus;
+
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t HPROUTOutputLevelControl                    :4;
@@ -720,6 +1132,185 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r65_HPROUT_Output_Level_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t HPROUTFullyPoweredUp                        :1;
+    e_HPROUTVolumeControlStatus
+      HPROUTVolumeControlStatus                         :1;
+    e_HPROUTPowerDownDriveControl
+      HPROUTPowerDownDriveControl                       :1;
+    uint8_t HPROUTMute                                  :1;
+    uint8_t HPROUTOutputLevelControl                    :4;
+  }s;
+  uint8_t i_reg;
+}p0_r65_HPROUT_Output_Level_Control_t;
+#endif
+
+
+
+
+typedef enum{
+  DAC_L1_not_routed_to_LEFT_LOPM = 0,
+  DAC_L1_routed_to_LEFT_LOPM = 1
+}e_DAC_L1OutputRoutingControl;
+#if BIG_ENDIAN_CONDITION
+typedef union{
+  struct{
+    e_DAC_L1OutputRoutingControl
+      DAC_L1OutputRoutingControl                        :1;
+    uint8_t DAC_L1ToLEFT_LOPMAnalogVolumeControl        :7;
+  }s;
+  uint8_t i_reg;
+}p0_r82_DAC_L1_To_LEFT_LOPM_Volume_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t DAC_L1ToLEFT_LOPMAnalogVolumeControl        :7;
+    e_DAC_L1OutputRoutingControl
+      DAC_L1OutputRoutingControl                        :1;
+  }s;
+  uint8_t i_reg;
+}p0_r82_DAC_L1_To_LEFT_LOPM_Volume_Control_t;
+#endif
+
+
+typedef enum{
+  LEFT_LOPM_Output_level_0dB = 0,
+  LEFT_LOPM_Output_level_1dB = 1,
+  LEFT_LOPM_Output_level_2dB = 2,
+  LEFT_LOPM_Output_level_3dB = 3,
+  LEFT_LOPM_Output_level_4dB = 4,
+  LEFT_LOPM_Output_level_5dB = 5,
+  LEFT_LOPM_Output_level_6dB = 6,
+  LEFT_LOPM_Output_level_7dB = 7,
+  LEFT_LOPM_Output_level_8dB = 8,
+  LEFT_LOPM_Output_level_9dB = 9
+}e_LEFT_LOPMOutputLevel;
+typedef enum{
+  LEFT_LOPM_all_prog_gains_to_LEFT_LOPM_applied = 0,
+  LEFT_LOPM_not_all_prog_gains_to_LEFT_LOPM_applied_yet = 1
+}e_LEFT_LOPMVolumeControlStatus;
+typedef enum{
+  LEFT_LOPM_not_fully_powered_up = 0,
+  LEFT_LOPM_fully_powered_up = 1,
+}e_LEFT_LOPMPowerControl;
+#if BIG_ENDIAN_CONDITION
+typedef union{
+  struct{
+    e_LEFT_LOPMOutputLevel
+      LEFT_LOPMOutputLevel                              :4;
+    uint8_t LEFT_LOPMMute                               :1;
+    uint8_t                                             :1;
+    e_LEFT_LOPMVolumeControlStatus
+      LEFT_LOPMVolumeControlStatus                      :1;
+    e_LEFT_LOPMPowerControl
+      LEFT_LOPMPowerControl                             :1;
+  }s;
+  uint8_t i_reg;
+}p0_r86_LEFT_LOPM_Output_Level_Control_Register;
+#else
+typedef union{
+  struct{
+    e_LEFT_LOPMPowerControl
+      LEFT_LOPMPowerControl                             :1;
+    e_LEFT_LOPMVolumeControlStatus
+      LEFT_LOPMVolumeControlStatus                      :1;
+    uint8_t                                             :1;
+    uint8_t LEFT_LOPMMute                               :1;
+    e_LEFT_LOPMOutputLevel
+      LEFT_LOPMOutputLevel                              :4;
+  }s;
+  uint8_t i_reg;
+}p0_r86_LEFT_LOPM_Output_Level_Control_Register;
+#endif
+
+
+
+
+
+typedef enum{
+  DAC_R1_not_routed_to_RIGHT_LOPM = 0,
+  DAC_R1_routed_to_RIGHT_LOPM = 1
+}e_DAC_R1OutputRoutingControl;
+#if BIG_ENDIAN_CONDITION
+typedef union{
+  struct{
+    e_DAC_R1OutputRoutingControl
+      DAC_R1OutputRoutingControl                        :1;
+    uint8_t DAC_R1ToRIGHT_LOPMAnalogVolumeControl       :7;
+  }s;
+  uint8_t i_reg;
+}p0_r92_DAC_R1_To_RIGHT_LOPM_Volume_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t DAC_R1ToRIGHT_LOPMAnalogVolumeControl       :7;
+    e_DAC_R1OutputRoutingControl
+      DAC_R1OutputRoutingControl                        :1;
+  }s;
+  uint8_t i_reg;
+}p0_r92_DAC_R1_To_RIGHT_LOPM_Volume_Control_t;
+#endif
+
+
+
+
+
+
+
+
+
+
+typedef enum{
+  RIGHT_LOPM_Output_level_0dB = 0,
+  RIGHT_LOPM_Output_level_1dB = 1,
+  RIGHT_LOPM_Output_level_2dB = 2,
+  RIGHT_LOPM_Output_level_3dB = 3,
+  RIGHT_LOPM_Output_level_4dB = 4,
+  RIGHT_LOPM_Output_level_5dB = 5,
+  RIGHT_LOPM_Output_level_6dB = 6,
+  RIGHT_LOPM_Output_level_7dB = 7,
+  RIGHT_LOPM_Output_level_8dB = 8,
+  RIGHT_LOPM_Output_level_9dB = 9
+}e_RIGHT_LOPMOutputLevel;
+typedef enum{
+  RIGHT_LOPM_all_prog_gains_to_RIGHT_LOPM_applied = 0,
+  RIGHT_LOPM_not_all_prog_gains_to_RIGHT_LOPM_applied_yet = 1
+}e_RIGHT_LOPMVolumeControlStatus;
+typedef enum{
+  RIGHT_LOPM_not_fully_powered_up = 0,
+  RIGHT_LOPM_fully_powered_up = 1,
+}e_RIGHT_LOPMPowerControl;
+#if BIG_ENDIAN_CONDITION
+typedef union{
+  struct{
+    e_RIGHT_LOPMOutputLevel
+      RIGHT_LOPMOutputLevel                             :4;
+    uint8_t RIGHT_LOPMMute                              :1;
+    uint8_t                                             :1;
+    e_RIGHT_LOPMVolumeControlStatus
+      RIGHT_LOPMVolumeControlStatus                     :1;
+    e_RIGHT_LOPMPowerControl
+      RIGHT_LOPMPowerControl                            :1;
+  }s;
+  uint8_t i_reg;
+}p0_r93_RIGHT_LOPM_Output_Level_Control_Register;
+#else
+typedef union{
+  struct{
+    e_RIGHT_LOPMPowerControl
+      RIGHT_LOPMPowerControl                            :1;
+    e_RIGHT_LOPMVolumeControlStatus
+      RIGHT_LOPMVolumeControlStatus                     :1;
+    uint8_t                                             :1;
+    uint8_t RIGHT_LOPMMute                              :1;
+    e_RIGHT_LOPMOutputLevel
+      RIGHT_LOPMOutputLevel                             :4;
+  }s;
+  uint8_t i_reg;
+}p0_r93_RIGHT_LOPM_Output_Level_Control_Register;
+#endif
 
 
 
@@ -736,6 +1327,8 @@ typedef enum{
   PLLCLK_IN_uses_GPIO2 = 1,
   PLLCLK_IN_uses_BLCK = 2
 }e_PLLCLK_INSourceSelection;
+
+#if BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_CLKDIV_INSourceSelection
@@ -746,7 +1339,19 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r102_Clock_Generation_Control_t;
+#else
+typedef union{
+  struct{
+    // 0b0000 -> 16 ; 0b0001 -> 17 ; 0b0010 -> 2 ; 0b0011 -> 3 ; 0b1111 -> 15
+    uint8_t PLLClockDividerNValue                               :4;
+    e_PLLCLK_INSourceSelection PLLCLK_INSourceSelection         :2;
+    e_CLKDIV_INSourceSelection
+      CLKDIV_INSourceSelection                                  :2;
+  }s;
+  uint8_t i_reg;
+}p0_r102_Clock_Generation_Control_t;
 
+#endif
 ///@}
 
 
@@ -789,10 +1394,12 @@ typedef struct{
 #define tlv320aic33_read_byte_ro_mem(p_address)     pgm_read_byte(p_address)
 #define tlv320aic33_read_word_ro_mem(p_address)     pgm_read_word(p_address)
 #define tlv320aic33_read_dword_ro_mem(p_address)    pgm_read_dword(p_address)
+#define tlv320aic33_read_float_ro_mem(p_address)    pgm_read_float(p_address)
 #else   // Else different architecture
 #define tlv320aic33_read_byte_ro_mem(p_address)     *(p_address)
 #define tlv320aic33_read_word_ro_mem(p_address)     *(p_address)
 #define tlv320aic33_read_dword_ro_mem(p_address)    *(p_address)
+#define tlv320aic33_read_float_ro_mem(p_address)    *(p_address)
 #endif
 
 /**
@@ -822,6 +1429,14 @@ typedef struct{
 //==========================| High level functions |===========================
 GD_RES_CODE tlv320aic33_init(void);
 GD_RES_CODE tlv320aic33_set_DAC_play_input_data(uint8_t i_play_stereo);
+
+///\todo Complete this functions
+GD_RES_CODE tlv320aic33_set_ADC_record_from_LINE2(uint8_t i_play_stereo);
+GD_RES_CODE tlv320aic33_set_ADC_power(uint8_t enable_ADCs);
+GD_RES_CODE tlv320aic33_set_ADC_mute(uint8_t i_mute_flag);
+GD_RES_CODE tlv320aic33_set_ADC_gain_dB(float f_gain);
+
+
 GD_RES_CODE tlv320aic33_set_digital_interface_as_master(uint8_t i_master);
 GD_RES_CODE tlv320aic33_set_data_interface_mode(
     e_AudioSerialDataInterfaceTransferMode e_mode);
