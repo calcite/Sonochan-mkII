@@ -1,7 +1,14 @@
-################################################################################
-# Automatically-generated file. Do not edit!
-################################################################################
+# Makefile for Sonochan mkII
 
+# Optimizations - write as parameter. Eq: OPT=-O2
+OPT=-O2
+# Debug level - write as parameter (can be void). Eq: DBG=-g3
+# Or can be void (no debug informations). Eq.: DBG=
+DBG=
+
+
+
+# DO NOT TOUCH!
 -include ../makefile.init
 
 RM := rm -rf
