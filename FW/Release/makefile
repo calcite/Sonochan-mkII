@@ -2,8 +2,9 @@
 
 # Optimizations - write as parameter. Eq: OPT=-O2
 OPT=-O2
-# Debug level - write as parameter (can be void). Eq: DBG=-g3
-# Or can be void (no debug informations). Eq.: DBG=
+# Debug level - write as parameter (can be void). Eq: DBG=-gdwarf-2
+# or: DBG=-g2
+# or can be void (no debug informations). Eq.: DBG=
 DBG=
 
 
