@@ -7,7 +7,7 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 08.08.2014
+ * Modified: 18.08.2014
  *
  * \version 0.2
  * \author  Martin Stejskal
@@ -113,8 +113,8 @@ const gd_config_struct BRD_DRV_config_table[] =
     },
     {
       3,
-      "BCLK direction",
-      "0 - input ; 1 - output ; 2 - Hi-Z",
+      "BCLK role and direction",
+      "0 - slave, BCLK is input ; 1 - master, BCLK output ; 2 - Hi-z",
       uint32_type,      // Cause it is enum and 32 bit system
       {.data_uint32 = 0},
       {.data_uint32 = 2},
@@ -126,8 +126,8 @@ const gd_config_struct BRD_DRV_config_table[] =
     },
     {
       4,
-      "FRAME_SYNC direction",
-      "0 - input ; 1 - output ; 2 - Hi-Z",
+      "FSYNC role and direction",
+      "0 - slave, FSYNC (word clock) is input ; 1 - master, FSYNC (word clock) is output ; 2 - hi-z",
       uint32_type,      // Cause it is enum and 32 bit system
       {.data_uint32 = 0},
       {.data_uint32 = 2},
@@ -205,7 +205,7 @@ const gd_config_struct BRD_DRV_config_table[] =
     {
       10,
       "Set RX_DATA direction",
-      "0- input ; 1 - not allowed ; 2 - HiZ",
+      "0 - input ; 1 - not allowed ; 2 - HiZ",
       uint32_type,      // Cause it is enum and 32 bit system
       {.data_uint32 = 0},
       {.data_uint32 = 2},
@@ -313,6 +313,7 @@ void brd_drv_task_FreeRTOS(void *pvParameters)
  *
  * @return GD_SUCCESS (0) if all right
  */
+
 GD_RES_CODE brd_drv_pre_init(void)
 {
   // Variable for storing status
