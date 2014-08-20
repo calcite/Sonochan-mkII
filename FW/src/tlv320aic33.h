@@ -14,7 +14,7 @@
 #define _TLV320AIC33_H_
 
 //===========================| Included libraries |============================
-/* HAL for PLL !!! Please include correct driver for used architecture!
+/* HAL for TLV !!! Please include correct driver for used architecture!
  * Also in included driver should be defined enumeration TLV320AIC33_status_t
  */
 #include "tlv320aic33_HAL_AVR32_UC3A3_HW_interface.h"

@@ -35,7 +35,7 @@
  * Due to SRAM limitations it is recommended set this value to 80. However on\n
  * more powerful AVR it could be more.
  */
-#define GD_MAX_STRING_SIZE    80
+#define GD_MAX_STRING_SIZE    100
 
 //===============================| Structures |================================
 #ifndef GD_RES_CODE_DEFINED

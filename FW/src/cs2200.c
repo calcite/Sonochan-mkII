@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 07.05.2014
+ * Modified: 20.08.2014
  *
- * \version 0.7
+ * \version 0.7.1
  * \author Martin Stejskal
  */
 
@@ -45,7 +45,6 @@ const gd_config_struct CS2200_config_table[] PROGMEM =
 const gd_config_struct CS2200_config_table[] =
 #endif
   {
-    //==========================| High level functions |========================
     {
       0,                      // Command ID
       "Initialize CS2200 hardware",  // Name
@@ -102,6 +101,19 @@ const gd_config_struct CS2200_config_table[] =
     },
     {
       4,
+      "Set ratio",
+      "Unsigned 32 bit raw value",
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0xFFFFFFFF},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0xFFFFFFFF},
+      (GD_DATA_VALUE*)&s_register_img.Ratio.i_32bit,
+      cs2200_set_ratio
+    },
+    {
+      5,
       "Set output divider/multiplier ratio",
       "Input values: 1 2 4 8 0.5 0.25 0.125 0.0625",
       float_type,
@@ -114,9 +126,9 @@ const gd_config_struct CS2200_config_table[] =
       cs2200_set_out_divider_multiplier_float
     },
     {
-      5,
-      "Set \"save change frequency by 1\" flag",
-      "Options: 1 - save changing (recommended) ; 0 - \"dangerous\" change",
+      6,
+      "Set safe change flag (frequency change)",
+      "Options: 1 - safe (recommended) ; 0 - dangerous change (may cause glitches)",
       uint8_type,
       {.data_uint8 = 0},
       {.data_uint8 = 1},
@@ -125,20 +137,6 @@ const gd_config_struct CS2200_config_table[] =
       {.data_uint8 = 1},
       (GD_DATA_VALUE*)&s_virtual_reg_img.i_save_change_ratio_by_1,
       cs2200_set_save_change_ratio_by_1
-    },
-    //===========================| Mid level functions |========================
-    {
-      6,
-      "Set ratio",
-      "Unsigned 32 bit raw value",
-      uint32_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 0xFFFFFFFF},
-      uint32_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 0xFFFFFFFF},
-      (GD_DATA_VALUE*)&s_register_img.Ratio.i_32bit,
-      cs2200_set_ratio
     },
     {
       7,
@@ -161,7 +159,7 @@ const gd_config_struct CS2200_config_table[] =
 const gd_metadata CS2200_metadata =
 {
         CS2200_MAX_CMD_ID,              // Max CMD ID
-        "Fractional PLL CS2200-CP v0.7",     // Description
+        "Fractional PLL CS2200-CP v0.7.1",     // Description
         (gd_config_struct*)&CS2200_config_table[0],
         0x21    // Serial number (0~255)
 };
