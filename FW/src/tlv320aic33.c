@@ -4,10 +4,10 @@
  * \brief Driver for codec TLV320AIC33
  *
  * Created:  02.04.2014\n
- * Modified: 23.06.2014
+ * Modified: 21.08.2014
  *
- * \version 0.1a
- * \author Martin Stejskal
+ * \version 0.2a
+ * \author Martin Stejskal, Tomas Bajus
  */
 
 #include "tlv320aic33.h"
@@ -146,7 +146,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
         float_type,
         {.data_float = -79},
         {.data_float = 0},
-        (GD_DATA_VALUE*)&s_virtual_reg_img.i_headphones_volume_db,
+        (GD_DATA_VALUE*)&s_virtual_reg_img.f_headphones_volume_db,
         tlv320aic33_set_headphones_volume_dB
       },
       {
@@ -164,6 +164,19 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         7,
+        "DAC power",
+        "Options: 0 - disable power ; 1 -enable power",
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 1},
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 1},
+        (GD_DATA_VALUE*)&s_virtual_reg_img.i_dac_power,
+        tlv320aic33_set_DAC_power
+      },
+      {
+        8,
         "DAC mute",
         "Options: 0 - disable mute ; 1 - enable mute",
         uint8_type,
@@ -175,9 +188,24 @@ const gd_config_struct TLV320AIC33_config_table[] =
         (GD_DATA_VALUE*)&s_virtual_reg_img.i_dac_mute,
         tlv320aic33_set_DAC_mute
       },
+
+//tomas
       {
-        8,
-        "DAC power",
+        9,
+        "DAC volume",
+        "Range: 0 to -63.5 dB (when -64 dB -> mute)",
+        float_type,
+        {.data_float = -64},
+        {.data_float = 0},
+        float_type,
+        {.data_float = -64},
+        {.data_float = 0},
+        (GD_DATA_VALUE*)&s_virtual_reg_img.f_dac_volume_db,
+        tlv320aic33_set_DAC_volume_dB
+      },
+      {
+        10,
+        "ADC power",
         "Options: 0 - disable power ; 1 -enable power",
         uint8_type,
         {.data_uint8 = 0},
@@ -185,8 +213,61 @@ const gd_config_struct TLV320AIC33_config_table[] =
         uint8_type,
         {.data_uint8 = 0},
         {.data_uint8 = 1},
-        (GD_DATA_VALUE*)&s_virtual_reg_img.i_dac_power,
-        tlv320aic33_set_DAC_power
+        (GD_DATA_VALUE*)&s_virtual_reg_img.i_adc_power,
+        tlv320aic33_set_ADC_power
+      },
+      {
+        11,
+        "ADC mute",
+        "Options: 0 - disable mute ; 1 - enable mute",
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 1},
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 1},
+        (GD_DATA_VALUE*)&s_virtual_reg_img.i_dac_mute,
+        tlv320aic33_set_ADC_mute
+      },
+
+      {
+        12,
+        "ADC gain",
+        "Range <0:59,5> dB, step 0,5dB",
+        float_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 59.5},
+        float_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 59.5},
+        (GD_DATA_VALUE*)&s_virtual_reg_img.f_adc_gain_db,
+        tlv320aic33_set_ADC_gain_dB
+      },
+      {
+        13,
+        "ADCL from LINE2L",
+        "LINE2L to ADCL, gain: 0=0dB, 1=-1.5dB, 2=-3dB..8=-12dB, 15=not routed",
+        uint8_type,
+        {.data_uint8= 0},
+        {.data_uint8 = 15},
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 15},
+        (GD_DATA_VALUE*)&s_virtual_reg_img.e_line2l_to_adc_left_gain,
+        tlv320aic33_set_ADC_L_from_LINE2_L
+      },
+      {
+        14,
+        "ADCR from LINE2R",
+        "LINE2R to ADCR, gain: 0=0dB, 1=-1.5dB, 2=-3dB..8=-12dB, 15=not routed",
+        uint8_type,
+        {.data_uint8= 0},
+        {.data_uint8 = 15},
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 15},
+        (GD_DATA_VALUE*)&s_virtual_reg_img.e_line2r_to_adc_right_gain,
+        tlv320aic33_set_ADC_R_from_LINE2_R
       }
   };
 /// \brief Maximum command ID (is defined by last command)
@@ -196,7 +277,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
 const gd_metadata TLV320AIC33_metadata =
 {
   TLV320AIC33_MAX_CMD_ID,              // Max CMD ID
-  "Audio codec TLV320AIC33 v0.1a",     // Description
+  "Audio codec TLV320AIC33 v0.2a",     // Description
   (gd_config_struct*)&TLV320AIC33_config_table[0],      // Pointer to table
   0x12    // Serial number (0~255)
 };
@@ -373,6 +454,551 @@ GD_RES_CODE tlv320aic33_set_DAC_play_input_data(uint8_t i_play_stereo)
   return e_status;
 }
 
+
+/**
+ * \brief set ADC Left from LINE1L
+ * sets routing and gain of LINE1L input to left channel of ADC
+ * @param e_gain Options: gain {0; -1.5; -3.. -12} or disconnect from ADC
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE1_L(e_ADCInputGain e_gain)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 19 structure
+  p0_r19_LINE1L_To_Left_ADC_Control_t p0_r19;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(19, &p0_r19.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r19.s.LINE1LInputLevelControlForLeftADCPGAMix = e_gain;
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(19, p0_r19.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    s_virtual_reg_img.e_line1l_to_adc_left_gain = e_gain;
+#endif
+    return e_status;
+}
+
+
+
+/**
+ * \brief set ADC Left from LINE1R
+ * sets routing and gain of LINE1R input to left channel of ADC
+ * @param e_gain Options: gain {0; -1.5; -3.. -12} or disconnect from ADC
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE1_R(e_ADCInputGain e_gain)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 21 structure
+  p0_r21_LINE1R_To_Left_ADC_Control_t p0_r21;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(21, &p0_r21.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r21.s.LINE1RInputLevelControlForLeftADCPGAMix = e_gain;
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(21, p0_r21.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    s_virtual_reg_img.e_line1r_to_adc_left_gain = e_gain;
+#endif
+    return e_status;
+}
+
+
+
+/**
+ * \brief set ADC Left from LINE2L
+ * sets routing and gain of LINE2L input to left channel of ADC
+ * @param e_gain Options: gain {0; -1.5; -3.. -12} or disconnect from ADC
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE2_L(e_ADCInputGain e_gain)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 20 structure
+  p0_r20_LINE2L_To_Left_ADC_Control_t p0_r20;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(20, &p0_r20.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r20.s.LINE2LInputLevelControlForADCPGAMix = e_gain;
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(20, p0_r20.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    s_virtual_reg_img.e_line2l_to_adc_left_gain = e_gain;
+#endif
+    return e_status;
+}
+
+
+
+/**
+ * \brief set ADC Left from MIC3L
+ * sets routing and gain of MIC3L input to left channel of ADC
+ * @param e_gain Options: gain {0; -1.5; -3.. -12} or disconnect from ADC
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_L_from_MIC3_L(e_ADCInputGain e_gain)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 17 structure
+  p0_r17_MIC3L_R_To_Left_ADC_Control_t p0_r17;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(17, &p0_r17.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r17.s.MIC3LInputLevelControlForLeftADCPGAMix = e_gain;
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(17, p0_r17.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    s_virtual_reg_img.e_mic3l_to_adc_left_gain = e_gain;
+#endif
+    return e_status;
+}
+
+
+
+/**
+ * \brief set ADC Left from MIC3R
+ * sets routing and gain of MIC3R input to left channel of ADC
+ * @param e_gain Options: gain {0; -1.5; -3.. -12} or disconnect from ADC
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_L_from_MIC3_R(e_ADCInputGain e_gain)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 17 structure
+  p0_r17_MIC3L_R_To_Left_ADC_Control_t p0_r17;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(17, &p0_r17.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r17.s.MIC3RInputLevelControlForLeftADCPGAMix = e_gain;
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(17, p0_r17.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    s_virtual_reg_img.e_mic3r_to_adc_left_gain = e_gain;
+#endif
+    return e_status;
+}
+
+
+
+/**
+ * \brief set ADC Right from LINE1L
+ * sets routing and gain of LINE1L input to right channel of ADC
+ * @param e_gain Options: gain {0; -1.5; -3.. -12} or disconnect from ADC
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE1_L(e_ADCInputGain e_gain)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 24 structure
+  p0_r24_LINE1L_To_Right_ADC_Control_t p0_r24;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(24, &p0_r24.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r24.s.LINE1LInputLevelControlForRightADCPGAMix = e_gain;
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(24, p0_r24.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    s_virtual_reg_img.e_line1l_to_adc_right_gain = e_gain;
+#endif
+    return e_status;
+}
+
+
+
+/**
+ * \brief set ADC Right from LINE1R
+ * sets routing and gain of LINE1R input to right channel of ADC
+ * @param e_gain Options: gain {0; -1.5; -3.. -12} or disconnect from ADC
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE1_R(e_ADCInputGain e_gain)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 22 structure
+  p0_r22_LINE1R_To_Right_ADC_Control_t p0_r22;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(22, &p0_r22.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r22.s.LINE1RInputLevelControlForRightADCPGAMix = e_gain;
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(22, p0_r22.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    s_virtual_reg_img.e_line1r_to_adc_right_gain = e_gain;
+#endif
+    return e_status;
+}
+
+
+
+/**
+ * \brief set ADC Right from LINE2R
+ * sets routing and gain of LINE2R input to right channel of ADC
+ * @param e_gain Options: gain {0; -1.5; -3.. -12} or disconnect from ADC
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE2_R(e_ADCInputGain e_gain)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 23 structure
+  p0_r23_LINE2R_To_Right_ADC_Control_t p0_r23;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(23, &p0_r23.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r23.s.LINE2RInputLevelControlForRightADCPGAMix = e_gain;
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(23, p0_r23.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    s_virtual_reg_img.e_line2r_to_adc_right_gain = e_gain;
+#endif
+    return e_status;
+}
+
+
+
+/**
+ * \brief set ADC Right from MIC3L
+ * sets routing and gain of MIC3L input to right channel of ADC
+ * @param e_gain Options: gain {0; -1.5; -3.. -12} or disconnect from ADC
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_R_from_MIC3_L(e_ADCInputGain e_gain)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 18 structure
+  p0_r18_MIC3L_R_To_Right_ADC_Control_t p0_r18;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(18, &p0_r18.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r18.s.MIC3LInputLevelControlForRightADCPGAMix = e_gain;
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(18, p0_r18.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    s_virtual_reg_img.e_mic3l_to_adc_right_gain = e_gain;
+#endif
+    return e_status;
+}
+
+
+
+/**
+ * \brief set ADC Right from MIC3R
+ * sets routing and gain of MIC3R input to right channel of ADC
+ * @param e_gain Options: gain {0; -1.5; -3.. -12} or disconnect from ADC
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_R_from_MIC3_R(e_ADCInputGain e_gain)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 18 structure
+  p0_r18_MIC3L_R_To_Right_ADC_Control_t p0_r18;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(18, &p0_r18.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r18.s.MIC3RInputLevelControlForRightADCPGAMix = e_gain;
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(18, p0_r18.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    s_virtual_reg_img.e_mic3r_to_adc_right_gain = e_gain;
+#endif
+    return e_status;
+}
+
+
+
+/**
+ * \brief set ADC power
+ * enable or disable powering of both ADCs - left an right
+ * @param i_enable_ADCs Options: 0 - not powered; 1 - powered
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_power(uint8_t i_enable_ADCs)
+{
+	//For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 19, 22 structure
+  p0_r19_LINE1L_To_Left_ADC_Control_t p0_r19; //tomas - toto som premenoval cez refactor, nazov struktury bol bez _
+  p0_r22_LINE1R_To_Right_ADC_Control_t p0_r22;
+
+	//Get settings from codec
+  e_status = tlv320aic33_read_data(19, &p0_r19.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  e_status = tlv320aic33_read_data(22, &p0_r22.i_reg);
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+  //Set configuration
+  if(i_enable_ADCs == 0)
+  {
+    p0_r19.s.LeftADCChannelPowerControl = 0;
+    p0_r22.s.RightADCChannelPowerControl = 0;
+  }
+  else
+  {
+    p0_r19.s.LeftADCChannelPowerControl = 1;
+    p0_r22.s.RightADCChannelPowerControl = 1;
+  }
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(19, p0_r19.i_reg);
+  if(e_status != GD_SUCCESS)
+        return e_status;
+  e_status = tlv320aic33_write_data(22, p0_r22.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    // Check input value once more
+    if(i_enable_ADCs == 0)
+      s_virtual_reg_img.i_adc_power = 0;
+    else
+      s_virtual_reg_img.i_adc_power = 1;
+#endif
+    return e_status;
+}
+
+
+/**
+ * \brief Set ADC mute flag on or off
+ * @param i_mute_flag Options: 0 - mute off; 1 - mute on
+ * @return GD_SUCCESS (0) if all OKs
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_mute(uint8_t i_mute_flag)
+{
+  //For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 15, 16 structure
+  p0_r15_Left_ADC_PGA_Control_t p0_r15;
+  p0_r16_Right_ADC_PGA_Control_t p0_r16;
+
+  //Get settings from codec
+  e_status = tlv320aic33_read_data(15, &p0_r15.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  e_status = tlv320aic33_read_data(16, &p0_r16.i_reg);
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+  //Set configuration
+  if(i_mute_flag == 0)
+  {
+    p0_r15.s.LeftADCPGAMute = 0;
+    p0_r16.s.RigthADCPGAMute = 0;
+  }
+  else
+  {
+    p0_r15.s.LeftADCPGAMute = 1;
+    p0_r16.s.RigthADCPGAMute = 1;
+  }
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(15, p0_r15.i_reg);
+  if(e_status != GD_SUCCESS)
+        return e_status;
+  e_status = tlv320aic33_write_data(16, p0_r16.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+    if(e_status != GD_SUCCESS)
+      return e_status;
+
+    // Check input value once more
+    if(i_mute_flag == 0)
+      s_virtual_reg_img.i_adc_mute = 0;
+    else
+      s_virtual_reg_img.i_adc_mute = 1;
+#endif
+    return e_status;
+}
+
+
+/**
+ * \brief set ADC gain
+ * sets ADC gain in range <0:59,5> dB
+ * @param f_gain - float value of ADC gain in dB (max 59,5, min 0)
+ * @return GD_SUCCESS (0) if all OKs
+ *
+ */
+//tomas
+GD_RES_CODE tlv320aic33_set_ADC_gain_dB(float f_gain)
+{
+  //For result code
+  GD_RES_CODE e_status;
+
+  //Parameter range test
+  #define ADC_MAX_GAIN 59.5
+  if((f_gain > ADC_MAX_GAIN)||(f_gain < 0))
+    return GD_INCORRECT_PARAMETER;
+
+  //Page 0, register 15 structure
+  p0_r15_Left_ADC_PGA_Control_t p0_r15;
+  p0_r16_Right_ADC_PGA_Control_t p0_r16;
+
+  //Get settings from codec
+  e_status = tlv320aic33_read_data(15, &p0_r15.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  e_status = tlv320aic33_read_data(16, &p0_r16.i_reg);
+  if(e_status != GD_SUCCESS)
+    return e_status;
+
+  //Set configuration
+  p0_r15.s.LeftADCPGAGainSetting = (uint8_t)(2*f_gain);
+  p0_r16.s.RightADCPGAGainSetting = (uint8_t)(2*f_gain);
+
+  //Write settings to codec
+  e_status = tlv320aic33_write_data(15, p0_r15.i_reg);
+  if(e_status != GD_SUCCESS)
+  			return e_status;
+  e_status = tlv320aic33_write_data(16, p0_r16.i_reg);
+
+  // Only if gneric driver support enabled
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+  if(e_status != GD_SUCCESS)
+    return e_status;
+  s_virtual_reg_img.f_adc_gain_db = f_gain;
+#endif
+	  return e_status;
+}
 
 
 /**
@@ -552,9 +1178,16 @@ GD_RES_CODE tlv320aic33_set_DAC_power(uint8_t enable_DACs)
   if(e_status != GD_SUCCESS)
     return e_status;
 
+  // Only if generic driver support is enabled...
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
   // Save info
-  s_virtual_reg_img.i_dac_power = enable_DACs & 0x01;
-
+  if(e_status != GD_SUCCESS)
+    return e_status;
+  if(enable_DACs == 0)
+    s_virtual_reg_img.i_dac_power = 0;
+  else
+    s_virtual_reg_img.i_dac_power = 1;
+#endif
   return e_status;
 }
 
@@ -708,10 +1341,10 @@ GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag)
   e_status = tlv320aic33_write_data(65, p0_r65.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
-  e_status = tlv320aic33_write_data(86, p0_r65.i_reg);
+  e_status = tlv320aic33_write_data(86, p0_r86.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
-  e_status = tlv320aic33_write_data(93, p0_r65.i_reg);
+  e_status = tlv320aic33_write_data(93, p0_r93.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
 
@@ -840,7 +1473,7 @@ GD_RES_CODE tlv320aic33_set_headphones_volume_dB(float f_volume)
  */
 GD_RES_CODE tlv320aic33_get_headphones_volume_db(float *p_f_volume)
 {
-  *p_f_volume = s_virtual_reg_img.i_headphones_volume_db;
+  *p_f_volume = s_virtual_reg_img.f_headphones_volume_db;
   return GD_SUCCESS;
 }
 //===========================| Mid level functions |===========================
@@ -857,7 +1490,7 @@ inline GD_RES_CODE tlv320aic33_reset(void)
 #if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
   // Set virtual register image to default values
   // Default TLV volume
-  s_virtual_reg_img.i_headphones_volume_db = 0;
+  s_virtual_reg_img.f_headphones_volume_db = 0;
   /* We do not know yet. By default is this value set to 2, so user get thru
    * generic driver "strange" value.
    */
@@ -874,7 +1507,7 @@ inline GD_RES_CODE tlv320aic33_reset(void)
 
   // Reset codec. 1) Set page to 0  2) Set self cleaning software reset
   p0_r0_Page_Select_t p0_r0_Page_Select;
-  p0_r0_Page_Select.i_reg = 0;	// Reset all values
+  p0_r0_Page_Select.i_reg = 0;  // Reset all values
   p0_r0_Page_Select.s.PageSelect = 0;   // Set page to 0
 
   // Save status and check it
@@ -887,7 +1520,7 @@ inline GD_RES_CODE tlv320aic33_reset(void)
   }
 
   p0_r1_Software_Reset_t p0_r1_SW_res;
-  p0_r1_SW_res.i_reg = 0;	// Reset all bits
+  p0_r1_SW_res.i_reg = 0;  // Reset all bits
   p0_r1_SW_res.s.SoftwareReset = 1;     // Set reset to 1
 
   // Save status and return it
@@ -1042,7 +1675,7 @@ GD_RES_CODE tlv320aic33_set_headphones_volume(uint8_t i_volume)
   // Calculate actual volume in dB and store it in virtual register
   return tlv320aic33_find_float_volume_value(
       i_volume,
-      &s_virtual_reg_img.i_headphones_volume_db);
+      &s_virtual_reg_img.f_headphones_volume_db);
 #else
   return e_status;
 #endif

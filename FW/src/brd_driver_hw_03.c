@@ -241,10 +241,23 @@ const gd_config_struct BRD_DRV_config_table[] =
       (GD_DATA_VALUE*)&gd_void_value,
       brd_drv_save_all_settings
     },
+    {
+      13,
+      "Test function",
+      "For testing",
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 1024},
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      (GD_DATA_VALUE*)&gd_void_value,
+      brd_drv_test_f
+    },
 
   };
 /// \brief Maximum command ID (is defined by last command)
-#define BRD_DRV_MAX_CMD_ID          12
+#define BRD_DRV_MAX_CMD_ID          13
 
 
 const gd_metadata BRD_DRV_metadata =
@@ -255,6 +268,15 @@ const gd_metadata BRD_DRV_metadata =
         0x0F    // Serial number (0~255)
 };
 #endif
+//[DEBUG]
+#include "ssc.h"
+GD_RES_CODE brd_drv_test_f(uint32_t i32)
+{
+
+  return 0;
+}
+//[/DEBUG]
+
 //=================| Definitions that user should not change |=================
 /// Define ADC level when on connector side is save voltage (minimum)
 #define BRD_DRV_ADC_SAVE_VOL_MIN                320
@@ -787,8 +809,8 @@ GD_RES_CODE brd_drv_save_all_settings(void){
   // TX DATA direction
   flashc_memset8(
       (void *)&s_brd_drv_user_settings.e_tx_data_dir,
-      s_brd_drv_pure_i2s_dir.e_rx_data_dir,
-      sizeof(s_brd_drv_pure_i2s_dir.e_rx_data_dir),
+      s_brd_drv_pure_i2s_dir.e_tx_data_dir,
+      sizeof(s_brd_drv_pure_i2s_dir.e_tx_data_dir),
       1);
 
   // RX DATA direction
@@ -863,7 +885,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       (uint8_t)s_brd_drv_user_settings.e_bclk_dir);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg("BCLK dir fail");
+    print_dbg(" ! BCLK dir fail ! ");
     return e_status;
   }
 
@@ -872,7 +894,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       (uint8_t)s_brd_drv_user_settings.e_frame_sync_dir);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg("FS dir fail");
+    print_dbg(" ! FS dir fail ! ");
     return e_status;
   }
 
@@ -881,7 +903,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       (uint8_t)s_brd_drv_user_settings.e_tx_data_dir);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg("TXD dir fail");
+    print_dbg(" ! TXD dir fail ! ");
     return e_status;
   }
 
@@ -890,7 +912,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       (uint8_t)s_brd_drv_user_settings.e_rx_data_dir);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg("RXD dir fail");
+    print_dbg(" ! RXD dir fail ! ");
     return e_status;
   }
 
