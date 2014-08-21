@@ -1,5 +1,6 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../src/ssc.c \
 ../src/cs2200_HAL_AVR32_UC3A3_HW_interface.c \
 ../src/cs2200.c \
 ../src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.c \
@@ -34,6 +35,7 @@ C_SRCS += \
 
 
 OBJS += \
+./src/ssc.o \
 ./src/cs2200_HAL_AVR32_UC3A3_HW_interface.o \
 ./src/cs2200.o \
 ./src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.o \
@@ -68,6 +70,7 @@ OBJS += \
 
 
 C_DEPS += \
+./src/ssc.d \
 ./src/cs2200_HAL_AVR32_UC3A3_HW_interface.d \
 ./src/cs2200.d \
 ./src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.d \

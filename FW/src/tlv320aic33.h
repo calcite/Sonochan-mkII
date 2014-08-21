@@ -4,17 +4,17 @@
  * \brief Driver for codec TLV320AIC33
  *
  * Created:  02.04.2014\n
- * Modified: 23.06.2014
+ * Modified: 21.08.2014
  *
- * \version 0.1a
- * \author Martin Stejskal
+ * \version 0.2a
+ * \author Martin Stejskal, Tomas Bajus
  */
 
 #ifndef _TLV320AIC33_H_
 #define _TLV320AIC33_H_
 
 //===========================| Included libraries |============================
-/* HAL for TLV !!! Please include correct driver for used architecture!
+/* HAL for PLL !!! Please include correct driver for used architecture!
  * Also in included driver should be defined enumeration TLV320AIC33_status_t
  */
 #include "tlv320aic33_HAL_AVR32_UC3A3_HW_interface.h"
@@ -290,9 +290,20 @@ typedef enum
   right_dac_datapath_plays_left_channel_input_data = 2,
   right_dac_datapath_plays_mono_mix_left_and_right_channel_input_data = 3
 }e_RightDACDatapathControl;
+typedef enum{
+	loss_0_0db = 0,
+	loss_1_5db = 1,
+	loss_3_0db = 2,
+  loss_4_5db = 3,
+  loss_6_0db = 4,
+  loss_7_5db = 5,
+  loss_9_0db = 6,
+  loss_10_5db = 7,
+  loss_12_0db = 8,
+	disconnected = 15
+}e_ADCInputGain;
 
-
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_FsrefSetting FsrefSetting                         :1;
@@ -349,7 +360,7 @@ typedef enum{
 }e_DigitalMicrophoneFunctionalityControl;
 
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_BitClockDirectionalControl BitClockDirectionalControl     :1;
@@ -408,7 +419,7 @@ typedef enum{
   re_sync_without_soft_muting = 0,
   re_sync_with_soft_muting = 1
 }e_ReSyncMuteBehavior;
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_AudioSerialDataInterfaceTransferMode
@@ -448,7 +459,7 @@ typedef union{
   uint8_t i_reg;
 }p0_r10_Audio_Serial_Interface_Control_C_t;
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftADCOverflowFlag                   :1;
@@ -472,7 +483,7 @@ typedef union{
 }p0_r11_Audio_Codec_Overflow_Flag_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftADCHighpassFilterControl          :2;
@@ -498,7 +509,7 @@ typedef union{
 }p0_r12_Audio_Codec_Digital_Filter_Control_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t HeadsetDetectionControl                                       :1;
@@ -520,7 +531,7 @@ typedef union{
 }p0_r13_Headset_Button_Press_Detection_A_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t DriverCapacitiveCoupling              :1;
@@ -546,7 +557,7 @@ typedef union{
 }p0_r14_Headset_Button_Press_Detection_B_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftADCPGAMute                        :1;
@@ -565,25 +576,25 @@ typedef union{
 
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
-    uint8_t LeftADCPGAMute                        :1;
-    uint8_t LeftADCPGAGainSetting                 :7;
+    uint8_t RigthADCPGAMute                        :1;
+    uint8_t RightADCPGAGainSetting                 :7;
   }s;
   uint8_t i_reg;
 }p0_r16_Right_ADC_PGA_Control_t;
 #else
 typedef union{
   struct{
-    uint8_t LeftADCPGAGainSetting                 :7;
-    uint8_t LeftADCPGAMute                        :1;
+    uint8_t RightADCPGAGainSetting                 :7;
+    uint8_t RigthADCPGAMute                        :1;
   }s;
   uint8_t i_reg;
 }p0_r16_Right_ADC_PGA_Control_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t MIC3LInputLevelControlForLeftADCPGAMix        :4;
@@ -601,7 +612,7 @@ typedef union{
 }p0_r17_MIC3L_R_To_Left_ADC_Control_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t MIC3LInputLevelControlForRightADCPGAMix       :4;
@@ -619,7 +630,7 @@ typedef union{
 }p0_r18_MIC3L_R_To_Right_ADC_Control_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE1LSingleEndedVsFullyDifferentialControl   :1;
@@ -628,7 +639,7 @@ typedef union{
     uint8_t LeftADCPGASoftSteppingControl                 :2;
   }s;
   uint8_t i_reg;
-}p0_r19_LINE1LToLeftADCControl_t;
+}p0_r19_LINE1L_To_Left_ADC_Control_t;
 #else
 typedef union{
   struct{
@@ -638,10 +649,10 @@ typedef union{
     uint8_t LINE1LSingleEndedVsFullyDifferentialControl   :1;
   }s;
   uint8_t i_reg;
-}p0_r19_LINE1LToLeftADCControl_t;
+}p0_r19_LINE1L_To_Left_ADC_Control_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE2LSingleEndedVsFullyDifferentialControl   :1;
@@ -663,7 +674,7 @@ typedef union{
 }p0_r20_LINE2L_To_Left_ADC_Control_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE1RSingleEndedVsFullyDifferentialControl   :1;
@@ -683,7 +694,7 @@ typedef union{
 }p0_r21_LINE1R_To_Left_ADC_Control_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE1RSingleEndedVsFullyDifferentialControl   :1;
@@ -705,7 +716,7 @@ typedef union{
 }p0_r22_LINE1R_To_Right_ADC_Control_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE2RSingleEndedVsFullyDifferentialControl   :1;
@@ -728,7 +739,7 @@ typedef union{
 
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LINE1LSingleEndedVsFullyDifferential          :1;
@@ -748,7 +759,7 @@ typedef union{
 }p0_r24_LINE1L_To_Right_ADC_Control_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t MICBIASLevelControl                           :2;
@@ -768,6 +779,58 @@ typedef union{
 }p0_r25_MICBIAS_Control_t;
 #endif
 
+
+
+
+
+typedef enum{
+	applied_and_programmed_gain_are_not_equal = 0,
+	applied_gain_is_equal_to_programmed_gain = 1
+}e_ADCPGAStatus;
+
+typedef enum{
+	signal_power_is_greather_than_noise_treshold = 0,
+	signal_power_is_less_than_noise_treshold = 0,
+}e_AGCSignalDetectionStatus;
+
+typedef enum{
+	AGC_is_not_saturated = 0,
+	AGC_gain_applied = 1
+}e_AGCSaturationFlag;
+
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
+typedef union{
+  struct{
+    e_ADCPGAStatus LeftADCPGAStatus              	        :1;
+    uint8_t LeftADCPowerStatus                            :1;
+    e_AGCSignalDetectionStatus
+      LeftAGCSignalDetectionStatus                        :1;
+    e_AGCSaturationFlag LeftAGCSaturationFlag             :1;
+    e_ADCPGAStatus RightADCPGAStatus              				:1;
+    uint8_t RightADCPowerStatus                           :1;
+    e_AGCSignalDetectionStatus
+      RightAGCSignalDetectionStatus                 			:1;
+    e_AGCSaturationFlag RightAGCSaturationFlag            :1;
+  }s;
+  uint8_t i_reg;
+}p0_r36_ADC_Flag_Register_t;
+#else
+typedef union{
+  struct{
+  	e_AGCSaturationFlag RightAGCSaturationFlag            :1;
+  	e_AGCSignalDetectionStatus
+  		RightAGCSignalDetectionStatus                 			:1;
+  	uint8_t RightADCPowerStatus                           :1;
+  	e_ADCPGAStatus RightADCPGAStatus              				:1;
+  	e_AGCSaturationFlag LeftAGCSaturationFlag             :1;
+  	e_AGCSignalDetectionStatus
+  	  LeftAGCSignalDetectionStatus                        :1;
+  	uint8_t LeftADCPowerStatus                            :1;
+  	e_ADCPGAStatus LeftADCPGAStatus              	        :1;
+  }s;
+  uint8_t i_reg;
+}p0_r36_ADC_Flag_Register_t;
+#endif
 
 
 
@@ -779,7 +842,7 @@ typedef enum{
   HPLCOM_is_single_ended = 2
 }e_HPLCOMOutputDriverConfigurationControl;
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftDACPower                                  :1;
@@ -802,10 +865,6 @@ typedef union{
   uint8_t i_reg;
 }p0_r37_DAC_Power_And_Output_Driver_Control_t;
 #endif
-
-
-
-
 
 typedef enum{
   HPRCOM_is_differential_of_HPROUT = 0,
@@ -818,7 +877,7 @@ typedef enum{
   if_short_protect_en_limit_max_current = 0,
   if_short_protect_en_power_down_when_short = 1
 }e_ShortCorcuitProtectionModeControl;
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t                                               :2;
@@ -854,7 +913,7 @@ typedef union{
 }p0_r39_Reserved_t;
 
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t OutputCommonModeVoltageControl                :2;
@@ -893,7 +952,7 @@ typedef enum{
   left_DAC_channel_follows_right_channel = 1,
   right_DAC_channel_follows_left_channel = 2
 }e_DACDigitalVolumeControlFunctionality;
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_LeftDACOutputSwitchingControl
@@ -950,7 +1009,7 @@ typedef enum{
   common_output_voltage_generated_from_bandgap_reference = 1
 }e_WeakOutputCommonModeVoltageControl;
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union
 {
   struct{
@@ -982,7 +1041,7 @@ typedef union
 #endif
 
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t LeftDACDigitalMute                            :1;
@@ -1000,7 +1059,7 @@ typedef union{
 }p0_r43_Left_DAC_Digital_Volume_Control_t;
 #endif
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t RightDACDigitalMute                           :1;
@@ -1022,7 +1081,7 @@ typedef union{
 
 
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t DACL1RouteToHPLOUTEnable                    :1;
@@ -1054,7 +1113,7 @@ typedef enum{
   all_programmed_gains_to_HPLOUT_have_been_applied_yet = 0,
   not_all_programmed_gains_to_HPLOUT_have_been_applied_yet = 1
 }e_HPLOUTVolumeControlStatus;
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t HPLOUTOutputLevelControl                    :4;
@@ -1083,7 +1142,7 @@ typedef union{
 #endif
 
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t DACR1RouteToHPROUTEnable                    :1;
@@ -1119,7 +1178,7 @@ typedef enum{
   not_all_programmed_gains_to_HPROUT_have_been_applied_yet = 1
 }e_HPROUTVolumeControlStatus;
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     uint8_t HPROUTOutputLevelControl                    :4;
@@ -1154,7 +1213,7 @@ typedef enum{
   DAC_L1_not_routed_to_LEFT_LOPM = 0,
   DAC_L1_routed_to_LEFT_LOPM = 1
 }e_DAC_L1OutputRoutingControl;
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_DAC_L1OutputRoutingControl
@@ -1195,7 +1254,7 @@ typedef enum{
   LEFT_LOPM_not_fully_powered_up = 0,
   LEFT_LOPM_fully_powered_up = 1,
 }e_LEFT_LOPMPowerControl;
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_LEFT_LOPMOutputLevel
@@ -1233,7 +1292,7 @@ typedef enum{
   DAC_R1_not_routed_to_RIGHT_LOPM = 0,
   DAC_R1_routed_to_RIGHT_LOPM = 1
 }e_DAC_R1OutputRoutingControl;
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_DAC_R1OutputRoutingControl
@@ -1282,7 +1341,7 @@ typedef enum{
   RIGHT_LOPM_not_fully_powered_up = 0,
   RIGHT_LOPM_fully_powered_up = 1,
 }e_RIGHT_LOPMPowerControl;
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_RIGHT_LOPMOutputLevel
@@ -1328,7 +1387,7 @@ typedef enum{
   PLLCLK_IN_uses_BLCK = 2
 }e_PLLCLK_INSourceSelection;
 
-#if BIG_ENDIAN_CONDITION
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
     e_CLKDIV_INSourceSelection
@@ -1359,7 +1418,10 @@ typedef union{
 // This structure have meaning only if generic driver is enabled
 typedef struct{
   // Headphones volume level in dB
-  float i_headphones_volume_db;
+  float f_headphones_volume_db;
+
+  // DAC volume level in dB
+  float f_dac_volume_db;
 
   // Info if DAC play stereo or mono
   uint8_t i_dac_play_stereo;
@@ -1381,8 +1443,48 @@ typedef struct{
   // DAC mute
   uint8_t i_dac_mute;
 
+  // ADC mute
+  uint8_t i_adc_mute;
+
   // DAC power
   uint8_t i_dac_power;
+
+  // ADC power
+  uint8_t i_adc_power;
+
+  // ADC gain dB
+  float f_adc_gain_db;
+
+  // MIC3R to ADC Right gain
+  e_ADCInputGain e_mic3r_to_adc_right_gain;
+
+  // MIC3L to ADC Right gain
+  e_ADCInputGain e_mic3l_to_adc_right_gain;
+
+  // LINE2R to ADC Right gain
+  e_ADCInputGain e_line2r_to_adc_right_gain;
+
+  // LINE1R to ADC Right gain
+  e_ADCInputGain e_line1r_to_adc_right_gain;
+
+  // LINE1L to ADC Right gain
+  e_ADCInputGain e_line1l_to_adc_right_gain;
+
+  // MIC3R to ADC Left gain
+  e_ADCInputGain e_mic3r_to_adc_left_gain;
+
+  // MIC3L to ADC Left gain
+  e_ADCInputGain e_mic3l_to_adc_left_gain;
+
+  // LINE2L to ADC Left gain
+  e_ADCInputGain e_line2l_to_adc_left_gain;
+
+  // LINE1R to ADC Left gain
+  e_ADCInputGain e_line1r_to_adc_left_gain;
+
+  // LINE1L to ADC Left gain
+  e_ADCInputGain e_line1l_to_adc_left_gain;
+
 }tlv320aic33_virtual_reg_img_t;
 
 #endif
@@ -1427,29 +1529,42 @@ typedef struct{
 
 
 //==========================| High level functions |===========================
-GD_RES_CODE tlv320aic33_init(void);
-GD_RES_CODE tlv320aic33_set_DAC_play_input_data(uint8_t i_play_stereo);
 
-///\todo Complete this functions
-GD_RES_CODE tlv320aic33_set_ADC_record_from_LINE2(uint8_t i_play_stereo);
+
+//not accesible from uniprot
+GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE1_L(e_ADCInputGain e_gain);
+GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE1_R(e_ADCInputGain e_gain);
+GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE2_L(e_ADCInputGain e_gain);
+//ADC L from LINE2 R not supported
+GD_RES_CODE tlv320aic33_set_ADC_L_from_MIC3_L(e_ADCInputGain e_gain);
+GD_RES_CODE tlv320aic33_set_ADC_L_from_MIC3_R(e_ADCInputGain e_gain);
+GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE1_L(e_ADCInputGain e_gain);
+GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE1_R(e_ADCInputGain e_gain);
+//ADC R from LINE2 L not supported
+GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE2_R(e_ADCInputGain e_gain);
+GD_RES_CODE tlv320aic33_set_ADC_R_from_MIC3_L(e_ADCInputGain e_gain);
+GD_RES_CODE tlv320aic33_set_ADC_R_from_MIC3_R(e_ADCInputGain e_gain);
+
+//accesible from uniprot
+GD_RES_CODE tlv320aic33_init(void);
+GD_RES_CODE tlv320aic33_set_ADC_gain_dB(float f_gain);
 GD_RES_CODE tlv320aic33_set_ADC_power(uint8_t enable_ADCs);
 GD_RES_CODE tlv320aic33_set_ADC_mute(uint8_t i_mute_flag);
-GD_RES_CODE tlv320aic33_set_ADC_gain_dB(float f_gain);
-
-
 GD_RES_CODE tlv320aic33_set_digital_interface_as_master(uint8_t i_master);
 GD_RES_CODE tlv320aic33_set_data_interface_mode(
     e_AudioSerialDataInterfaceTransferMode e_mode);
 GD_RES_CODE tlv320aic33_set_word_length(uint8_t i_word_length);
-GD_RES_CODE tlv320aic33_set_DAC_power(uint8_t enable_DACs);
+GD_RES_CODE tlv320aic33_set_DAC_play_input_data(uint8_t i_play_stereo);
+GD_RES_CODE tlv320aic33_set_headphones_volume_dB(float f_volume);
 GD_RES_CODE tlv320aic33_set_headphones_single_ended(uint8_t i_single_ended);
+GD_RES_CODE tlv320aic33_set_DAC_power(uint8_t enable_DACs);
 GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag);
 GD_RES_CODE tlv320aic33_set_DAC_volume_dB(float f_volume);
 GD_RES_CODE tlv320aic33_set_CLKDIV_IN_source(
     e_CLKDIV_INSourceSelection e_source);
 GD_RES_CODE tlv320aic33_set_PLLCLK_IN_source(
     e_PLLCLK_INSourceSelection e_source);
-GD_RES_CODE tlv320aic33_set_headphones_volume_dB(float f_volume);
+
 GD_RES_CODE tlv320aic33_get_headphones_volume_db(float *p_f_volume);
 //===========================| Mid level functions |===========================
 GD_RES_CODE tlv320aic33_reset(void);

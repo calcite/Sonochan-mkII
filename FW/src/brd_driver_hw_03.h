@@ -295,6 +295,9 @@
 // Because of sprintf()
 #include <stdio.h>
 
+// SSC driver (on chip AVR32)
+#include "ssc.h"
+
 // PLL control
 #include "cs2200.h"
 
@@ -834,5 +837,7 @@ GD_RES_CODE brd_drv_set_rst_i2s_dir(e_brd_drv_dir_t e_rst_i2s_dir);
 GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag);
 
 
-
+//[DEBUG]
+GD_RES_CODE brd_drv_test_f(uint32_t i32);
+//[/DEBUG]
 #endif
