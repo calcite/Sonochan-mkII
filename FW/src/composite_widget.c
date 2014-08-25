@@ -266,9 +266,9 @@ int main(void)
 
 
   // Start the image tasks
-  print_dbg("> Image task init");
+  print_dbg("> Image task init\n--------\n");
   image_task_init();
-  print_dbg("             OK\n");
+  print_dbg("\n--------\n             OK\n");
 
 
   // Start OS scheduler

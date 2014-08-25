@@ -7,7 +7,7 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 20.08.2014
+ * Modified: 25.08.2014
  *
  * \version 0.2
  * \author  Martin Stejskal
@@ -313,6 +313,9 @@
 // Printing debug messages through UART
 #include "print_funcs.h"
 
+// Because of uac1_device_audio_set_auto_tune() function
+#include "uac1_device_audio_task.h"
+
 // GPIO operations
 ///\todo Try to remove this dependency
 #include "gpio.h"
@@ -434,6 +437,9 @@ typedef struct{
   e_brd_drv_dir_t e_tx_data_dir;
   // RX DATA direction
   e_brd_drv_dir_t e_rx_data_dir;
+
+  // Auto tune external PLL option
+  uint8_t i_auto_tune_pll;
 }s_brd_drv_user_settings_t;
 
 //===============================| Definitions |===============================
@@ -791,6 +797,8 @@ GD_RES_CODE brd_drv_init(void);
 void brd_drv_task(void);
 
 GD_RES_CODE brd_drv_reset_i2s(void);
+
+GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable);
 
 GD_RES_CODE brd_drv_save_all_settings(void);
 

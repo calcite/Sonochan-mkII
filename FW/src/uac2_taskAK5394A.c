@@ -68,188 +68,198 @@ void uac2_AK5394A_task(void*);
 //! required for device CDC task.
 //!
 void uac2_AK5394A_task_init(void) {
-	current_freq.frequency = 96000;
-	AK5394A_task_init(FALSE);
-	xTaskCreate(uac2_AK5394A_task,
-				configTSK_AK5394A_NAME,
-				configTSK_AK5394A_STACK_SIZE,
-				NULL,
-				UAC2_configTSK_AK5394A_PRIORITY,
-				NULL);
+  current_freq.frequency = 96000;
+  AK5394A_task_init(FALSE);
+  xTaskCreate(uac2_AK5394A_task,
+        configTSK_AK5394A_NAME,
+        configTSK_AK5394A_STACK_SIZE,
+        NULL,
+        UAC2_configTSK_AK5394A_PRIORITY,
+        NULL);
 }
 
 //!
 //! @brief Entry point of the AK5394A task management
 //!
 void uac2_AK5394A_task(void *pvParameters) {
-	portTickType xLastWakeTime;
-	xLastWakeTime = xTaskGetTickCount();
-	int i;
+  portTickType xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
+  int i;
 
-	while (TRUE) {
-		// All the hardwork is done by the pdca and the interrupt handler.
-		// Just check whether sampling freq is changed, to do rate change etc.
+  while (TRUE) {
+    // All the hardwork is done by the pdca and the interrupt handler.
+    // Just check whether sampling freq is changed, to do rate change etc.
 
-		vTaskDelayUntil(&xLastWakeTime, UAC2_configTSK_AK5394A_PERIOD);
+    vTaskDelayUntil(&xLastWakeTime, UAC2_configTSK_AK5394A_PERIOD);
 
-		if (freq_changed) {
+    if (freq_changed) {
 
-			spk_mute = TRUE;						// mute speaker while changing frequency and oscillator
-			if (current_freq.frequency == 96000) {
-				pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-				pdca_disable(PDCA_CHANNEL_SSC_RX);
-
-
-				gpio_set_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 24.576MHz/2 for AB-1
-
-				pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
-				pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
-							0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
-							1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
-							1,                  // diven - enabled
-							0);                 // divided by 2.  Therefore GCLK1 = 6.144Mhz
-				pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
-
-				FB_rate = 96 << 14;
-
-			}
-
-		   	else if (current_freq.frequency == 88200){
-				pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-				pdca_disable(PDCA_CHANNEL_SSC_RX);
+      spk_mute = TRUE;            // mute speaker while changing frequency and oscillator
+      if (current_freq.frequency == 96000) {
+        pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+        pdca_disable(PDCA_CHANNEL_SSC_RX);
 
 
-				gpio_clr_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 22.5792MHz/2 for AB-1
+        gpio_set_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 24.576MHz/2 for AB-1
 
-				pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
-				pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
-								  0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
-								  1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
-								  1,                  // diven - enabled
-								  0);                 // divided by 2.  Therefore GCLK1 = 6.144Mhz
-				pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+        pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+        pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
+              0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
+              1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
+              1,                  // diven - enabled
+              0);                 // divided by 2.  Therefore GCLK1 = 6.144Mhz
+        pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
 
-				FB_rate = (88 << 14) + (1<<14)/5;
-				}
+        FB_rate = 96 << 14;
 
-	       	else if (current_freq.frequency == 176400)
-	        	{
-	    			pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-	    			pdca_disable(PDCA_CHANNEL_SSC_RX);
+      }
 
-
-					gpio_clr_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 22.5792MHz/2 for AB-1
+         else if (current_freq.frequency == 88200){
+        pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+        pdca_disable(PDCA_CHANNEL_SSC_RX);
 
 
-	    			pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
-	    			pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
-	    								  0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
-	    								  1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
-	    								  0,                  // diven - disabled
-	    								  0);                 // GCLK1 = 12.288Mhz
-	    			pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+        gpio_clr_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 22.5792MHz/2 for AB-1
 
-	    			FB_rate = (176 << 14) + ((1<<14) * 4)/ 10;
+        pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+        pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
+                  0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
+                  1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
+                  1,                  // diven - enabled
+                  0);                 // divided by 2.  Therefore GCLK1 = 6.144Mhz
+        pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
 
-	        	}
+        FB_rate = (88 << 14) + (1<<14)/5;
+        }
 
-			else if (current_freq.frequency == 192000) {
-				pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-				pdca_disable(PDCA_CHANNEL_SSC_RX);
-
-					gpio_set_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 24.576MHz/2 for AB-1
-
-
-
-				pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
-				pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
-							0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
-							1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
-							0,                  // diven - disabled
-							0);                 // GCLK1 = 12.288Mhz
-				pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
-
-				FB_rate = 192 << 14;
-
-			} else if (current_freq.frequency == 48000) {
-				// if there are two XO, PX16 sets the 48x
-				// gpio_set_gpio_pin(AVR32_PIN_PX16);
-				pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-				pdca_disable(PDCA_CHANNEL_SSC_RX);
+           else if (current_freq.frequency == 176400)
+            {
+            pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+            pdca_disable(PDCA_CHANNEL_SSC_RX);
 
 
-					gpio_set_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 24.576MHz/2 for AB-1
-
-				pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
-				pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
-							0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
-							1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
-							1,                  // diven - enabled
-							1);                 // divided by 4.  Therefore GCLK1 = 3.072Mhz
-				pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
-
-				FB_rate = 48 << 14;
-
-			}
-
-			else if (current_freq.frequency == 44100) {
-				// if there are two XO, PX16 set --> 48x. clr -->44.1x
-				// gpio_clr_gpio_pin(AVR32_PIN_PX16);
-				pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-				pdca_disable(PDCA_CHANNEL_SSC_RX);
-
-					gpio_clr_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 22.5792MHz/2 for AB-1
-
-				pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
-				pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
-							0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
-							1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
-							1,                  // diven - enabled
-							1);                 // divided by 4.  Therefore GCLK1 = 3.072Mhz
-				pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
-
-				FB_rate = (44 << 14) + (1 << 14)/10 ;
-
-			}
+          gpio_clr_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 22.5792MHz/2 for AB-1
 
 
-				// re-sync SSC to LRCK
-				// Wait for the next frame synchronization event
-				// to avoid channel inversion.  Start with left channel - FS goes low
-				// However, the channels are reversed at 192khz
+            pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+            pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
+                        0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
+                        1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
+                        0,                  // diven - disabled
+                        0);                 // GCLK1 = 12.288Mhz
+            pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
 
-				if (current_freq.frequency == 192000) {
-					while (gpio_get_pin_value(AK5394_LRCK));
-					while (!gpio_get_pin_value(AK5394_LRCK));	// exit when FS goes high
-				} else {
-					while (!gpio_get_pin_value(AK5394_LRCK));
-					while (gpio_get_pin_value(AK5394_LRCK));	// exit when FS goes low
-				}
-				// Enable now the transfer.
-				pdca_enable(PDCA_CHANNEL_SSC_RX);
+            FB_rate = (176 << 14) + ((1<<14) * 4)/ 10;
 
-				// Init PDCA channel with the pdca_options.
-				AK5394A_pdca_enable();
+            }
+
+      else if (current_freq.frequency == 192000) {
+        pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+        pdca_disable(PDCA_CHANNEL_SSC_RX);
+
+          gpio_set_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 24.576MHz/2 for AB-1
 
 
-			spk_mute = FALSE;
-			// reset freq_changed flag
-			freq_changed = FALSE;
-		}
 
-		if (usb_alternate_setting_out_changed) {
-			if (usb_alternate_setting_out != 1) {
-				spk_mute = TRUE;
-				for (i = 0; i < SPK_BUFFER_SIZE; i++) {
-					spk_buffer_0[i] = 0;
-					spk_buffer_1[i] = 0;
-				}
-				spk_mute = FALSE;
-			}
-			usb_alternate_setting_out_changed = FALSE;
-		}
+        pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+        pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
+              0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
+              1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
+              0,                  // diven - disabled
+              0);                 // GCLK1 = 12.288Mhz
+        pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
 
-	} // end while (TRUE)
+        FB_rate = 192 << 14;
+
+      } else if (current_freq.frequency == 48000) {
+        // if there are two XO, PX16 sets the 48x
+        // gpio_set_gpio_pin(AVR32_PIN_PX16);
+        pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+        pdca_disable(PDCA_CHANNEL_SSC_RX);
+
+
+          gpio_set_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 24.576MHz/2 for AB-1
+
+        pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+        pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
+              0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
+              1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
+              1,                  // diven - enabled
+              1);                 // divided by 4.  Therefore GCLK1 = 3.072Mhz
+        pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+
+        FB_rate = 48 << 14;
+
+      }
+
+      else if (current_freq.frequency == 44100) {
+        // if there are two XO, PX16 set --> 48x. clr -->44.1x
+        // gpio_clr_gpio_pin(AVR32_PIN_PX16);
+        pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+        pdca_disable(PDCA_CHANNEL_SSC_RX);
+
+          gpio_clr_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 22.5792MHz/2 for AB-1
+
+        pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+        pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
+              0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
+              1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
+              1,                  // diven - enabled
+              1);                 // divided by 4.  Therefore GCLK1 = 3.072Mhz
+        pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+
+        FB_rate = (44 << 14) + (1 << 14)/10 ;
+
+      }
+
+
+        // re-sync SSC to LRCK
+        // Wait for the next frame synchronization event
+        // to avoid channel inversion.  Start with left channel - FS goes low
+        // However, the channels are reversed at 192khz
+
+        if (current_freq.frequency == 192000) {
+        /**\todo This code is not so far tested as "Sonochan mkII", so it must
+         * be written. There is only warning. For synchronization there should
+         * be function, that wait to rising or falling edge
+         */
+          print_dbg("Warning: this code is not completed!!! #1\n");
+          while (gpio_get_pin_value(AK5394_LRCK));
+          while (!gpio_get_pin_value(AK5394_LRCK));  // exit when FS goes high
+        } else {
+        /**\todo This code is not so far tested as "Sonochan mkII", so it must
+         * be written. There is only warning. For synchronization there should
+         * be function, that wait to rising or falling edge
+         */
+          print_dbg("Warning: this code is not completed!!! #2\n");
+          while (!gpio_get_pin_value(AK5394_LRCK));
+          while (gpio_get_pin_value(AK5394_LRCK));  // exit when FS goes low
+        }
+        // Enable now the transfer.
+        pdca_enable(PDCA_CHANNEL_SSC_RX);
+
+        // Init PDCA channel with the pdca_options.
+        AK5394A_pdca_enable();
+
+
+      spk_mute = FALSE;
+      // reset freq_changed flag
+      freq_changed = FALSE;
+    }
+
+    if (usb_alternate_setting_out_changed) {
+      if (usb_alternate_setting_out != 1) {
+        spk_mute = TRUE;
+        for (i = 0; i < SPK_BUFFER_SIZE; i++) {
+          spk_buffer_0[i] = 0;
+          spk_buffer_1[i] = 0;
+        }
+        spk_mute = FALSE;
+      }
+      usb_alternate_setting_out_changed = FALSE;
+    }
+
+  } // end while (TRUE)
 }
 
 

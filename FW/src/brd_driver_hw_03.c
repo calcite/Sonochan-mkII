@@ -7,7 +7,7 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 20.08.2014
+ * Modified: 25.08.2014
  *
  * \version 0.2
  * \author  Martin Stejskal
@@ -33,6 +33,11 @@ static s_brd_drv_rst_i2s_t s_brd_drv_rst_i2s;
  * \brief Store directions for MCLK, BCLK, FRAME_SYNC, TX_DATA, RX_DATA
  */
 static s_brd_drv_pure_i2s_dir_t s_brd_drv_pure_i2s_dir;
+
+/**
+ * \brief Store auto tune PLL value
+ */
+static uint8_t i_auto_tune_pll;
 
 /**
  * \brief Store information if error occurred
@@ -230,16 +235,16 @@ const gd_config_struct BRD_DRV_config_table[] =
     },
     {
       12,
-      "Save all settings",
-      "Just save variables to flash memory",
-      void_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 0},
-      void_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 0},
-      (GD_DATA_VALUE*)&gd_void_value,
-      brd_drv_save_all_settings
+      "Auto tune PLL when audio feedback not work",
+      "Enable (1) or disable (0)",
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      (GD_DATA_VALUE*)&i_auto_tune_pll,
+      brd_drv_auto_tune
     },
     {
       13,
@@ -254,10 +259,23 @@ const gd_config_struct BRD_DRV_config_table[] =
       (GD_DATA_VALUE*)&gd_void_value,
       brd_drv_test_f
     },
+    {
+      14,
+      "Save all settings",
+      "Just save variables to flash memory",
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      (GD_DATA_VALUE*)&gd_void_value,
+      brd_drv_save_all_settings
+    },
 
   };
 /// \brief Maximum command ID (is defined by last command)
-#define BRD_DRV_MAX_CMD_ID          13
+#define BRD_DRV_MAX_CMD_ID          14
 
 
 const gd_metadata BRD_DRV_metadata =
@@ -270,10 +288,90 @@ const gd_metadata BRD_DRV_metadata =
 #endif
 //[DEBUG]
 #include "ssc.h"
+#include "sync_control.h"
+#include "pdca.h"
+#include "taskAK5394A.h"
+
+
 GD_RES_CODE brd_drv_test_f(uint32_t i32)
 {
+  volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
 
-  return 0;
+
+  switch(i32)
+  {
+  case 0:
+    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
+    break;
+  case 1:
+    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_POS_PULSE;
+    break;
+  case 2:
+    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_TOGGLE_DATA_START;
+    break;
+  case 3:
+    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_INPUT_ONLY;
+    break;
+  case 4:
+    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_LOW_DURING_DATA;
+    break;
+
+  case 5:
+    p_ssc->TCMR.cki = 0;
+    break;
+  case 6:
+    p_ssc->TCMR.cki = 1;
+    break;
+  case 7:
+    ///\todo THIS code as function
+    print_dbg("FSYNC 0\n");
+    ssc_FSYNC_RX_edge(0);
+
+      pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+      pdca_disable(PDCA_CHANNEL_SSC_RX);
+
+
+      // re-sync SSC to LRCK
+      // Wait for the next frame synchronization event
+      // to avoid channel inversion.  Start with left channel - FS goes low
+      ssc_wait_for_FSYNC_RX();
+
+      // Enable now the transfer.
+      pdca_enable(PDCA_CHANNEL_SSC_RX);
+
+      // Init PDCA channel with the pdca_options.
+      AK5394A_pdca_enable();
+
+
+    print_dbg("END\n\n\n");
+    break;
+  case 8:
+    ///\todo THIS code as function
+    print_dbg("FSYNC 1\n");
+    ssc_FSYNC_RX_edge(1);
+
+      pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+      pdca_disable(PDCA_CHANNEL_SSC_RX);
+
+
+      // re-sync SSC to LRCK
+      // Wait for the next frame synchronization event
+      // to avoid channel inversion.  Start with left channel - FS goes low
+      ssc_wait_for_FSYNC_RX();
+
+      // Enable now the transfer.
+      pdca_enable(PDCA_CHANNEL_SSC_RX);
+
+      // Init PDCA channel with the pdca_options.
+      AK5394A_pdca_enable();
+
+    print_dbg("END\n\n\n");
+    break;
+  default:
+    return GD_FAIL;
+  }
+  return GD_SUCCESS;
 }
 //[/DEBUG]
 
@@ -369,6 +467,8 @@ GD_RES_CODE brd_drv_pre_init(void)
     e_status = cs2200_set_PLL_freq(8000000);
   }
 
+  ///\todo Turn On BLCK too -> can set SSC
+
   // If all OK -> return SUCCESS (0)
   return GD_SUCCESS;
 }
@@ -389,7 +489,6 @@ GD_RES_CODE brd_drv_init(void)
 #if (BRD_DRV_SUPPORT_RTOS != 0) && (BRD_DRV_RTOS_CREATE_MUTEX != 0)
   mutexADC = xSemaphoreCreateMutex();
 #endif
-
   // Variable for storing status
   GD_RES_CODE e_status;
 
@@ -471,15 +570,22 @@ GD_RES_CODE brd_drv_init(void)
 
 
 
-  /* Try to restore pin direction. If fail (invalid setting in user flash),
-   * then keep all pins in Hi-Z. Do not care about return code, because in
-   * default we set all pins to Hi-Z, so if in memory will be invalid settings,
-   * nothing will be changed and nothing happnes.
-   * If you doubt, this code is correct and move on.
+  /* Try to restore settings. If fail (invalid setting in user flash),
+   * then keep all pins in Hi-Z. But some settings should be defined. So that
+   * is why is there if() condition
    */
-  brd_drv_restore_all_settings();
+  e_status = brd_drv_restore_all_settings();
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg("> Non valid settings in user flash\n");
+    // Load value i_auto_tune_pll
+    uac1_device_audio_get_auto_tune(&i_auto_tune_pll);
+  }
 
 
+  ///\todo MOVE THIS CONFIGURATION TO SSC.C
+  ssc_set_digital_interface_mode(
+                                        SSC_DEFAULT_DIGITAL_AUDIO_INTERFACE);
 
   /* If FreeRTOS is used, then create task. Note that
    * "configTSK_brd_drv_*" should be defined in FreeRTOSConfig.h
@@ -759,6 +865,26 @@ GD_RES_CODE brd_drv_reset_i2s(void)
 
 
 
+/**
+ * \brief Enable or disable auto tune feature
+ * @param i_enable Enable (1) or disable (0) feature
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable)
+{
+  if(i_enable == 0)
+  {
+    uac1_device_audio_set_auto_tune(0);
+    i_auto_tune_pll = 0;
+  }
+  else
+  {
+    uac1_device_audio_set_auto_tune(1);
+    i_auto_tune_pll = 1;
+  }
+
+  return GD_SUCCESS;
+}
 
 
 
@@ -820,6 +946,12 @@ GD_RES_CODE brd_drv_save_all_settings(void){
       sizeof(s_brd_drv_pure_i2s_dir.e_rx_data_dir),
       1);
 
+  // Auto tune PLL option
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.i_auto_tune_pll,
+      i_auto_tune_pll,
+      sizeof(i_auto_tune_pll),
+      1);
 
   // Save information (code), that settings was saved
   flashc_memset8(
@@ -885,6 +1017,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       (uint8_t)s_brd_drv_user_settings.e_bclk_dir);
   if(e_status != GD_SUCCESS)
   {
+    ///\todo Remove debug messages when all tested
     print_dbg(" ! BCLK dir fail ! ");
     return e_status;
   }
@@ -913,6 +1046,15 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   if(e_status != GD_SUCCESS)
   {
     print_dbg(" ! RXD dir fail ! ");
+    return e_status;
+  }
+
+  // Auto tune PLL
+  e_status = brd_drv_auto_tune(
+      (uint8_t)s_brd_drv_user_settings.i_auto_tune_pll);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! Auto tune PLL fail ! ");
     return e_status;
   }
 
