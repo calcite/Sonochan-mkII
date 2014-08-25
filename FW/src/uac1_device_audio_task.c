@@ -83,6 +83,7 @@
 #include "taskAK5394A.h"
 
 //[Martin]
+#include "ssc.h"
 #include "sync_control.h"
 
 #include "print_funcs.h"
@@ -99,15 +100,30 @@
 #define FB_RATE_DELTA_NUM 2
 
 //[Martin]
-// For testing we can set high value. In real it should be about 1000
+/* For testing we can set high value. Tested usually with value 50000, but
+ * some audiophiles can change it if are 100% sure, that OS support nicely
+ * feedback EP and they are sure that do not need auto tune function
+ */
 #define MAX_PLL_PPM     50000
-// Define minimum "time delay" between two frequency changes (INC, DEC functions)
-#define PLL_CHANGE_TIME_DIFF    500
+/* Define minimum "time delay" between two frequency changes
+ * (INC, DEC functions). Experimentally was set value 250, but it can be
+ * changed by time
+ *
+ */
+#define PLL_CHANGE_TIME_DIFF    250
 
 //_____ D E C L A R A T I O N S ____________________________________________
 
 
 //? why are these defined as statics?
+//[Martin] Cause they are only for this file
+
+/* Enable / disable auto tune PLL. Usually in case, that audio feedback EP
+ * seems that not work, so last option is tune PLL by small steps. However
+ * not every time it is best option. Under Linux seems that works good, but
+ * under Win7 buffer can overflow/underflow.
+ */
+static uint8_t i_auto_tune_enable = 1;
 
 static U32  index, spk_index;
 //static U16  old_gap = SPK_BUFFER_SIZE;
@@ -182,6 +198,7 @@ void uac1_device_audio_task(void *pvParameters)
   // Time when not in start up
   uint32_t time = 0;
 
+
   // Just 4 debug - if needed, then uncomment
   //char c[20];
 
@@ -253,10 +270,14 @@ void uac1_device_audio_task(void *pvParameters)
         index = 0;
 
 
+        /* [Martin]
+         * At this place we need to wait for next frame synchronization event.
+         * This is data mode (I2S, DSP, Left justified....) dependent, so we
+         * simply use SSC driver's function, that simply "know what to do"
+         */
         // Wait for the next frame synchronization event
         // to avoid channel inversion.  Start with left channel - FS goes low
-        while (!gpio_get_pin_value(AK5394_LRCK));
-        while (gpio_get_pin_value(AK5394_LRCK));
+        ssc_wait_for_FSYNC_RX();
 
         // Enable now the transfer.
         pdca_enable(PDCA_CHANNEL_SSC_RX);
@@ -502,11 +523,13 @@ void uac1_device_audio_task(void *pvParameters)
              * When frequency change is too high, then data process will be
              * desynchronized. So change PLL frequency only if buffer have
              * only few % remaining.
+             * Also variable auto_tune must be enabled
              */
             if((gap < SPK_BUFFER_SIZE -(SPK_BUFFER_SIZE*2/3)) &&
                     (i_pll_diff < (MAX_PLL_PPM/10)) &&
                     (delta_num <= -FB_RATE_DELTA_NUM) &&
-                    ((time - i_last_time) > PLL_CHANGE_TIME_DIFF))
+                    ((time - i_last_time) > PLL_CHANGE_TIME_DIFF) &&
+                    (i_auto_tune_enable != 0))
             {
               // We must change frequency - speed up
               if(cs2200_inc_PLL_freq() != 0)
@@ -528,8 +551,8 @@ void uac1_device_audio_task(void *pvParameters)
             if((gap > SPK_BUFFER_SIZE +(SPK_BUFFER_SIZE*2/3)) &&
                     (i_pll_diff > -(MAX_PLL_PPM/10)) &&
                     (delta_num >= FB_RATE_DELTA_NUM) &&
-                    ((time - i_last_time) > PLL_CHANGE_TIME_DIFF)
-                    )
+                    ((time - i_last_time) > PLL_CHANGE_TIME_DIFF) &&
+                    (i_auto_tune_enable != 0))
             {
               // We must change frequency - slow down
               if(cs2200_dec_PLL_freq() != 0)
@@ -642,5 +665,39 @@ void uac1_device_audio_task(void *pvParameters)
 }
 
 
+
+/**
+ * \brief Set auto tune PLL option
+ *
+ * By setting parameter as non zero, automatic PLL tune will be enabled.\n
+ * This feature allow slightly tune external PLL to avoid buffer overflow or\n
+ * underflow when feedback EP not work (for some reason).\n
+ *
+ * @param i_enable Enable (1), disable (0)
+ */
+inline void uac1_device_audio_set_auto_tune(uint8_t i_enable)
+{
+  char c[50];
+  sprintf(&c[0], "Auto tune > old value: %u | new value: %u\n",
+      i_auto_tune_enable, i_enable);
+  print_dbg(&c[0]);
+
+  i_auto_tune_enable = i_enable;
+}
+
+/**
+ * Get auto tune option value
+ *
+ * @param p_enable Pointer to memory, where value will be written
+ */
+inline void uac1_device_audio_get_auto_tune(uint8_t *p_enable)
+{
+  *p_enable = i_auto_tune_enable;
+
+  if(i_auto_tune_enable == 0)
+    print_dbg("Auto tune > Get: 0\n");
+  else
+    print_dbg("Auto tune > Get: 1\n");
+}
 
 #endif  // USB_DEVICE_FEATURE == ENABLED

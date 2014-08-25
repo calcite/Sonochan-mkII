@@ -79,4 +79,8 @@ extern void uac1_device_audio_task(void *pvParameters);
 extern void uac1_device_audio_task(void);
 #endif
 
+void uac1_device_audio_set_auto_tune(uint8_t i_enable);
+
+void uac1_device_audio_get_auto_tune(uint8_t *p_enable);
+
 #endif  // _UAC1_DEVICE_AUDIO_TASK_H_

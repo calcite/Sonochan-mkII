@@ -54,6 +54,9 @@
 #include "taskAK5394A.h"
 #include "uac1_taskAK5394A.h"
 
+//[Martin]
+#include "ssc.h"
+
 //_____ M A C R O S ________________________________________________________
 
 //_____ D E F I N I T I O N S ______________________________________________
@@ -127,7 +130,6 @@ void uac1_AK5394A_task(void *pvParameters) {
       freq_changed = FALSE;
     }
     if (usb_alternate_setting_changed) {
-
       pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
       pdca_disable(PDCA_CHANNEL_SSC_RX);
 
@@ -135,8 +137,8 @@ void uac1_AK5394A_task(void *pvParameters) {
       // re-sync SSC to LRCK
       // Wait for the next frame synchronization event
       // to avoid channel inversion.  Start with left channel - FS goes low
-      while (!gpio_get_pin_value(AK5394_LRCK));
-      while (gpio_get_pin_value(AK5394_LRCK));
+      ssc_wait_for_FSYNC_RX();
+
 
       // Enable now the transfer.
       pdca_enable(PDCA_CHANNEL_SSC_RX);
