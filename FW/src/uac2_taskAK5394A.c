@@ -43,7 +43,7 @@
 #endif
 #include "usb_drv.h"
 #include "gpio.h"
-#include "ssc_i2s.h"
+
 #include "pm.h"
 #include "pdca.h"
 #include "usb_standard_request.h"

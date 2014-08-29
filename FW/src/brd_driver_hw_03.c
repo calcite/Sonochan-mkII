@@ -7,7 +7,7 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 25.08.2014
+ * Modified: 27.08.2014
  *
  * \version 0.2
  * \author  Martin Stejskal
@@ -33,6 +33,11 @@ static s_brd_drv_rst_i2s_t s_brd_drv_rst_i2s;
  * \brief Store directions for MCLK, BCLK, FRAME_SYNC, TX_DATA, RX_DATA
  */
 static s_brd_drv_pure_i2s_dir_t s_brd_drv_pure_i2s_dir;
+
+/**
+ * \brief Store fine settings of SSC module
+ */
+static s_brd_drv_ssc_fine_setting_t s_brd_drv_ssc_fine_settings;
 
 /**
  * \brief Store auto tune PLL value
@@ -148,10 +153,10 @@ const gd_config_struct BRD_DRV_config_table[] =
       "0 - input ; 1 - output ; 2 - Hi-Z",
       uint32_type,      // Cause it is enum and 32 bit system
       {.data_uint32 = 0},
-      {.data_uint32 = 1},
+      {.data_uint32 = 2},
       uint32_type,
       {.data_uint32 = 0},
-      {.data_uint32 = 1},
+      {.data_uint32 = 2},
       (GD_DATA_VALUE*)&s_brd_drv_mute.e_mute_dir,
       brd_drv_set_mute_dir
     },
@@ -174,10 +179,10 @@ const gd_config_struct BRD_DRV_config_table[] =
       "0 - input ; 1 - output ; 2 - Hi-Z",
       uint32_type,      // Cause it is enum and 32 bit system
       {.data_uint32 = 0},
-      {.data_uint32 = 1},
+      {.data_uint32 = 2},
       uint32_type,
       {.data_uint32 = 0},
-      {.data_uint32 = 1},
+      {.data_uint32 = 2},
       (GD_DATA_VALUE*)&s_brd_drv_rst_i2s.e_rst_i2s_dir,
       brd_drv_set_rst_i2s_dir
     },
@@ -222,19 +227,6 @@ const gd_config_struct BRD_DRV_config_table[] =
     },
     {
       11,
-      "Restore saved settings",
-      "Load and apply saved settings",
-      void_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 0},
-      void_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 0},
-      (GD_DATA_VALUE*)&gd_void_value,
-      brd_drv_restore_all_settings
-    },
-    {
-      12,
       "Auto tune PLL when audio feedback not work",
       "Enable (1) or disable (0)",
       uint8_type,
@@ -247,7 +239,7 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_auto_tune
     },
     {
-      13,
+      12,
       "Test function",
       "For testing",
       uint32_type,
@@ -258,6 +250,19 @@ const gd_config_struct BRD_DRV_config_table[] =
       {.data_uint32 = 0},
       (GD_DATA_VALUE*)&gd_void_value,
       brd_drv_test_f
+    },
+    {
+      13,
+      "Restore saved settings",
+      "Load and apply saved settings",
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      (GD_DATA_VALUE*)&gd_void_value,
+      brd_drv_restore_all_settings
     },
     {
       14,
@@ -298,6 +303,7 @@ GD_RES_CODE brd_drv_test_f(uint32_t i32)
   volatile avr32_ssc_t *p_ssc;
   p_ssc = SSC_DEVICE;
 
+  print_dbg("TEST FUNCTION ...\n\n");
 
   switch(i32)
   {
@@ -326,7 +332,7 @@ GD_RES_CODE brd_drv_test_f(uint32_t i32)
   case 7:
     ///\todo THIS code as function
     print_dbg("FSYNC 0\n");
-    ssc_FSYNC_RX_edge(0);
+    ssc_set_FSYNC_RX_edge(0);
 
       pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
       pdca_disable(PDCA_CHANNEL_SSC_RX);
@@ -349,7 +355,7 @@ GD_RES_CODE brd_drv_test_f(uint32_t i32)
   case 8:
     ///\todo THIS code as function
     print_dbg("FSYNC 1\n");
-    ssc_FSYNC_RX_edge(1);
+    ssc_set_FSYNC_RX_edge(1);
 
       pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
       pdca_disable(PDCA_CHANNEL_SSC_RX);
@@ -368,6 +374,13 @@ GD_RES_CODE brd_drv_test_f(uint32_t i32)
 
     print_dbg("END\n\n\n");
     break;
+  case 9:
+    ssc_set_FSYNC_TX_edge(SSC_EDGE_FALLING);
+    break;
+  case 10:
+    ssc_set_FSYNC_TX_edge(SSC_EDGE_RISING);
+    break;
+
   default:
     return GD_FAIL;
   }
@@ -467,8 +480,6 @@ GD_RES_CODE brd_drv_pre_init(void)
     e_status = cs2200_set_PLL_freq(8000000);
   }
 
-  ///\todo Turn On BLCK too -> can set SSC
-
   // If all OK -> return SUCCESS (0)
   return GD_SUCCESS;
 }
@@ -495,9 +506,11 @@ GD_RES_CODE brd_drv_init(void)
   // So far so good
   i_error_occurred = 0;
 
+//=================================| IO pins |=================================
   // Set isolators I/O (recommended default)
   brd_drv_set_isolators_to_HiZ();
 
+//================================| LCD stuff |================================
   // Initialize LCD
   e_status = LCD_5110_init();
   if(e_status != GD_SUCCESS)
@@ -527,7 +540,7 @@ GD_RES_CODE brd_drv_init(void)
     return e_status;
   }
 
-
+//==============================| External PLL |===============================
   // Precise setting of PLL
   /* Turn of save setting when changing frequency by 1. We want continuous
    * clock at "any price". PLL CLK OUT should work as expected.
@@ -542,7 +555,7 @@ GD_RES_CODE brd_drv_init(void)
   }
 
 
-
+//===================================| ADC |===================================
   // Take control over ADC
   BRD_DRV_LOCK_ADC_MODULE_IF_RTOS
   // ADC for volume control
@@ -558,7 +571,14 @@ GD_RES_CODE brd_drv_init(void)
   }
 
 
+//===============================| SSC module |================================
+  // Preset SSC - DONT! This procedure is done when music begin be played!
+  /*e_status = ssc_init();
+    if(e_status != GD_SUCCESS)
+      return e_status;
+  */
 
+//==================================| Codec |==================================
   // Prepare TLV (CS2200 have to be already initialized)
   e_status = brd_drv_TLV_default();
   if(e_status != GD_SUCCESS)
@@ -569,7 +589,7 @@ GD_RES_CODE brd_drv_init(void)
   }
 
 
-
+//======================| Try load settings from flash |=======================
   /* Try to restore settings. If fail (invalid setting in user flash),
    * then keep all pins in Hi-Z. But some settings should be defined. So that
    * is why is there if() condition
@@ -583,9 +603,7 @@ GD_RES_CODE brd_drv_init(void)
   }
 
 
-  ///\todo MOVE THIS CONFIGURATION TO SSC.C
-  ssc_set_digital_interface_mode(
-                                        SSC_DEFAULT_DIGITAL_AUDIO_INTERFACE);
+
 
   /* If FreeRTOS is used, then create task. Note that
    * "configTSK_brd_drv_*" should be defined in FreeRTOSConfig.h
@@ -1071,6 +1089,30 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
 
 
 //===========================| Mid level functions |===========================
+
+/**
+ * @brief Set on which FSYNC edge will SSC RX unit begin
+ * @param e_edge SSC_FALLING or SSC_RISING
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
+{
+  GD_RES_CODE e_status;
+  e_status = ssc_set_FSYNC_RX_edge(e_edge);
+
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+  // If all OK, save value
+  s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge = e_edge;
+
+  return GD_SUCCESS;
+}
+
+
+
+
 /**
  * \brief Show volume value on LCD
  * @return GD_SUCCESS (0) if all right
@@ -1716,29 +1758,42 @@ GD_RES_CODE brd_drv_set_bclk_dir(e_brd_drv_dir_t e_bclk_dir)
  */
 GD_RES_CODE brd_drv_set_frame_sync_dir(e_brd_drv_dir_t e_frame_sync_dir)
 {
+  // Store status
+  GD_RES_CODE e_status;
+
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
-
-  // Pointer to SSC memory
-  volatile avr32_ssc_t *ssc = &AVR32_SSC;
 
   switch(e_frame_sync_dir)
   {
   case brd_drv_dir_in:
     BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
     // SSC as slave. So TX module will not generate FRAME_SYNC
-    ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_INPUT_ONLY;
+    e_status = ssc_set_FSYNC_role(SSC_ROLE_RX);
+    if(e_status != GD_SUCCESS)
+    {
+      return e_status;
+    }
     BRD_DRV_IO_HIGH(BRD_DRV_FS_EN_A_PIN);
     break;
   case brd_drv_dir_out:
     BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
-    ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
+    e_status = ssc_set_FSYNC_role(SSC_ROLE_TX);
+    if(e_status != GD_SUCCESS)
+    {
+      return e_status;
+    }
     BRD_DRV_IO_HIGH(BRD_DRV_FS_EN_B_PIN);
     break;
   case brd_drv_dir_hiz:
     BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
     BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
-    ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
+    // If Hi-Z set we want listen at least through codec
+    e_status = ssc_set_FSYNC_role(SSC_ROLE_TX);
+    if(e_status != GD_SUCCESS)
+    {
+      return GD_SUCCESS;
+    }
     break;
   default:
     return GD_INCORRECT_PARAMETER;

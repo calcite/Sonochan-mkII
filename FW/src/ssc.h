@@ -57,23 +57,37 @@
 
 
 /**
+ * @brief Set default data length in bits
+ *
+ * This is depend on actual settings, so there should be some default value\n
+ * for higher layers. Recommended values are: 16, 24, 32.
+ */
+#define SSC_DEFAULT_DATA_LENGTH                 24
+
+
+/**
+ * @brief Set default frame length in bits
+ * Not all bits in frame must be data. Some of them can be void, or just\n
+ * dummy. So this define how long is frame, no matter how many data bits are\n
+ * transmitted or received.
+ */
+#define SSC_DEFAULT_FRAME_LENGTH                32
+
+
+/**
  * \brief Set default FSYNC edge
  *
  * Options: SSC_FSYNC_FALLING, SSC_FSYNC_RISING
  */
-#define SSC_DEFAULT_FSYNC_EDGE                  SSC_FALLING
+#define SSC_DEFAULT_FSYNC_EDGE                  SSC_EDGE_FALLING
 
 /**
  * \brief Set default FSYNC TX MODE (when FSYNC as master)
  *
- * Options: AVR32_SSC_TFMR_FSOS_INPUT_ONLY\n
- * AVR32_SSC_TFMR_FSOS_NEG_PULSE\n
- * AVR32_SSC_TFMR_FSOS_POS_PULSE\n
- * AVR32_SSC_TFMR_FSOS_LOW_DURING_DATA\n
- * AVR32_SSC_TFMR_FSOS_HIGH_DURING_DATA\n
- * AVR32_SSC_TFMR_FSOS_TOGGLE_DATA_START
+ * Options: SSC_RX (slave - FSYNC as input)\n
+ * SSC_TX (master - FSYNC is generated)\n
  */
-#define SSC_DEFAULT_FSYNC_TX_MODE       AVR32_SSC_TFMR_FSOS_NEG_PULSE
+#define SSC_DEFAULT_FSYNC_ROLE       SSC_ROLE_TX
 
 
 //===============================| Structures |================================
@@ -92,8 +106,8 @@ typedef enum{
  * \brief Signal role. TX (master) or RX (slave)
  */
 typedef enum{
-  SSC_RX = 0,//!< SSC_RX Slave
-  SSC_TX = 1 //!< SSC_TX Master
+  SSC_ROLE_RX = 0,//!< SSC_RX Slave
+  SSC_ROLE_TX = 1 //!< SSC_TX Master
 }e_ssc_Role_Rx_Tx_t;
 
 
@@ -104,20 +118,41 @@ typedef enum{
   SSC_I2S = 0,           //!< SSC_I2S I2S
   SSC_DSP = 1,           //!< SSC_DSP DSP
   SSC_LEFT_JUSTIFIED = 2,//!< SSC_LEFT_JUSTIFIED Left justified
-  SSC_RIGHT_JUSTIFIED = 3//!< SSC_RIGHT_JUSTIFIED Right justified
+  SSC_RIGHT_JUSTIFIED =3,//!< SSC_RIGHT_JUSTIFIED Right justified
 }e_ssc_digital_audio_interface_t;
 
 
 
 typedef enum{
-  SSC_FALLING = 0,
-  SSC_RISING = 1
+  SSC_EDGE_FALLING = 0,
+  SSC_EDGE_RISING = 1,
+  SSC_EDGE_DEFAULT = 2
 }e_ssc_edge_t;
 
+/**
+ * \brief Structure, that store settings of SSC module
+ */
 typedef struct{
+  /// Digital audio interface (I2S, DSP, ...)
   e_ssc_digital_audio_interface_t e_dig_aud_mode;
+
+  /// Define edge on which RX data will be synchronized
   e_ssc_edge_t e_FSYNC_RX_edge;
+  /// Define edge on which TX data will be synchronized
   e_ssc_edge_t e_FSYNC_TX_edge;
+
+  /// Define edge on which RX BCLK will be synchronized
+  e_ssc_edge_t e_BCLK_RX_edge;
+  /// Define edge on which TX BCLK be synchronized / generated
+  e_ssc_edge_t e_BCLK_TX_edge;
+
+  /// FSYNC role (master / slave)
+  e_ssc_Role_Rx_Tx_t e_FSYNC_role;
+
+  /// Data length in bits
+  uint8_t i_data_length;
+  /// Frame length in bits
+  uint8_t i_frame_length;
 }s_ssc_settings_t;
 //===============================| Definitions |===============================
 //=================================| Macros |==================================
@@ -130,18 +165,34 @@ SSC_RES_CODE ssc_reset(void);
 
 //===========================| Mid level functions |===========================
 SSC_RES_CODE ssc_wait_for_FSYNC_RX(void);
+
 SSC_RES_CODE ssc_set_digital_interface_mode(
     e_ssc_digital_audio_interface_t e_mode);
+SSC_RES_CODE ssc_get_digital_interface(
+    e_ssc_digital_audio_interface_t *p_e_mode);
 
-
+SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void);
 
 //===========================| Low level functions |===========================
-SSC_RES_CODE ssc_FSYNC_RX_edge(e_ssc_edge_t e_edge);
-SSC_RES_CODE ssc_FSYNC_role(e_ssc_Role_Rx_Tx_t e_role);
+SSC_RES_CODE ssc_set_FSYNC_RX_edge(e_ssc_edge_t e_edge);
+SSC_RES_CODE ssc_get_FSYNC_RX_edge(e_ssc_edge_t *p_e_edge);
+
+SSC_RES_CODE ssc_set_FSYNC_TX_edge(e_ssc_edge_t e_edge);
+SSC_RES_CODE ssc_get_FSYNC_TX_edge(e_ssc_edge_t *p_e_edge);
+
+SSC_RES_CODE ssc_set_FSYNC_role(e_ssc_Role_Rx_Tx_t e_role);
+SSC_RES_CODE ssc_get_FSYNC_role(e_ssc_Role_Rx_Tx_t *p_e_role);
 
 
 
+SSC_RES_CODE ssc_set_BCLK_RX_edge(e_ssc_edge_t e_edge);
+SSC_RES_CODE ssc_get_BCLK_RX_edge(e_ssc_edge_t *p_e_edge);
+SSC_RES_CODE ssc_set_BCLK_TX_edge(e_ssc_edge_t e_edge);
+SSC_RES_CODE ssc_get_BCLK_TX_edge(e_ssc_edge_t *p_e_edge);
 
+
+SSC_RES_CODE ssc_disable_RX_TX(void);
+SSC_RES_CODE ssc_enable_RX_TX(void);
 
 
 #endif

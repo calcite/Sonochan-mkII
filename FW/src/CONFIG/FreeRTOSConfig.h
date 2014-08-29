@@ -173,7 +173,7 @@ to exclude the API function. */
 //==============================| Board driver |===============================
 #define configTSK_brd_drv_NAME                  \
                                 ((const signed portCHAR *)"Board driver")
-#define configTSK_brd_drv_STACK_SIZE            1024
+#define configTSK_brd_drv_STACK_SIZE            2048
 #define configTSK_brd_drv_PRIORITY              (tskIDLE_PRIORITY + 0)
 #define configTSK_brd_drv_PERIOD                1000
 
@@ -201,6 +201,6 @@ to exclude the API function. */
 /* taskExercise definitions */
 #define configTSK_EXERCISE_STACK_SIZE		32
 #define configTSK_EXERCISE_PRIORITY			(tskIDLE_PRIORITY + 0 )
-#define configTSK_EXERCISE_PERIOD			1000	// 100ms
+#define configTSK_EXERCISE_PERIOD			10000	// 1000ms
 
 #endif /* FREERTOS_CONFIG_H */
