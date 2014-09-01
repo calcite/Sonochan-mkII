@@ -9,7 +9,7 @@
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  20.08.2014\n
- * Modified: 25.08.2014
+ * Modified: 29.08.2014
  *
  * \version 0.1
  * \author Martin Stejskal
@@ -608,16 +608,13 @@ SSC_RES_CODE ssc_set_BCLK_TX_edge(e_ssc_edge_t e_edge)
   switch(e_edge)
   {
   case SSC_EDGE_FALLING:
-    print_dbg("TX CKI: 0\n");
     p_ssc->TCMR.cki = 0;
     break;
   case SSC_EDGE_RISING:
-    print_dbg("TX CKI: 1\n");
     p_ssc->TCMR.cki = 1;
     break;
   case SSC_EDGE_DEFAULT:
     // At all modes always transmit samples on falling edge
-    print_dbg("TX CKI (D): 0\n");
     p_ssc->TCMR.cki = 0;
     break;
   // Some fail -> error

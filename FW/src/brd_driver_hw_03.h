@@ -7,7 +7,7 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 26.08.2014
+ * Modified: 01.09.2014
  *
  * \version 0.2
  * \author  Martin Stejskal
@@ -624,6 +624,8 @@ typedef struct{
 #define BRD_DRV_MSG_ERROR_CLEANED               \
   {"ERROR message deleted\n\n\n"}
 
+
+
 /// @}
 
 
@@ -856,6 +858,11 @@ GD_RES_CODE brd_drv_save_all_settings(void);
 GD_RES_CODE brd_drv_restore_all_settings(void);
 //===========================| Mid level functions |===========================
 GD_RES_CODE brd_drv_set_FSYNC_RX_edge(e_ssc_edge_t e_edge);
+GD_RES_CODE brd_drv_set_FSYNC_TX_edge(e_ssc_edge_t e_edge);
+
+GD_RES_CODE brd_drv_set_BCLK_RX_edge(e_ssc_edge_t e_edge);
+GD_RES_CODE brd_drv_set_BCLK_TX_edge(e_ssc_edge_t e_edge);
+
 
 GD_RES_CODE brd_drv_show_volume(void);
 
@@ -899,6 +906,7 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag);
 
 
 //[DEBUG]
+///\todo REMOVE
 GD_RES_CODE brd_drv_test_f(uint32_t i32);
 //[/DEBUG]
 #endif

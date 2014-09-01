@@ -9,7 +9,7 @@
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  20.08.2014\n
- * Modified: 25.08.2014
+ * Modified: 29.08.2014
  *
  * \version 0.1
  * \author Martin Stejskal
@@ -77,9 +77,10 @@
 /**
  * \brief Set default FSYNC edge
  *
- * Options: SSC_FSYNC_FALLING, SSC_FSYNC_RISING
+ * Select FSYNC synchronization edge.\n
+ * Options: SSC_FSYNC_FALLING, SSC_FSYNC_RISING, SSC_EDGE_DEFAULT (recommended)
  */
-#define SSC_DEFAULT_FSYNC_EDGE                  SSC_EDGE_FALLING
+#define SSC_DEFAULT_FSYNC_EDGE                  SSC_EDGE_DEFAULT
 
 /**
  * \brief Set default FSYNC TX MODE (when FSYNC as master)
@@ -187,6 +188,7 @@ SSC_RES_CODE ssc_get_FSYNC_role(e_ssc_Role_Rx_Tx_t *p_e_role);
 
 SSC_RES_CODE ssc_set_BCLK_RX_edge(e_ssc_edge_t e_edge);
 SSC_RES_CODE ssc_get_BCLK_RX_edge(e_ssc_edge_t *p_e_edge);
+
 SSC_RES_CODE ssc_set_BCLK_TX_edge(e_ssc_edge_t e_edge);
 SSC_RES_CODE ssc_get_BCLK_TX_edge(e_ssc_edge_t *p_e_edge);
 
