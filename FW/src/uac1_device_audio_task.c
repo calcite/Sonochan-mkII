@@ -677,12 +677,12 @@ void uac1_device_audio_task(void *pvParameters)
  */
 inline void uac1_device_audio_set_auto_tune(uint8_t i_enable)
 {
-  char c[50];
-  sprintf(&c[0], "Auto tune > old value: %u | new value: %u\n",
-      i_auto_tune_enable, i_enable);
-  print_dbg(&c[0]);
-
   i_auto_tune_enable = i_enable;
+
+  if(i_auto_tune_enable == 0)
+    print_dbg("External PLL auto tune set: DISABLED\n");
+  else
+    print_dbg("External PLL auto tune set: ENABLED\n");
 }
 
 /**
@@ -695,9 +695,9 @@ inline void uac1_device_audio_get_auto_tune(uint8_t *p_enable)
   *p_enable = i_auto_tune_enable;
 
   if(i_auto_tune_enable == 0)
-    print_dbg("Auto tune > Get: 0\n");
+    print_dbg("External PLL auto tune get: DISABLED\n");
   else
-    print_dbg("Auto tune > Get: 1\n");
+    print_dbg("External PLL auto tune get: ENABLED\n");
 }
 
 #endif  // USB_DEVICE_FEATURE == ENABLED

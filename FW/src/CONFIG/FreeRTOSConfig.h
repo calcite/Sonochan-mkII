@@ -173,7 +173,7 @@ to exclude the API function. */
 //==============================| Board driver |===============================
 #define configTSK_brd_drv_NAME                  \
                                 ((const signed portCHAR *)"Board driver")
-#define configTSK_brd_drv_STACK_SIZE            2048
+#define configTSK_brd_drv_STACK_SIZE            1024
 #define configTSK_brd_drv_PRIORITY              (tskIDLE_PRIORITY + 0)
 #define configTSK_brd_drv_PERIOD                1000
 
@@ -183,24 +183,24 @@ to exclude the API function. */
 
 
 /* USB device Audio task definitions. */
-#define configTSK_USB_DAUDIO_NAME				((const signed portCHAR *)"USB Device Audio")
-#define configTSK_USB_DAUDIO_STACK_SIZE			256
-#define configTSK_USB_DAUDIO_PRIORITY			(tskIDLE_PRIORITY + 2)
-#define UAC1_configTSK_USB_DAUDIO_PERIOD		2
-#define UAC2_configTSK_USB_DAUDIO_PERIOD		1
-#define HPSDR_configTSK_USB_DAUDIO_PERIOD		2
+#define configTSK_USB_DAUDIO_NAME          ((const signed portCHAR *)"USB Device Audio")
+#define configTSK_USB_DAUDIO_STACK_SIZE    256
+#define configTSK_USB_DAUDIO_PRIORITY      (tskIDLE_PRIORITY + 2)
+#define UAC1_configTSK_USB_DAUDIO_PERIOD   2
+#define UAC2_configTSK_USB_DAUDIO_PERIOD   1
+#define HPSDR_configTSK_USB_DAUDIO_PERIOD  2
 
 /* AK5394A task definitions. */
-#define configTSK_AK5394A_NAME					((const signed portCHAR *)"AK5394A")
-#define configTSK_AK5394A_STACK_SIZE			256
-#define UAC1_configTSK_AK5394A_PRIORITY			(tskIDLE_PRIORITY + 2)// Was 1
-#define UAC2_configTSK_AK5394A_PRIORITY			(tskIDLE_PRIORITY + 3)// Was +1, then +2
-#define UAC1_configTSK_AK5394A_PERIOD			200
-#define UAC2_configTSK_AK5394A_PERIOD			200
+#define configTSK_AK5394A_NAME             ((const signed portCHAR *)"AK5394A")
+#define configTSK_AK5394A_STACK_SIZE       256
+#define UAC1_configTSK_AK5394A_PRIORITY    (tskIDLE_PRIORITY + 2)// Was 1
+#define UAC2_configTSK_AK5394A_PRIORITY    (tskIDLE_PRIORITY + 3)// Was +1, then +2
+#define UAC1_configTSK_AK5394A_PERIOD      200
+#define UAC2_configTSK_AK5394A_PERIOD      200
 
 /* taskExercise definitions */
-#define configTSK_EXERCISE_STACK_SIZE		32
-#define configTSK_EXERCISE_PRIORITY			(tskIDLE_PRIORITY + 0 )
-#define configTSK_EXERCISE_PERIOD			10000	// 1000ms
+#define configTSK_EXERCISE_STACK_SIZE      32
+#define configTSK_EXERCISE_PRIORITY        (tskIDLE_PRIORITY + 0 )
+#define configTSK_EXERCISE_PERIOD          10000  // 1000ms
 
 #endif /* FREERTOS_CONFIG_H */

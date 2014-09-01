@@ -7,7 +7,7 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 27.08.2014
+ * Modified: 01.09.2014
  *
  * \version 0.2
  * \author  Martin Stejskal
@@ -240,6 +240,58 @@ const gd_config_struct BRD_DRV_config_table[] =
     },
     {
       12,
+      "RX FSYNC edge",
+      "RX FSYNC sync edge ; 0 - falling ; 1 - rising ; 2 - default",
+      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge,
+      brd_drv_set_FSYNC_RX_edge
+    },
+    {
+      13,
+      "TX FSYNC edge",
+      "TX FSYNC sync edge ; 0 - falling ; 1- rising ; 2 - default",
+      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_FSYNC_TX_edge,
+      brd_drv_set_FSYNC_TX_edge
+    },
+    {
+      14,
+      "RX BCLK sampling edge",
+      "RX BCLK sync edge ; 0 - falling ; 1 - rising ; 2 - default",
+      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_BCLK_RX_edge,
+      brd_drv_set_BCLK_RX_edge
+    },
+    {
+      15,
+      "TX BCLK transmitting edge",
+      "TX BCLK sync edge ; 0 - falling ; 1 - rising ; 2 - default",
+      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 2},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_BCLK_TX_edge,
+      brd_drv_set_BCLK_TX_edge
+    },
+    {
+      16,
       "Test function",
       "For testing",
       uint32_type,
@@ -252,7 +304,7 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_test_f
     },
     {
-      13,
+      17,
       "Restore saved settings",
       "Load and apply saved settings",
       void_type,
@@ -265,7 +317,7 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_restore_all_settings
     },
     {
-      14,
+      18,
       "Save all settings",
       "Just save variables to flash memory",
       void_type,
@@ -280,7 +332,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 
   };
 /// \brief Maximum command ID (is defined by last command)
-#define BRD_DRV_MAX_CMD_ID          14
+#define BRD_DRV_MAX_CMD_ID          18
 
 
 const gd_metadata BRD_DRV_metadata =
@@ -292,6 +344,7 @@ const gd_metadata BRD_DRV_metadata =
 };
 #endif
 //[DEBUG]
+///\todo REMOVE THIS DEBUG STUFF
 #include "ssc.h"
 #include "sync_control.h"
 #include "pdca.h"
@@ -308,77 +361,6 @@ GD_RES_CODE brd_drv_test_f(uint32_t i32)
   switch(i32)
   {
   case 0:
-    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
-    break;
-  case 1:
-    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_POS_PULSE;
-    break;
-  case 2:
-    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_TOGGLE_DATA_START;
-    break;
-  case 3:
-    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_INPUT_ONLY;
-    break;
-  case 4:
-    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_LOW_DURING_DATA;
-    break;
-
-  case 5:
-    p_ssc->TCMR.cki = 0;
-    break;
-  case 6:
-    p_ssc->TCMR.cki = 1;
-    break;
-  case 7:
-    ///\todo THIS code as function
-    print_dbg("FSYNC 0\n");
-    ssc_set_FSYNC_RX_edge(0);
-
-      pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-      pdca_disable(PDCA_CHANNEL_SSC_RX);
-
-
-      // re-sync SSC to LRCK
-      // Wait for the next frame synchronization event
-      // to avoid channel inversion.  Start with left channel - FS goes low
-      ssc_wait_for_FSYNC_RX();
-
-      // Enable now the transfer.
-      pdca_enable(PDCA_CHANNEL_SSC_RX);
-
-      // Init PDCA channel with the pdca_options.
-      AK5394A_pdca_enable();
-
-
-    print_dbg("END\n\n\n");
-    break;
-  case 8:
-    ///\todo THIS code as function
-    print_dbg("FSYNC 1\n");
-    ssc_set_FSYNC_RX_edge(1);
-
-      pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-      pdca_disable(PDCA_CHANNEL_SSC_RX);
-
-
-      // re-sync SSC to LRCK
-      // Wait for the next frame synchronization event
-      // to avoid channel inversion.  Start with left channel - FS goes low
-      ssc_wait_for_FSYNC_RX();
-
-      // Enable now the transfer.
-      pdca_enable(PDCA_CHANNEL_SSC_RX);
-
-      // Init PDCA channel with the pdca_options.
-      AK5394A_pdca_enable();
-
-    print_dbg("END\n\n\n");
-    break;
-  case 9:
-    ssc_set_FSYNC_TX_edge(SSC_EDGE_FALLING);
-    break;
-  case 10:
-    ssc_set_FSYNC_TX_edge(SSC_EDGE_RISING);
     break;
 
   default:
@@ -597,11 +579,27 @@ GD_RES_CODE brd_drv_init(void)
   e_status = brd_drv_restore_all_settings();
   if(e_status != GD_SUCCESS)
   {
-    print_dbg("> Non valid settings in user flash\n");
     // Load value i_auto_tune_pll
     uac1_device_audio_get_auto_tune(&i_auto_tune_pll);
-  }
 
+    // Load SSC default values
+    // FSYNC RX
+    e_status = ssc_get_FSYNC_RX_edge(
+        &s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge);
+    if(e_status != GD_SUCCESS) return e_status;
+    // FSYNC TX
+    e_status = ssc_get_FSYNC_TX_edge(
+        &s_brd_drv_ssc_fine_settings.e_FSYNC_TX_edge);
+    if(e_status != GD_SUCCESS) return e_status;
+    // BCLK RX
+    e_status = ssc_get_BCLK_RX_edge(
+        &s_brd_drv_ssc_fine_settings.e_BCLK_RX_edge);
+    if(e_status != GD_SUCCESS) return e_status;
+    // BCLK TX
+    e_status = ssc_get_BCLK_TX_edge(
+        &s_brd_drv_ssc_fine_settings.e_BCLK_TX_edge);
+    if(e_status != GD_SUCCESS) return e_status;
+  }
 
 
 
@@ -913,52 +911,57 @@ GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable)
  * @return GD_SUCCESS (0) if all OK
  */
 GD_RES_CODE brd_drv_save_all_settings(void){
-  // Save settings
+  /* Save settings
+   * Remember: this is 32 bit arch. So even stupid enum is 32 bit long. That is
+   * why is saved to flash as 32 bit value even if values is not even 8 bit
+   * wide.
+   */
+
 
   // MUTE direction
-  flashc_memset8(
+  flashc_memset32(
       (void *)&s_brd_drv_user_settings.e_mute_dir,      // Where to write
       s_brd_drv_mute.e_mute_dir,                        // From where
       sizeof(s_brd_drv_mute.e_mute_dir),                // Number of Bytes
       1);                                               // Erase?
 
   // RESET direction
-  flashc_memset8(
+  flashc_memset32(
       (void *)&s_brd_drv_user_settings.e_rst_i2s_dir,
       s_brd_drv_rst_i2s.e_rst_i2s_dir,
       sizeof(s_brd_drv_rst_i2s.e_rst_i2s_dir),
       1);
 
   // MCLK direction
-  flashc_memset8(
+  flashc_memset32(
       (void *)&s_brd_drv_user_settings.e_mclk_dir,
-      s_brd_drv_pure_i2s_dir.e_mclk_dir,
+      (uint32_t)s_brd_drv_pure_i2s_dir.e_mclk_dir,
       sizeof(s_brd_drv_pure_i2s_dir.e_mclk_dir),
       1);
 
   // BCLK direction
-  flashc_memset8(
+  flashc_memset32(
       (void *)&s_brd_drv_user_settings.e_bclk_dir,
       s_brd_drv_pure_i2s_dir.e_bclk_dir,
       sizeof(s_brd_drv_pure_i2s_dir.e_bclk_dir),
       1);
 
   // FRAME SYNC direction
-  flashc_memset8(
+  flashc_memset32(
       (void *)&s_brd_drv_user_settings.e_frame_sync_dir,
       s_brd_drv_pure_i2s_dir.e_frame_sync_dir,
       sizeof(s_brd_drv_pure_i2s_dir.e_frame_sync_dir),
       1);
 
   // TX DATA direction
-  flashc_memset8(
+  flashc_memset32(
       (void *)&s_brd_drv_user_settings.e_tx_data_dir,
       s_brd_drv_pure_i2s_dir.e_tx_data_dir,
       sizeof(s_brd_drv_pure_i2s_dir.e_tx_data_dir),
       1);
 
   // RX DATA direction
-  flashc_memset8(
+  flashc_memset32(
       (void *)&s_brd_drv_user_settings.e_rx_data_dir,
       s_brd_drv_pure_i2s_dir.e_rx_data_dir,
       sizeof(s_brd_drv_pure_i2s_dir.e_rx_data_dir),
@@ -970,6 +973,39 @@ GD_RES_CODE brd_drv_save_all_settings(void){
       i_auto_tune_pll,
       sizeof(i_auto_tune_pll),
       1);
+
+  // SSC fine settings
+  flashc_memset32(
+      (void *)&s_brd_drv_user_settings.e_BCLK_RX_edge,
+      s_brd_drv_ssc_fine_settings.e_BCLK_RX_edge,
+      sizeof(s_brd_drv_ssc_fine_settings.e_BCLK_RX_edge),
+      1);
+  flashc_memset32(
+      (void *)&s_brd_drv_user_settings.e_BCLK_TX_edge,
+      s_brd_drv_ssc_fine_settings.e_BCLK_TX_edge,
+      sizeof(s_brd_drv_ssc_fine_settings.e_BCLK_TX_edge),
+      1);
+  flashc_memset32(
+      (void *)&s_brd_drv_user_settings.e_FSYNC_RX_edge,
+      s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge,
+      sizeof(s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge),
+      1);
+  flashc_memset32(
+      (void *)&s_brd_drv_user_settings.e_FSYNC_TX_edge,
+      s_brd_drv_ssc_fine_settings.e_FSYNC_TX_edge,
+      sizeof(s_brd_drv_ssc_fine_settings.e_FSYNC_TX_edge),
+      1);
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.i_FSYNC_pulse,
+      s_brd_drv_ssc_fine_settings.i_FSYNC_pulse,
+      sizeof(s_brd_drv_ssc_fine_settings.i_FSYNC_pulse),
+      1);
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.i_word_bit_offset,
+      s_brd_drv_ssc_fine_settings.i_word_bit_offset,
+      sizeof(s_brd_drv_ssc_fine_settings.i_word_bit_offset),
+      1);
+
 
   // Save information (code), that settings was saved
   flashc_memset8(
@@ -1000,49 +1036,50 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   if(i_brd_drv_settings_check != BRD_DRV_FLASH_CHECK_CODE)
   {
     // Not equal -> can not restore settings
+    print_dbg("> Non valid settings in user flash. Loading default\n");
     return GD_FAIL;
   }
 
-  // Apply settings
+  // Settings is correct
+  print_dbg("Valid settings found. Lading\n");
 
+  // Apply settings
+  ///\todo Remove debug messages when all tested and everything work
 
   // MUTE direction
-  e_status = brd_drv_set_mute_dir(
-      (uint8_t)s_brd_drv_user_settings.e_mute_dir);
+  e_status = brd_drv_set_mute_dir(s_brd_drv_user_settings.e_mute_dir);
   if(e_status != GD_SUCCESS)    // Check status
   {
+    print_dbg("MUTE direction failed!\n");
     return e_status;
   }
 
   // RESET direction
-  e_status = brd_drv_set_rst_i2s_dir(
-      (uint8_t)s_brd_drv_user_settings.e_rst_i2s_dir);
+  e_status = brd_drv_set_rst_i2s_dir(s_brd_drv_user_settings.e_rst_i2s_dir);
   if(e_status != GD_SUCCESS)
   {
+    print_dbg("RESET direction failed\n");
     return e_status;
   }
 
   // MCLK direction
-  e_status = brd_drv_set_mclk_dir(
-      (uint8_t)s_brd_drv_user_settings.e_mclk_dir);
+  e_status = brd_drv_set_mclk_dir(s_brd_drv_user_settings.e_mclk_dir);
   if(e_status != GD_SUCCESS)
   {
+    print_dbg("MCLK direction failed!\n");
     return e_status;
   }
 
   // BCLK direction
-  e_status = brd_drv_set_bclk_dir(
-      (uint8_t)s_brd_drv_user_settings.e_bclk_dir);
+  e_status = brd_drv_set_bclk_dir(s_brd_drv_user_settings.e_bclk_dir);
   if(e_status != GD_SUCCESS)
   {
-    ///\todo Remove debug messages when all tested
     print_dbg(" ! BCLK dir fail ! ");
     return e_status;
   }
 
   // FRAME SYNC direction
-  e_status=brd_drv_set_frame_sync_dir(
-      (uint8_t)s_brd_drv_user_settings.e_frame_sync_dir);
+  e_status=brd_drv_set_frame_sync_dir(s_brd_drv_user_settings.e_frame_sync_dir);
   if(e_status != GD_SUCCESS)
   {
     print_dbg(" ! FS dir fail ! ");
@@ -1050,8 +1087,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   }
 
   // TX DATA
-  e_status = brd_drv_set_tx_data_dir(
-      (uint8_t)s_brd_drv_user_settings.e_tx_data_dir);
+  e_status = brd_drv_set_tx_data_dir(s_brd_drv_user_settings.e_tx_data_dir);
   if(e_status != GD_SUCCESS)
   {
     print_dbg(" ! TXD dir fail ! ");
@@ -1059,17 +1095,47 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   }
 
   // RX DATA
-  e_status = brd_drv_set_rx_data_dir(
-      (uint8_t)s_brd_drv_user_settings.e_rx_data_dir);
+  e_status = brd_drv_set_rx_data_dir(s_brd_drv_user_settings.e_rx_data_dir);
   if(e_status != GD_SUCCESS)
   {
     print_dbg(" ! RXD dir fail ! ");
     return e_status;
   }
 
+  // SSC fine settings
+  e_status = brd_drv_set_FSYNC_RX_edge(
+      s_brd_drv_user_settings.e_FSYNC_RX_edge);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! RX FSYNC dir fail ! ");
+    return e_status;
+  }
+  ///\todo Uncomment, when code complete
+  //e_status = brd_drv_set_FSYNC_TX_edge(s_brd_drv_user_settings.e_FSYNC_TX_edge);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! FSYNC TX edge fail ! ");
+    return e_status;
+  }
+  e_status = brd_drv_set_BCLK_RX_edge(
+      s_brd_drv_user_settings.e_BCLK_RX_edge);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! BCLK RX edge fail ! ");
+    return e_status;
+  }
+  e_status = brd_drv_set_BCLK_TX_edge(
+      s_brd_drv_user_settings.e_BCLK_TX_edge);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! BCLK TX edge fail ! ");
+    return e_status;
+  }
+  ///\todo More SSC fine settings to save to flash
+
+
   // Auto tune PLL
-  e_status = brd_drv_auto_tune(
-      (uint8_t)s_brd_drv_user_settings.i_auto_tune_pll);
+  e_status = brd_drv_auto_tune(s_brd_drv_user_settings.i_auto_tune_pll);
   if(e_status != GD_SUCCESS)
   {
     print_dbg(" ! Auto tune PLL fail ! ");
@@ -1092,12 +1158,32 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
 
 /**
  * @brief Set on which FSYNC edge will SSC RX unit begin
- * @param e_edge SSC_FALLING or SSC_RISING
+ * @param e_edge SSC_FALLING, SSC_RISING or SSC_EDGE_DEFAULT
  * @return GD_SUCCESS (0) if all OK
  */
 GD_RES_CODE brd_drv_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
 {
+  // Store status error code
   GD_RES_CODE e_status;
+
+  /* Perform only if value is different. Else can cause very little glitch.
+   * This check may be in future removed (because user will want set setting
+   * even if is same, but this is probably only for debug purposes). Also in
+   * time can be solved "switch" glitches, so this will be useless code
+   */
+  e_ssc_edge_t e_tmp_edge;
+  ssc_get_FSYNC_RX_edge(&e_tmp_edge);
+  if(e_tmp_edge == e_edge)
+  {
+    print_dbg(" BRD DRV: FSYNC EDGE: parameter same as actual value\n");
+    // Anyway save current edge setting
+    s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge = e_edge;
+    return GD_SUCCESS;
+  }
+
+
+  ///todo Try to set synchronization in PDCA (or when writing data to USB)
+  // Set edge on SSC driver
   e_status = ssc_set_FSYNC_RX_edge(e_edge);
 
   if(e_status != GD_SUCCESS)
@@ -1107,9 +1193,74 @@ GD_RES_CODE brd_drv_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
   // If all OK, save value
   s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge = e_edge;
 
-  return GD_SUCCESS;
+  // Reset PDCA
+  pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+
+  /* re-sync SSC to LRCK
+   * Wait for the next frame synchronization event
+   * to avoid channel inversion.  Start with left/right channel
+   * (FS goes low/high)
+   */
+  ssc_wait_for_FSYNC_RX();
+
+  pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
+  // Init PDCA channel with the pdca_options.
+  AK5394A_pdca_enable();
+
+  // Return last status
+  return e_status;
 }
 
+
+
+/**
+ * @brief Set on which FSYNC edge will SSC TX unit begin
+ * @param e_edge SSC_FALLING, SSC_RISING or SSC_EDGE_DEFAULT
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
+{
+  ///\todo COMPLETE as FIRST!!!!
+  GD_RES_CODE e_status = GD_FAIL;
+  return e_status;
+}
+
+
+///\todo Doxydoc
+GD_RES_CODE brd_drv_set_BCLK_RX_edge(e_ssc_edge_t e_edge)
+{
+  // Store status
+  GD_RES_CODE e_status;
+
+  e_status = ssc_set_BCLK_RX_edge(e_edge);
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+
+  // If all OK save actual value
+  s_brd_drv_ssc_fine_settings.e_BCLK_RX_edge = e_edge;
+
+  return e_status;
+}
+
+///\todo Doxydoc
+GD_RES_CODE brd_drv_set_BCLK_TX_edge(e_ssc_edge_t e_edge)
+{
+    // Store status
+  GD_RES_CODE e_status;
+
+  e_status = ssc_set_BCLK_TX_edge(e_edge);
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+
+  // If all OK save actual value
+  s_brd_drv_ssc_fine_settings.e_BCLK_TX_edge = e_edge;
+
+  return e_status;
+}
 
 
 
