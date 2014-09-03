@@ -124,6 +124,10 @@
  * under Win7 buffer can overflow/underflow.
  */
 static uint8_t i_auto_tune_enable = 1;
+///\todo Move to function if possible
+static uint8_t i_switch_LR = 0;
+
+
 
 static U32  index, spk_index;
 //static U16  old_gap = SPK_BUFFER_SIZE;
@@ -339,7 +343,7 @@ void uac1_device_audio_task(void *pvParameters)
       {
         // Set "old" value
         old_num_samples = num_samples;
-        // And reset pll difference
+        // And reset PLL difference
         i_pll_diff = 0;
       }
 
@@ -630,8 +634,20 @@ void uac1_device_audio_task(void *pvParameters)
             }
 
             sample = (((U32) sample_MSB) << 16) + (((U32)sample_SB) << 8) + sample_LSB;
-            if (spk_buffer_in == 0) spk_buffer_0[spk_index+OUT_LEFT] = sample;
-            else spk_buffer_1[spk_index+OUT_LEFT] = sample;
+
+            // Switch TX data
+            if(i_switch_LR == 0)
+            {
+              if (spk_buffer_in == 0) spk_buffer_0[spk_index+OUT_LEFT] = sample;
+              else spk_buffer_1[spk_index+OUT_LEFT] = sample;
+            }
+            else
+            {
+              if (spk_buffer_in == 0) spk_buffer_0[spk_index+OUT_RIGHT] = sample;
+              else spk_buffer_1[spk_index+OUT_RIGHT] = sample;
+            }
+
+
 
             if (spk_mute) {
               sample_LSB = 0;
@@ -644,8 +660,19 @@ void uac1_device_audio_task(void *pvParameters)
             };
 
             sample = (((U32) sample_MSB) << 16) + (((U32)sample_SB) << 8) + sample_LSB;
-            if (spk_buffer_in == 0) spk_buffer_0[spk_index+OUT_RIGHT] = sample;
-            else spk_buffer_1[spk_index+OUT_RIGHT] = sample;
+
+            // Switch TX data
+            if(i_switch_LR == 0)
+            {
+              if (spk_buffer_in == 0) spk_buffer_0[spk_index+OUT_RIGHT] = sample;
+              else spk_buffer_1[spk_index+OUT_RIGHT] = sample;
+            }
+            else
+            {
+              if (spk_buffer_in == 0) spk_buffer_0[spk_index+OUT_LEFT] = sample;
+              else spk_buffer_1[spk_index+OUT_LEFT] = sample;
+            }
+
 
             spk_index += 2;
             if (spk_index >= SPK_BUFFER_SIZE){
@@ -699,5 +726,27 @@ inline void uac1_device_audio_get_auto_tune(uint8_t *p_enable)
   else
     print_dbg("External PLL auto tune get: ENABLED\n");
 }
+
+
+
+///\todo Doxydoc
+inline void uac1_device_audio_set_switch_LR(uint8_t i_switch_left_right)
+{
+  if(i_switch_left_right == 0)
+  {
+    i_switch_LR = 0;
+  }
+  else
+  {
+    i_switch_LR = 1;
+  }
+}
+
+
+inline void uac1_device_audio_get_switch_LR(uint8_t *p_i_switch_left_right)
+{
+  *p_i_switch_left_right = i_switch_LR;
+}
+
 
 #endif  // USB_DEVICE_FEATURE == ENABLED

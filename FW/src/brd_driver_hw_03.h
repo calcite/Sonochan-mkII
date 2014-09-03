@@ -908,5 +908,6 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag);
 //[DEBUG]
 ///\todo REMOVE
 GD_RES_CODE brd_drv_test_f(uint32_t i32);
+GD_RES_CODE brd_drv_test_f2(uint32_t i_32);
 //[/DEBUG]
 #endif

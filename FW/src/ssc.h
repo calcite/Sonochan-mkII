@@ -88,7 +88,7 @@
  * Options: SSC_RX (slave - FSYNC as input)\n
  * SSC_TX (master - FSYNC is generated)\n
  */
-#define SSC_DEFAULT_FSYNC_ROLE       SSC_ROLE_TX
+#define SSC_DEFAULT_FSYNC_ROLE                  SSC_ROLE_TX
 
 
 //===============================| Structures |================================
