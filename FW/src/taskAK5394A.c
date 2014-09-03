@@ -206,6 +206,8 @@ void AK5394A_task_init(const Bool uac1) {
   gpio_enable_pin_glitch_filter(SSC_TX_DATA);
   gpio_enable_pin_glitch_filter(SSC_TX_FRAME_SYNC);
 
+  print_dbg("\nSSC init\n\n");
+
   // set up SSC
   if (uac1) {
     //[Martin] Old code. Just for reference.

@@ -329,10 +329,23 @@ const gd_config_struct BRD_DRV_config_table[] =
       (GD_DATA_VALUE*)&gd_void_value,
       brd_drv_save_all_settings
     },
+        {
+      19,
+      "Test function 2",
+      "For testing",
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0xFFFFFFFF},
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      (GD_DATA_VALUE*)&gd_void_value,
+      brd_drv_test_f2
+    },
 
   };
 /// \brief Maximum command ID (is defined by last command)
-#define BRD_DRV_MAX_CMD_ID          18
+#define BRD_DRV_MAX_CMD_ID          19
 
 
 const gd_metadata BRD_DRV_metadata =
@@ -351,22 +364,93 @@ const gd_metadata BRD_DRV_metadata =
 #include "taskAK5394A.h"
 
 
+static const pdca_channel_options_t SPK_PDCA_OPTIONS = {
+  .addr = (void *)spk_buffer_1,         // memory address
+  .pid = AVR32_PDCA_PID_SSC_TX,           // select peripheral
+  .size = SPK_BUFFER_SIZE,              // transfer counter
+  .r_addr = NULL,                         // next memory address
+  .r_size = 0,                            // next transfer counter
+  .transfer_size = PDCA_TRANSFER_SIZE_WORD  // select size of the transfer - 32 bits
+};
+
 GD_RES_CODE brd_drv_test_f(uint32_t i32)
 {
   volatile avr32_ssc_t *p_ssc;
   p_ssc = SSC_DEVICE;
+  //char c[150];
 
   print_dbg("TEST FUNCTION ...\n\n");
 
   switch(i32)
   {
   case 0:
+    // Positive
+    ssc_set_FSYNC_TX_edge(SSC_EDGE_RISING);
+    break;
+  case 1:
+    // Negative (default)
+    ssc_set_FSYNC_TX_edge(SSC_EDGE_FALLING);
+    break;
+  case 2:
+    ssc_set_FSYNC_TX_edge(SSC_EDGE_DEFAULT);
+    break;
+  case 3:
+    return ssc_set_digital_interface_mode(SSC_I2S);
+    break;
+  case 4:
+    print_dbg("CMD 4\n");
+    ssc_init();
+    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_POS_PULSE;
+
+
+  // Init PDCA channel with the pdca_options.
+
+  pdca_init_channel(PDCA_CHANNEL_SSC_TX, &SPK_PDCA_OPTIONS); // init PDCA channel with options.
+  pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX);
+
+  // Enable now the transfer.
+  pdca_enable(PDCA_CHANNEL_SSC_TX);
+
+    break;
+  case 7:
+    print_dbg("TCMR start: any LVL\n");
+    p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_LEVEL_CHANGE_TF;
+    break;
+  case 8:
+    print_dbg("TCMR start: low LVL\n");
+    p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_LOW_TF;
+    break;
+  case 9:
+    print_dbg("TCMR start: high LVLV\n");
+    p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_HIGH_TF;
+    break;
+  case 10:
+    uac1_device_audio_set_switch_LR(0);
+    break;
+  case 11:
+    uac1_device_audio_set_switch_LR(1);
     break;
 
   default:
     return GD_FAIL;
   }
   return GD_SUCCESS;
+}
+
+GD_RES_CODE brd_drv_test_f2(uint32_t i_32)
+{
+    volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
+  char c[55];
+    sprintf(&c[0], "4 PRE: TFMR: %lu\n\n", p_ssc->tfmr);
+    print_dbg(&c[0]);
+    p_ssc->tfmr = i_32;
+
+    sprintf(&c[0], "4 POST TFMR: %lu\n\n", p_ssc->tfmr);
+    print_dbg(&c[0]);
+
+
+    return GD_SUCCESS;
 }
 //[/DEBUG]
 
@@ -1175,7 +1259,7 @@ GD_RES_CODE brd_drv_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
   ssc_get_FSYNC_RX_edge(&e_tmp_edge);
   if(e_tmp_edge == e_edge)
   {
-    print_dbg(" BRD DRV: FSYNC EDGE: parameter same as actual value\n");
+    print_dbg(" BRD DRV: FSYNC RX EDGE: parameter same as actual value\n");
     // Anyway save current edge setting
     s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge = e_edge;
     return GD_SUCCESS;
@@ -1220,8 +1304,64 @@ GD_RES_CODE brd_drv_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
  */
 GD_RES_CODE brd_drv_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
 {
-  ///\todo COMPLETE as FIRST!!!!
-  GD_RES_CODE e_status = GD_FAIL;
+  // Store status error code
+  GD_RES_CODE e_status;
+
+  /* Perform only if value is different. Else can cause very little glitch.
+   * This check may be in future removed (because user will want set setting
+   * even if is same, but this is probably only for debug purposes). Also in
+   * time can be solved "switch" glitches, so this will be useless code
+   */
+  e_ssc_edge_t e_tmp_edge;
+  ssc_get_FSYNC_TX_edge(&e_tmp_edge);
+  if(e_tmp_edge == e_edge)
+  {
+    print_dbg(" BRD DRV: FSYNC TX EDGE: parameter same as actual value\n");
+    // Anyway save current edge setting
+    s_brd_drv_ssc_fine_settings.e_FSYNC_TX_edge = e_edge;
+    return GD_SUCCESS;
+  }
+
+
+  ///todo Try to set synchronization in PDCA (or when writing data to USB)
+  // Set edge on SSC driver
+  e_status = ssc_set_FSYNC_TX_edge(e_edge);
+
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+  // If all OK, save value
+  s_brd_drv_ssc_fine_settings.e_FSYNC_TX_edge = e_edge;
+
+
+
+
+  // Reset PDCA
+  //pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX);
+
+  /* re-sync SSC to LRCK
+   * Wait for the next frame synchronization event
+   * to avoid channel inversion.  Start with left/right channel
+   * (FS goes low/high)
+   */
+  //ssc_wait_for_FSYNC_RX();
+
+  //pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX);
+  // Init PDCA channel with the pdca_options.
+
+  //Shot 2
+  //pdca_disable_interrupt_transfer_complete(PDCA_CHANNEL_SSC_TX); // disable channel interrupt
+  //pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX); // disable channel interrupt
+  //pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX);
+
+  // Enable now the transfer.
+  //pdca_enable(PDCA_CHANNEL_SSC_TX);
+
+
+  // Shot 3
+
+  // Return last status
   return e_status;
 }
 

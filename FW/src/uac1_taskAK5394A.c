@@ -137,6 +137,7 @@ void uac1_AK5394A_task(void *pvParameters) {
       // re-sync SSC to LRCK
       // Wait for the next frame synchronization event
       // to avoid channel inversion.  Start with left channel - FS goes low
+      //[Martin] Because of flexibility whole application there is function
       ssc_wait_for_FSYNC_RX();
 
 

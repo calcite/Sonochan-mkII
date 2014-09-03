@@ -30,6 +30,7 @@ static s_ssc_settings_t s_ssc_settings;
  */
 SSC_RES_CODE ssc_init(void)
 {
+  print_dbg("SSC INIT (inter)\n\n");
   // For storing status codes
   SSC_RES_CODE e_status;
 
@@ -88,14 +89,6 @@ SSC_RES_CODE ssc_init(void)
 
   // RX Frame sync as input only
   p_ssc->RFMR.fsos = AVR32_SSC_RFMR_FSOS_INPUT_ONLY;
-
-  // FSYNC role (master / slave)
-  e_status = ssc_set_FSYNC_role(SSC_DEFAULT_FSYNC_ROLE);
-  if(e_status != SSC_SUCCESS)
-  {
-    return e_status;
-  }
-
 
   // Digital interface (also enable TX and RX module)
   e_status = ssc_set_digital_interface_mode(
@@ -327,13 +320,6 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
    * active I2S_SSC and if some problem occurs, then we load back backup.
    */
   s_ssc_settings.e_dig_aud_mode = SSC_I2S;
-  // Set FSYNC TX edge
-  e_status = ssc_set_FSYNC_TX_edge(SSC_EDGE_DEFAULT);
-  if(e_status != SSC_SUCCESS)
-  {
-    s_ssc_settings.e_dig_aud_mode = e_mode_backup;
-    return e_status;
-  }
   // Set BCLK TX edge
   e_status = ssc_set_BCLK_TX_edge(SSC_EDGE_DEFAULT);
   if(e_status != SSC_SUCCESS)
@@ -343,6 +329,7 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
   }
 
   // Set last set role (this is the "best way")
+  // FSYNC TX edge only if FSYNC role is output - in FSYNC_role() function
   e_status = ssc_set_FSYNC_role(s_ssc_settings.e_FSYNC_role);
   if(e_status != SSC_SUCCESS)
   {
@@ -423,20 +410,20 @@ SSC_RES_CODE ssc_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
   switch(e_edge)
   {
   case SSC_EDGE_FALLING:
-    print_dbg("TX FSYNC edge: 1\n");
-    p_ssc->TFMR.fsedge = 1;
+    print_dbg("TX FSYNC edge: falling\n");
+    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
     break;
   case SSC_EDGE_RISING:
-    print_dbg("TX FSYNC edge: 0\n");
-    p_ssc->TFMR.fsedge = 0;
+    print_dbg("TX FSYNC edge: rising\n");
+    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_POS_PULSE;
     break;
   case SSC_EDGE_DEFAULT:
     // This is mode dependent
     switch(s_ssc_settings.e_dig_aud_mode)
     {
     case SSC_I2S:
-      print_dbg("TX FSYNC edge (D): 1\n");
-      p_ssc->TFMR.fsedge = 1;
+      print_dbg("TX FSYNC edge (D): falling\n");
+      p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
       break;
     case SSC_DSP:
       ///\todo Complete
@@ -460,7 +447,6 @@ SSC_RES_CODE ssc_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
 
   // Else is all OK -> save value
   s_ssc_settings.e_FSYNC_TX_edge = e_edge;
-  ///\todo SET "SOME" REGISTER (do not know which yet)
   return SSC_SUCCESS;
 }
 
@@ -501,11 +487,13 @@ SSC_RES_CODE ssc_set_FSYNC_role(e_ssc_Role_Rx_Tx_t e_role)
   {
     // Slave (receive FSYNC)
     case SSC_ROLE_RX:
+      print_dbg("Setting FSYNC role: slave\n");
       p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_INPUT_ONLY;
       break;
-    // Master (generate FSYNC)
+    // Master (generate FSYNC with default edge)
     case SSC_ROLE_TX:
-        p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
+      print_dbg("Setting FSYNC role: master\n");
+      ssc_set_FSYNC_TX_edge(SSC_EDGE_DEFAULT);
       break;
     // UNknown parameter -> fail
     default:
