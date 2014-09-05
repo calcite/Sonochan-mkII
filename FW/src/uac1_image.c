@@ -61,8 +61,6 @@ static void x_image_init(void) {
 }
 
 static void x_image_task_init(void) {
-  // Status variable
-  GD_RES_CODE i_status;
 
   // Initialize USB task
   usb_task_init();
@@ -72,14 +70,8 @@ static void x_image_task_init(void) {
   mutexEP_IN = xSemaphoreCreateMutex(); // for co-ordinating multiple tasks using EP IN
 
   // vStartTaskEXERCISE( tskIDLE_PRIORITY );
+  // in init is also board init function (must be here)
   uac1_AK5394A_task_init();
-
-  i_status = brd_drv_init();
-  if(i_status != GD_SUCCESS)
-  {
-    print_dbg("Board initialization failed.");
-    ///\todo More process
-  }
 
   bridge_init();
 

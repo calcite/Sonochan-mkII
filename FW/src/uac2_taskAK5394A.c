@@ -100,8 +100,12 @@ void uac2_AK5394A_task(void *pvParameters) {
         pdca_disable(PDCA_CHANNEL_SSC_RX);
 
 
+        ///\todo [Martin] It this really needed? Probably not -> remove
         gpio_set_gpio_pin(AVR32_PIN_PX16); // BSB 20110301 MUX in 24.576MHz/2 for AB-1
 
+        ///\todo [Martin] Use symbolic names from brd_driver_hw_*.h instead of\n
+        /// AVR32_PM_GCLK_GCLK1. Also instead of "hard definition" there should\n
+        /// be functions from brd_driver_*.c which do needed processing
         pm_gc_disable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
         pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
               0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
