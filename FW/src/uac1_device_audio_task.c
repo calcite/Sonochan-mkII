@@ -125,7 +125,9 @@
  */
 static uint8_t i_auto_tune_enable = 1;
 // Allow switch TX data channels (L+R -> R+L)
-static uint8_t i_switch_LR = 0;
+static uint8_t i_swap_LR_TX = 0;
+// Allow switch RX data channels (L+R -> R+L)
+static uint8_t i_swap_LR_RX = 0;
 
 
 
@@ -252,6 +254,7 @@ void uac1_device_audio_task(void *pvParameters)
 
       time_startup+=UAC1_configTSK_USB_DAUDIO_PERIOD;
 #define STARTUP_LED_DELAY  10000
+      ///\todo [Martin] Try to write new LED driver and "connect" it to board driver
       if ( time_startup <= 1*STARTUP_LED_DELAY ) {
         LED_On( LED0 );
         pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
@@ -431,13 +434,37 @@ void uac1_device_audio_task(void *pvParameters)
             // Fill endpoint with sample raw
             if (mute==FALSE) {
               if (audio_buffer_out == 0) {
-                sample_LSB = audio_buffer_0[index+IN_LEFT];
-                sample_SB = audio_buffer_0[index+IN_LEFT] >> 8;
-                sample_MSB = audio_buffer_0[index+IN_LEFT] >> 16;
+                // Swap RX data if needed
+                if(i_swap_LR_RX == 0)
+                {
+                  // Do not swap
+                  sample_LSB = audio_buffer_0[index+IN_LEFT];
+                  sample_SB = audio_buffer_0[index+IN_LEFT] >> 8;
+                  sample_MSB = audio_buffer_0[index+IN_LEFT] >> 16;
+                }
+                else
+                {
+                  // Swap
+                  sample_LSB = audio_buffer_0[index+IN_RIGHT];
+                  sample_SB = audio_buffer_0[index+IN_RIGHT] >> 8;
+                  sample_MSB = audio_buffer_0[index+IN_RIGHT] >> 16;
+                }
               } else {
-                sample_LSB = audio_buffer_1[index+IN_LEFT];
-                sample_SB = audio_buffer_1[index+IN_LEFT] >> 8;
-                sample_MSB = audio_buffer_1[index+IN_LEFT] >> 16;
+                // Swap if needed
+                if(i_swap_LR_RX == 0)
+                {
+                  // Do not swap
+                  sample_LSB = audio_buffer_1[index+IN_LEFT];
+                  sample_SB = audio_buffer_1[index+IN_LEFT] >> 8;
+                  sample_MSB = audio_buffer_1[index+IN_LEFT] >> 16;
+                }
+                else
+                {
+                  // Swap
+                  sample_LSB = audio_buffer_1[index+IN_RIGHT];
+                  sample_SB = audio_buffer_1[index+IN_RIGHT] >> 8;
+                  sample_MSB = audio_buffer_1[index+IN_RIGHT] >> 16;
+                }
               }
 
               Usb_write_endpoint_data(EP_AUDIO_IN, 8, sample_LSB);
@@ -445,13 +472,38 @@ void uac1_device_audio_task(void *pvParameters)
               Usb_write_endpoint_data(EP_AUDIO_IN, 8, sample_MSB);
 
               if (audio_buffer_out == 0) {
-                sample_LSB = audio_buffer_0[index+IN_RIGHT];
-                sample_SB = audio_buffer_0[index+IN_RIGHT] >> 8;
-                sample_MSB = audio_buffer_0[index+IN_RIGHT] >> 16;
+                // Swap if needed
+                if(i_swap_LR_RX == 0)
+                {
+                  // Do not swap
+                  sample_LSB = audio_buffer_0[index+IN_RIGHT];
+                  sample_SB = audio_buffer_0[index+IN_RIGHT] >> 8;
+                  sample_MSB = audio_buffer_0[index+IN_RIGHT] >> 16;
+                }
+                else
+                {
+                  // Swap
+                  sample_LSB = audio_buffer_0[index+IN_LEFT];
+                  sample_SB = audio_buffer_0[index+IN_LEFT] >> 8;
+                  sample_MSB = audio_buffer_0[index+IN_LEFT] >> 16;
+                }
+
               } else {
-                sample_LSB = audio_buffer_1[index+IN_RIGHT];
-                sample_SB = audio_buffer_1[index+IN_RIGHT] >> 8;
-                sample_MSB = audio_buffer_1[index+IN_RIGHT] >> 16;
+                // Swap if needed
+                if(i_swap_LR_RX == 0)
+                {
+                  // Do not swap
+                  sample_LSB = audio_buffer_1[index+IN_RIGHT];
+                  sample_SB = audio_buffer_1[index+IN_RIGHT] >> 8;
+                  sample_MSB = audio_buffer_1[index+IN_RIGHT] >> 16;
+                }
+                else
+                {
+                  // Swap
+                  sample_LSB = audio_buffer_1[index+IN_LEFT];
+                  sample_SB = audio_buffer_1[index+IN_LEFT] >> 8;
+                  sample_MSB = audio_buffer_1[index+IN_LEFT] >> 16;
+                }
               }
 
               Usb_write_endpoint_data(EP_AUDIO_IN, 8, sample_LSB);
@@ -542,10 +594,7 @@ void uac1_device_audio_task(void *pvParameters)
               }
 
               //[Martin] This should be commented. Only for debug
-              print_dbg("I\n");
-              /*print_dbg_hex(gap);
-              print_dbg("\n");
-              */
+              //print_dbg("I\n");
 
               // Increase difference number
               i_pll_diff++;
@@ -565,14 +614,8 @@ void uac1_device_audio_task(void *pvParameters)
               }
 
               //[Martin] This should be commented. Only for debug
-              print_dbg("D\n");
-              /*print_dbg_hex(gap);
-              print_dbg("\n");
-              */
+              //print_dbg("D\n");
 
-              /*print_dbg("Time: ");
-              print_dbg_hex(time);
-              print_dbg("\n\n");*/
               // Decrease difference number
               i_pll_diff--;
               // Save actual time
@@ -604,7 +647,6 @@ void uac1_device_audio_task(void *pvParameters)
           }
 
         if (Is_usb_out_received(EP_AUDIO_OUT)) {
-          //spk_usb_heart_beat++;      // indicates EP_AUDIO_OUT receiving data from host
 
           Usb_reset_endpoint_fifo_access(EP_AUDIO_OUT);
           num_samples = Usb_byte_count(EP_AUDIO_OUT) / 6;       // Bit resolution (6)
@@ -615,9 +657,7 @@ void uac1_device_audio_task(void *pvParameters)
             num_remaining = spk_pdca_channel->tcr;
             spk_buffer_in = spk_buffer_out;
             spk_index = SPK_BUFFER_SIZE - num_remaining;
-            // BSB added 20120912 after UAC2 time bar pull noise analysis
-//            if (spk_index & (U32)1)
-//              print_dbg_char_char('s'); // BSB debug 20120912
+
             spk_index = spk_index & ~((U32)1); // Clear LSB in order to start with L sample
             delta_num = 0;
           }
@@ -636,7 +676,7 @@ void uac1_device_audio_task(void *pvParameters)
             sample = (((U32) sample_MSB) << 16) + (((U32)sample_SB) << 8) + sample_LSB;
 
             // Switch TX data
-            if(i_switch_LR == 0)
+            if(i_swap_LR_TX == 0)
             {
               if (spk_buffer_in == 0) spk_buffer_0[spk_index+OUT_LEFT] = sample;
               else spk_buffer_1[spk_index+OUT_LEFT] = sample;
@@ -662,7 +702,7 @@ void uac1_device_audio_task(void *pvParameters)
             sample = (((U32) sample_MSB) << 16) + (((U32)sample_SB) << 8) + sample_LSB;
 
             // Switch TX data
-            if(i_switch_LR == 0)
+            if(i_swap_LR_TX == 0)
             {
               if (spk_buffer_in == 0) spk_buffer_0[spk_index+OUT_RIGHT] = sample;
               else spk_buffer_1[spk_index+OUT_RIGHT] = sample;
@@ -729,24 +769,66 @@ inline void uac1_device_audio_get_auto_tune(uint8_t *p_enable)
 
 
 
-///\todo Doxydoc
-inline void uac1_device_audio_set_switch_LR(uint8_t i_switch_left_right)
+/**
+ * @brief Simply swap left and right channel for transmitting audio data
+ * @param i_switch_left_right Options: 0 - do not swap ; 1 - swap L and R
+ */
+inline void uac1_device_audio_set_swap_LR_TX(uint8_t i_switch_left_right)
 {
   if(i_switch_left_right == 0)
   {
-    i_switch_LR = 0;
+    print_dbg("LR TX swap OFF\n");
+    i_swap_LR_TX = 0;
   }
   else
   {
-    i_switch_LR = 1;
+    print_dbg("LR TX swap ON\n");
+    i_swap_LR_TX = 1;
   }
 }
 
 
-inline void uac1_device_audio_get_switch_LR(uint8_t *p_i_switch_left_right)
+/**
+ * @brief Take actual settings of swap L and R channel for transmitter
+ * @param p_i_switch_left_right Pointer to memory, where result will be\n
+ * written. Options: 0 - do not swap ; 1 - swap L and R
+ */
+inline void uac1_device_audio_get_switch_LR_TX(uint8_t *p_i_switch_left_right)
 {
-  *p_i_switch_left_right = i_switch_LR;
+  *p_i_switch_left_right = i_swap_LR_TX;
 }
+
+
+
+/**
+ * @brief Simply swap left and right channel for receiving audio data
+ * @param i_switch_left_right Options: 0 - do not swap ; 1 - swap L and R
+ */
+inline void uac1_device_audio_set_swap_LR_RX(uint8_t i_switch_left_right)
+{
+  if(i_switch_left_right == 0)
+  {
+    print_dbg("LR RX swap OFF\n");
+    i_swap_LR_RX = 0;
+  }
+  else
+  {
+    print_dbg("LR RX swap ON\n");
+    i_swap_LR_RX = 1;
+  }
+}
+
+
+/**
+ * @brief Take actual settings of swap L and R channel for receiver
+ * @param p_i_switch_left_right Pointer to memory, where result will be\n
+ * written. Options: 0 - do not swap ; 1 - swap L and R
+ */
+inline void uac1_device_audio_get_switch_LR_RX(uint8_t *p_i_switch_left_right)
+{
+  *p_i_switch_left_right = i_swap_LR_RX;
+}
+
 
 
 #endif  // USB_DEVICE_FEATURE == ENABLED

@@ -170,16 +170,11 @@ void AK5394A_task_init(const Bool uac1) {
     ///\todo More process
   }
 
-  print_dbg("\nfunc: AK5394A_task_init > SSC init\n\n");
-
-  // set up SSC
+  // set up SSC (already done by board driver)
   //[Martin] Old code. Just for reference.
   // UAC1: ssc_i2s_init(ssc, 48000, 24, 32, SSC_I2S_MODE_STEREO_OUT_STEREO_IN, FPBA_HZ);
   // UAC2: ssc_i2s_init(ssc, 96000, 24, 32, SSC_I2S_MODE_STEREO_OUT_STEREO_IN, FPBA_HZ);
-  if(ssc_init() != 0)
-  {
-    brd_drv_send_error_msg("SSC init FAILED!\n",1,1);
-  }
+
 
   // set up PDCA
   // In order to avoid long slave handling during undefined length bursts (INCR), the Bus Matrix

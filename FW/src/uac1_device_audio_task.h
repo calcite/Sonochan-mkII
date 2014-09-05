@@ -83,8 +83,12 @@ void uac1_device_audio_set_auto_tune(uint8_t i_enable);
 
 void uac1_device_audio_get_auto_tune(uint8_t *p_enable);
 
-void uac1_device_audio_set_switch_LR(uint8_t i_switch_left_right);
+void uac1_device_audio_set_swap_LR_TX(uint8_t i_switch_left_right);
 
-void uac1_device_audio_get_switch_LR(uint8_t *p_i_switch_left_right);
+void uac1_device_audio_get_switch_LR_TX(uint8_t *p_i_switch_left_right);
+
+void uac1_device_audio_set_swap_LR_RX(uint8_t i_switch_left_right);
+
+void uac1_device_audio_get_switch_LR_RX(uint8_t *p_i_switch_left_right);
 
 #endif  // _UAC1_DEVICE_AUDIO_TASK_H_

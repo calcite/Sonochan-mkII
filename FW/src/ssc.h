@@ -274,14 +274,15 @@ typedef struct{
 SSC_RES_CODE ssc_init(void);
 SSC_RES_CODE ssc_reset(void);
 
+SSC_RES_CODE ssc_set_digital_interface_mode(
+    e_ssc_digital_audio_interface_t e_mode);
+SSC_RES_CODE ssc_get_digital_interface_mode(
+    e_ssc_digital_audio_interface_t *p_e_mode);
 
 //===========================| Mid level functions |===========================
 SSC_RES_CODE ssc_wait_for_FSYNC_RX(void);
 
-SSC_RES_CODE ssc_set_digital_interface_mode(
-    e_ssc_digital_audio_interface_t e_mode);
-SSC_RES_CODE ssc_get_digital_interface(
-    e_ssc_digital_audio_interface_t *p_e_mode);
+
 
 SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void);
 

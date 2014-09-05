@@ -154,53 +154,6 @@ SSC_RES_CODE ssc_reset(void)
 
 
 
-//===========================| Mid level functions |===========================
-
-/* [Martin] It looks like this function is not being used in future, because of
- * PDCA synchronization (synchronize once, then do not need SSC -> changes not
- * applied immediately)
- */
-/**
- * @brief Wait until correct FSYNC edge is detected
- * @return SSC_SUCCESS (0) if all OK
- */
-inline SSC_RES_CODE ssc_wait_for_FSYNC_RX(void)
-{
-  switch(s_ssc_settings.e_dig_aud_mode)
-  {
-  case SSC_I2S:
-    if((s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_FALLING) ||
-       (s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_DEFAULT))
-    {// Falling edge
-      while (!gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
-      while (gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
-    }
-    else if(s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_RISING)
-    {// Rising edge
-      while (gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
-      while (!gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
-    }
-    break;  // SSC_I2S
-  case SSC_DSP:
-    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
-    ///\todo Complete
-    break;
-  case SSC_LEFT_JUSTIFIED:
-    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
-    ///\todo Complete
-    break;
-  case SSC_RIGHT_JUSTIFIED:
-    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
-    ///\todo Complete
-    break;
-  // Else mode is unknown
-  default:
-    return SSC_INCORRECT_PARAMETER;
-  }
-  return SSC_SUCCESS;
-}
-
-
 /**
  * @brief Set one of supported digital interfaces
  * @param e_mode Options: SSC_I2S, SSC_DSP, SSC_LEFT_JUSTIFIED or\n
@@ -269,7 +222,7 @@ SSC_RES_CODE ssc_set_digital_interface_mode(
  * Options: SSC_I2S, SSC_DSP, SSC_LEFT_JUSTIFIED or SSC_RIGHT_JUSTIFIED
  * @return SSC_SUCCESS (0) if all OK
  */
-inline SSC_RES_CODE ssc_get_digital_interface(
+inline SSC_RES_CODE ssc_get_digital_interface_mode(
     e_ssc_digital_audio_interface_t *p_e_mode)
 {
   // Just save value to correct address
@@ -277,6 +230,56 @@ inline SSC_RES_CODE ssc_get_digital_interface(
 
   return SSC_SUCCESS;
 }
+
+
+
+//===========================| Mid level functions |===========================
+
+/* [Martin] It looks like this function is not being used in future, because of
+ * PDCA synchronization (synchronize once, then do not need SSC -> changes not
+ * applied immediately)
+ */
+/**
+ * @brief Wait until correct FSYNC edge is detected
+ * @return SSC_SUCCESS (0) if all OK
+ */
+inline SSC_RES_CODE ssc_wait_for_FSYNC_RX(void)
+{
+  switch(s_ssc_settings.e_dig_aud_mode)
+  {
+  case SSC_I2S:
+    if((s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_FALLING) ||
+       (s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_DEFAULT))
+    {// Falling edge
+      while (!gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+      while (gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+    }
+    else if(s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_RISING)
+    {// Rising edge
+      while (gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+      while (!gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+    }
+    break;  // SSC_I2S
+  case SSC_DSP:
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
+    ///\todo Complete
+    break;
+  case SSC_LEFT_JUSTIFIED:
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
+    ///\todo Complete
+    break;
+  case SSC_RIGHT_JUSTIFIED:
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
+    ///\todo Complete
+    break;
+  // Else mode is unknown
+  default:
+    return SSC_INCORRECT_PARAMETER;
+  }
+  return SSC_SUCCESS;
+}
+
+
 
 
 

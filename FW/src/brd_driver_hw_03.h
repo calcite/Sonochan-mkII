@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 01.09.2014
+ * Modified: 05.09.2014
  *
- * \version 0.2
+ * \version 0.3
  * \author  Martin Stejskal
  */
 
@@ -447,6 +447,7 @@ typedef struct{
  * memory when user want to keep settings.
  */
 typedef struct{
+  //===== I/O settings (also SSC settings)
   /// MUTE direction
   e_brd_drv_dir_t e_mute_dir;
   /// RESET I2S direction
@@ -463,26 +464,26 @@ typedef struct{
   e_brd_drv_dir_t e_rx_data_dir;
 
 
+  //===== SSC fine settings
+  /// Digital interface mode
+  e_ssc_digital_audio_interface_t e_dig_audio_mode;
   /// FSYNC RX edge
   e_ssc_edge_t e_FSYNC_RX_edge;
-
   /// FSYNC TX edge
   e_ssc_edge_t e_FSYNC_TX_edge;
-
   /// BCLK RX edge
   e_ssc_edge_t e_BCLK_RX_edge;
   /// BCLK TX edge
   e_ssc_edge_t e_BCLK_TX_edge;
-
   /// Length of FSYNC pulse (only in DSP mode)
   uint8_t i_FSYNC_pulse;
-
-
   /** Word bit offset
    * Number of bits (BCLK intervals) before start of actual audio data.
    */
   uint8_t i_word_bit_offset;
 
+
+  //===== Other settings
   /// Auto tune external PLL option
   uint8_t i_auto_tune_pll;
 }s_brd_drv_user_settings_t;
@@ -496,20 +497,18 @@ typedef struct{
  * developing new digital audio interface.
  */
 typedef struct{
+  /// Digital audio interface (I2S, DSP, ...)
+  e_ssc_digital_audio_interface_t e_dig_aud_mode;
   /// FSYNC RX edge
   e_ssc_edge_t e_FSYNC_RX_edge;
-
   /// FSYNC TX edge
   e_ssc_edge_t e_FSYNC_TX_edge;
-
   /// BCLK RX edge
   e_ssc_edge_t e_BCLK_RX_edge;
   /// BCLK TX edge
   e_ssc_edge_t e_BCLK_TX_edge;
-
   /// Length of FSYNC pulse (only in DSP mode)
   uint8_t i_FSYNC_pulse;
-
   /** Word bit offset
    * Number of bits (BCLK intervals) before start of actual audio data.
    */
@@ -877,6 +876,9 @@ GD_RES_CODE brd_drv_reset_i2s(void);
 
 GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable);
 
+GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
+    e_ssc_digital_audio_interface_t e_mode);
+
 GD_RES_CODE brd_drv_save_all_settings(void);
 
 GD_RES_CODE brd_drv_restore_all_settings(void);
@@ -936,6 +938,5 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag);
 //[DEBUG]
 ///\todo REMOVE
 GD_RES_CODE brd_drv_test_f(uint32_t i32);
-GD_RES_CODE brd_drv_test_f2(uint32_t i_32);
 //[/DEBUG]
 #endif
