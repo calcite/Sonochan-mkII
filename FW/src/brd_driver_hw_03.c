@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 01.09.2014
+ * Modified: 05.09.2014
  *
- * \version 0.2
+ * \version 0.3
  * \author  Martin Stejskal
  */
 
@@ -105,7 +105,7 @@ const gd_config_struct BRD_DRV_config_table[] =
     },
     {
       1,
-      "Reset I2S",
+      "Reset connector I/O's",
       "Set all signals to Hi-Z. Codec on board will work.",
       void_type,
       {.data_uint32 = 0},
@@ -300,11 +300,24 @@ const gd_config_struct BRD_DRV_config_table[] =
     },
     {
       16,
+      "Digital audio interface mode",
+      "NOT TESTED! ; 0 - I2S ; 1 - DSP ; 2 - Left justified ; 3 - Right justified",
+      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
+      {.data_uint32 = 0},
+      {.data_uint32 = 3},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 3},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_dig_aud_mode,
+      brd_drv_set_digital_audio_interface_mode
+    },
+    {
+      17,
       "Test function",
       "For testing",
       uint32_type,
       {.data_uint32 = 0},
-      {.data_uint32 = 1024},
+      {.data_uint32 = 0xFFFFFFFF},
       void_type,
       {.data_uint32 = 0},
       {.data_uint32 = 0},
@@ -312,7 +325,7 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_test_f
     },
     {
-      17,
+      18,
       "Restore saved settings",
       "Load and apply saved settings",
       void_type,
@@ -325,7 +338,7 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_restore_all_settings
     },
     {
-      18,
+      19,
       "Save all settings",
       "Just save variables to flash memory",
       void_type,
@@ -337,19 +350,6 @@ const gd_config_struct BRD_DRV_config_table[] =
       (GD_DATA_VALUE*)&gd_void_value,
       brd_drv_save_all_settings
     },
-        {
-      19,
-      "Test function 2",
-      "For testing",
-      uint32_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 0xFFFFFFFF},
-      void_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 0},
-      (GD_DATA_VALUE*)&gd_void_value,
-      brd_drv_test_f2
-    },
 
   };
 /// \brief Maximum command ID (is defined by last command)
@@ -359,7 +359,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 const gd_metadata BRD_DRV_metadata =
 {
         BRD_DRV_MAX_CMD_ID,              // Max CMD ID
-        "Board driver for Sonochan mkII v0.2",     // Description
+        "Board driver for Sonochan mkII v0.3",     // Description
         (gd_config_struct*)&BRD_DRV_config_table[0],
         0x0F    // Serial number (0~255)
 };
@@ -372,15 +372,6 @@ const gd_metadata BRD_DRV_metadata =
 #include "taskAK5394A.h"
 
 
-static const pdca_channel_options_t SPK_PDCA_OPTIONS = {
-  .addr = (void *)spk_buffer_1,         // memory address
-  .pid = AVR32_PDCA_PID_SSC_TX,           // select peripheral
-  .size = SPK_BUFFER_SIZE,              // transfer counter
-  .r_addr = NULL,                         // next memory address
-  .r_size = 0,                            // next transfer counter
-  .transfer_size = PDCA_TRANSFER_SIZE_WORD  // select size of the transfer - 32 bits
-};
-
 GD_RES_CODE brd_drv_test_f(uint32_t i32)
 {
   volatile avr32_ssc_t *p_ssc;
@@ -391,75 +382,12 @@ GD_RES_CODE brd_drv_test_f(uint32_t i32)
 
   switch(i32)
   {
-  case 0:
-    // Positive
-    ssc_set_FSYNC_TX_edge(SSC_EDGE_RISING);
-    break;
-  case 1:
-    // Negative (default)
-    ssc_set_FSYNC_TX_edge(SSC_EDGE_FALLING);
-    break;
-  case 2:
-    ssc_set_FSYNC_TX_edge(SSC_EDGE_DEFAULT);
-    break;
-  case 3:
-    return ssc_set_digital_interface_mode(SSC_I2S);
-    break;
-  case 4:
-    print_dbg("CMD 4\n");
-    ssc_init();
-    p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_POS_PULSE;
-
-
-  // Init PDCA channel with the pdca_options.
-
-  pdca_init_channel(PDCA_CHANNEL_SSC_TX, &SPK_PDCA_OPTIONS); // init PDCA channel with options.
-  pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX);
-
-  // Enable now the transfer.
-  pdca_enable(PDCA_CHANNEL_SSC_TX);
-
-    break;
-  case 7:
-    print_dbg("TCMR start: any LVL\n");
-    p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_LEVEL_CHANGE_TF;
-    break;
-  case 8:
-    print_dbg("TCMR start: low LVL\n");
-    p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_LOW_TF;
-    break;
-  case 9:
-    print_dbg("TCMR start: high LVLV\n");
-    p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_HIGH_TF;
-    break;
-  case 10:
-    uac1_device_audio_set_switch_LR(0);
-    break;
-  case 11:
-    uac1_device_audio_set_switch_LR(1);
-    break;
-
   default:
     return GD_FAIL;
   }
   return GD_SUCCESS;
 }
 
-GD_RES_CODE brd_drv_test_f2(uint32_t i_32)
-{
-    volatile avr32_ssc_t *p_ssc;
-  p_ssc = SSC_DEVICE;
-  char c[55];
-    sprintf(&c[0], "4 PRE: TFMR: %lu\n\n", p_ssc->tfmr);
-    print_dbg(&c[0]);
-    p_ssc->tfmr = i_32;
-
-    sprintf(&c[0], "4 POST TFMR: %lu\n\n", p_ssc->tfmr);
-    print_dbg(&c[0]);
-
-
-    return GD_SUCCESS;
-}
 //[/DEBUG]
 
 //=================| Definitions that user should not change |=================
@@ -707,11 +635,10 @@ GD_RES_CODE brd_drv_init(void)
 
 
 //===============================| SSC module |================================
-  // Preset SSC - DONT! This procedure is done when music begin be played!
-  /*e_status = ssc_init();
+  // Preset SSC
+  e_status = ssc_init();
     if(e_status != GD_SUCCESS)
       return e_status;
-  */
 
 //==================================| Codec |==================================
   // Prepare TLV (CS2200 have to be already initialized)
@@ -735,14 +662,16 @@ GD_RES_CODE brd_drv_init(void)
     // Load value i_auto_tune_pll
     uac1_device_audio_get_auto_tune(&i_auto_tune_pll);
 
+    // Set as default I2S mode
+    e_status = ssc_set_digital_interface_mode(SSC_I2S);
+    if(e_status != GD_SUCCESS) return e_status;
+
     // Load SSC default values
     // FSYNC RX
-    e_status = ssc_get_FSYNC_RX_edge(
-        &s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge);
+    e_status = brd_drv_set_FSYNC_RX_edge(SSC_EDGE_DEFAULT);
     if(e_status != GD_SUCCESS) return e_status;
     // FSYNC TX
-    e_status = ssc_get_FSYNC_TX_edge(
-        &s_brd_drv_ssc_fine_settings.e_FSYNC_TX_edge);
+    e_status = brd_drv_set_FSYNC_TX_edge(SSC_EDGE_DEFAULT);
     if(e_status != GD_SUCCESS) return e_status;
     // BCLK RX
     e_status = ssc_get_BCLK_RX_edge(
@@ -1055,6 +984,30 @@ GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable)
 
 
 
+/**
+ * @brief Simple function, that allow set digital audio interface
+ *
+ * Can switch between I2S, DSP, Right justify and so on.
+ * @param e_mode Options: SSC_I2S, SSC_DSP, SSC_LEFT_JUSTIFIED,\n
+ *   SSC_RIGHT_JUSTIFIED
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
+    e_ssc_digital_audio_interface_t e_mode)
+{
+  // Status code
+  GD_RES_CODE e_status;
+
+  e_status = ssc_set_digital_interface_mode(e_mode);
+  if(e_status == GD_SUCCESS)
+  {
+    // If all OK -> save actual mode value
+    s_brd_drv_ssc_fine_settings.e_dig_aud_mode = e_mode;
+  }
+  // Anyway, return status code
+  return e_status;
+}
+
 
 
 /**
@@ -1126,6 +1079,11 @@ GD_RES_CODE brd_drv_save_all_settings(void){
       1);
 
   // SSC fine settings
+  flashc_memset32(
+      (void *)&s_brd_drv_user_settings.e_dig_audio_mode,
+      s_brd_drv_ssc_fine_settings.e_dig_aud_mode,
+      sizeof(s_brd_drv_ssc_fine_settings.e_dig_aud_mode),
+      1);
   flashc_memset32(
       (void *)&s_brd_drv_user_settings.e_BCLK_RX_edge,
       s_brd_drv_ssc_fine_settings.e_BCLK_RX_edge,
@@ -1254,6 +1212,13 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   }
 
   // SSC fine settings
+  e_status = brd_drv_set_digital_audio_interface_mode(
+      s_brd_drv_user_settings.e_dig_audio_mode);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! Set dig. aud. itfce failed ! ");
+    return e_status;
+  }
   e_status = brd_drv_set_FSYNC_RX_edge(
       s_brd_drv_user_settings.e_FSYNC_RX_edge);
   if(e_status != GD_SUCCESS)
@@ -1261,8 +1226,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
     print_dbg(" ! RX FSYNC dir fail ! ");
     return e_status;
   }
-  ///\todo Uncomment, when code complete
-  //e_status = brd_drv_set_FSYNC_TX_edge(s_brd_drv_user_settings.e_FSYNC_TX_edge);
+  e_status = brd_drv_set_FSYNC_TX_edge(s_brd_drv_user_settings.e_FSYNC_TX_edge);
   if(e_status != GD_SUCCESS)
   {
     print_dbg(" ! FSYNC TX edge fail ! ");
@@ -1282,7 +1246,6 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
     print_dbg(" ! BCLK TX edge fail ! ");
     return e_status;
   }
-  ///\todo More SSC fine settings to save to flash
 
 
   // Auto tune PLL
@@ -1314,49 +1277,50 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
  */
 GD_RES_CODE brd_drv_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
 {
-  // Store status error code
+  // Store status
   GD_RES_CODE e_status;
 
-  /* Perform only if value is different. Else can cause very little glitch.
-   * This check may be in future removed (because user will want set setting
-   * even if is same, but this is probably only for debug purposes). Also in
-   * time can be solved "switch" glitches, so this will be useless code
-   */
-  e_ssc_edge_t e_tmp_edge;
-  ssc_get_FSYNC_RX_edge(&e_tmp_edge);
-  if(e_tmp_edge == e_edge)
+  // Variable to store digital interface mode
+  e_ssc_digital_audio_interface_t e_mode;
+
+  // Check input parameter
+  if((e_edge != SSC_EDGE_DEFAULT) &&
+     (e_edge != SSC_EDGE_FALLING) &&
+     (e_edge != SSC_EDGE_RISING))
   {
-    print_dbg(" BRD DRV: FSYNC RX EDGE: parameter same as actual value\n");
-    // Anyway save current edge setting
-    s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge = e_edge;
-    return GD_SUCCESS;
+    return GD_INCORRECT_PARAMETER;
   }
 
 
-  ///todo Try to set synchronization in PDCA (or when writing data to USB)
-  // Set edge on SSC driver
-  e_status = ssc_set_FSYNC_RX_edge(e_edge);
-
+  // Because edge is mode dependent (I2S, DSP, ....) we must get current mode
+  e_status = ssc_get_digital_interface_mode(&e_mode);
   if(e_status != GD_SUCCESS)
   {
     return e_status;
   }
-  // If all OK, save value
+
+  // OK, so we got mode. So now it is time for switch
+  switch(e_mode)
+  {
+  // I2S
+  case SSC_I2S:
+    // If rising  edge -> switch channels
+    if(e_edge == SSC_EDGE_RISING)
+    {
+      uac1_device_audio_set_swap_LR_RX(1);
+    }
+    else // Do not switch channel
+    {
+      uac1_device_audio_set_swap_LR_RX(0);
+    }
+    break; // I2S
+  // Mode not known/not supported
+  default:
+    return GD_FAIL;
+  }
+
+  // OK, save actual value
   s_brd_drv_ssc_fine_settings.e_FSYNC_RX_edge = e_edge;
-
-  // Reset PDCA
-  pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-
-  /* re-sync SSC to LRCK
-   * Wait for the next frame synchronization event
-   * to avoid channel inversion.  Start with left/right channel
-   * (FS goes low/high)
-   */
-  ssc_wait_for_FSYNC_RX();
-
-  pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_RX);
-  // Init PDCA channel with the pdca_options.
-  AK5394A_pdca_enable();
 
   // Return last status
   return e_status;
@@ -1371,62 +1335,50 @@ GD_RES_CODE brd_drv_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
  */
 GD_RES_CODE brd_drv_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
 {
-  // Store status error code
+  // Store status
   GD_RES_CODE e_status;
 
-  /* Perform only if value is different. Else can cause very little glitch.
-   * This check may be in future removed (because user will want set setting
-   * even if is same, but this is probably only for debug purposes). Also in
-   * time can be solved "switch" glitches, so this will be useless code
-   */
-  e_ssc_edge_t e_tmp_edge;
-  ssc_get_FSYNC_TX_edge(&e_tmp_edge);
-  if(e_tmp_edge == e_edge)
+  // Variable to store digital interface mode
+  e_ssc_digital_audio_interface_t e_mode;
+
+  // Check input parameter
+  if((e_edge != SSC_EDGE_DEFAULT) &&
+     (e_edge != SSC_EDGE_FALLING) &&
+     (e_edge != SSC_EDGE_RISING))
   {
-    print_dbg(" BRD DRV: FSYNC TX EDGE: parameter same as actual value\n");
-    // Anyway save current edge setting
-    s_brd_drv_ssc_fine_settings.e_FSYNC_TX_edge = e_edge;
-    return GD_SUCCESS;
+    return GD_INCORRECT_PARAMETER;
   }
 
 
-  ///todo Try to set synchronization in PDCA (or when writing data to USB)
-  // Set edge on SSC driver
-  e_status = ssc_set_FSYNC_TX_edge(e_edge);
-
+  // Because edge is mode dependent (I2S, DSP, ....) we must get current mode
+  e_status = ssc_get_digital_interface_mode(&e_mode);
   if(e_status != GD_SUCCESS)
   {
     return e_status;
   }
-  // If all OK, save value
+
+  // OK, so we got mode. So now it is time for switch
+  switch(e_mode)
+  {
+  // I2S
+  case SSC_I2S:
+    // If rising  edge -> switch channels
+    if(e_edge == SSC_EDGE_RISING)
+    {
+      uac1_device_audio_set_swap_LR_TX(1);
+    }
+    else // Do not switch channel
+    {
+      uac1_device_audio_set_swap_LR_TX(0);
+    }
+    break; // I2S
+  // Mode not known/not supported
+  default:
+    return GD_FAIL;
+  }
+
+  // OK, save actual value
   s_brd_drv_ssc_fine_settings.e_FSYNC_TX_edge = e_edge;
-
-
-
-
-  // Reset PDCA
-  //pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX);
-
-  /* re-sync SSC to LRCK
-   * Wait for the next frame synchronization event
-   * to avoid channel inversion.  Start with left/right channel
-   * (FS goes low/high)
-   */
-  //ssc_wait_for_FSYNC_RX();
-
-  //pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX);
-  // Init PDCA channel with the pdca_options.
-
-  //Shot 2
-  //pdca_disable_interrupt_transfer_complete(PDCA_CHANNEL_SSC_TX); // disable channel interrupt
-  //pdca_disable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX); // disable channel interrupt
-  //pdca_enable_interrupt_reload_counter_zero(PDCA_CHANNEL_SSC_TX);
-
-  // Enable now the transfer.
-  //pdca_enable(PDCA_CHANNEL_SSC_TX);
-
-
-  // Shot 3
 
   // Return last status
   return e_status;
