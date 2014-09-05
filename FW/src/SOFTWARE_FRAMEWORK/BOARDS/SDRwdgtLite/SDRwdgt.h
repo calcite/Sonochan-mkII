@@ -47,7 +47,8 @@
 // Osc1 crystal is not mounted by default. Set the following definitions to the
 // appropriate values if a custom Osc1 crystal is mounted on your board.
 #define FOSC1           12288000                              //!< Osc1 frequency: Hz.
-#define OSC1_STARTUP    AVR32_PM_OSCCTRL1_STARTUP_2048_RCOSC  //!< Osc1 startup time: RCOsc periods.
+// Now in brd_driver_hw_*.c
+//#define OSC1_STARTUP    AVR32_PM_OSCCTRL1_STARTUP_2048_RCOSC  //!< Osc1 startup time: RCOsc periods.
 
 //! @}
 /*! \name System Clock Frequencies
@@ -83,72 +84,36 @@
 //! Number of LEDs.
 #define LED_COUNT   4
 
-/*! \name GPIO Connections of LEDs
+/**
+ * \name GPIO Connections of LEDs
+ * @{
  */
-//! @{
-#define LED0_GPIO   AVR32_PIN_PX20
-#define LED1_GPIO   AVR32_PIN_PX46
-#define LED2_GPIO   AVR32_PIN_PX50
-#define LED3_GPIO   AVR32_PIN_PX57
-//! @}
-
-/*! \name PWM Channels of LEDs
- */
-//! @{
-#define LED0_PWM    (-1)
-#define LED1_PWM    (-1)
-#define LED2_PWM    (-1)
-#define LED3_PWM    (-1)
-
-//! @}
-
-/*! \name PWM Functions of LEDs
- */
-//! @{
-#define LED0_PWM_FUNCTION   (-1)
-#define LED1_PWM_FUNCTION   (-1)
-#define LED2_PWM_FUNCTION   (-1)
-#define LED3_PWM_FUNCTION   (-1)
-
-//! @}
-
-/*! \name Color Identifiers of LEDs to Use with LED Functions
- */
-//! @{
-#define LED_MONO0_GREEN   LED0
-#define LED_MONO1_GREEN   LED1
-#define LED_MONO2_GREEN   LED2
-#define LED_MONO3_GREEN   LED3
-//! @}
-
+#define LED0_GPIO       AVR32_PIN_PX20
+#define LED1_GPIO       AVR32_PIN_PX46
+#define LED2_GPIO       AVR32_PIN_PX50
+#define LED3_GPIO       AVR32_PIN_PX57
+//!@}
 
 /*! \name Signals for ADC
  */
 //! @{
 
 // NOTE:: need to work on these pin assignments
-#define AK5394_FSYNC                     AVR32_PIN_PX26    // with Jumper 1-2 in J302
-#define AK5394_LRCK                      AVR32_PIN_PX36    // with Jumper 3-4 in J302
-#define AK5394_LRCK_IN                   AVR32_PIN_PX26    // with Jumper 2-3 in J302
-#define AK5394_SDATA                     AVR32_PIN_PX25
-#define AK5394_SCLK                      AVR32_PIN_PX28    // trace on board to PX34  ??
-#define AK5394_AD_MCLK                   AVR32_PIN_PC04    // clock from A/D board
-
-//! @}
-
-
-/*! \name TWI Connections of the Spare TWI Connector
+/* [Martin] Some need to be defined because of UAC2, but in future this
+ * definition will be removed to brd_driver_*.h file.
  */
-//! @{
-#define TWIM0                     (&AVR32_TWIM0)
-#define TWIM0_SCL_PIN             AVR32_TWIMS0_TWCK_0_0_PIN
-#define TWIM0_SCL_FUNCTION        AVR32_TWIMS0_TWCK_0_0_FUNCTION
-#define TWIM0_SDA_PIN             AVR32_TWIMS0_TWD_0_0_PIN
-#define TWIM0_SDA_FUNCTION        AVR32_TWIMS0_TWD_0_0_FUNCTION
+///\todo [Martin] Remove commented definition when not needed
+//#define AK5394_FSYNC                     AVR32_PIN_PX26    // with Jumper 1-2 in J302
+#define AK5394_LRCK                      AVR32_PIN_PX36    // with Jumper 3-4 in J302
+//#define AK5394_LRCK_IN                   AVR32_PIN_PX26    // with Jumper 2-3 in J302
+//#define AK5394_SDATA                     AVR32_PIN_PX25
+//#define AK5394_SCLK                      AVR32_PIN_PX28    // trace on board to PX34  ??
+//#define AK5394_AD_MCLK                   AVR32_PIN_PC04    // clock from A/D board
+
 //! @}
 
 
-/*! \name USART Settings for the SDR-Widget boards
+/*! \name USART Settings for the Sonochan mkII boards
  */
 //! @{
 
@@ -158,34 +123,7 @@
 #define USART_TX_PIN        AVR32_USART1_TXD_0_2_PIN
 #define USART_TX_FUNCTION   AVR32_USART1_TXD_0_2_FUNCTION
 #define USART_CLOCK_MASK    AVR32_USART1_CLK_PBA
-
-/*! \name SSC Settings for the SDR-Widget boards
- */
-//! @{
-
-#define SSC_RX_DATA             AVR32_SSC_RX_DATA_0_2_PIN
-#define SSC_RX_DATA_FUNCTION    AVR32_SSC_RX_DATA_0_2_FUNCTION
-#define SSC_RX_FRAME_SYNC       AVR32_SSC_RX_FRAME_SYNC_0_2_PIN
-#define SSC_RX_FRAME_SYNC_FUNCTION  AVR32_SSC_RX_FRAME_SYNC_0_2_FUNCTION
-#define SSC_RX_CLOCK            AVR32_SSC_RX_CLOCK_0_1_PIN
-#define  SSC_RX_CLOCK_FUNCTION  AVR32_SSC_RX_CLOCK_0_1_FUNCTION
-#define SSC_TX_DATA             AVR32_SSC_TX_DATA_0_1_PIN
-#define SSC_TX_DATA_FUNCTION    AVR32_SSC_TX_DATA_0_1_FUNCTION
-#define SSC_TX_FRAME_SYNC       AVR32_SSC_TX_FRAME_SYNC_0_1_PIN
-#define SSC_TX_FRAME_SYNC_FUNCTION  AVR32_SSC_TX_FRAME_SYNC_0_1_FUNCTION
-#define SSC_TX_CLOCK            AVR32_SSC_TX_CLOCK_0_1_PIN
-#define  SSC_TX_CLOCK_FUNCTION  AVR32_SSC_TX_CLOCK_0_1_FUNCTION
-
-/*! \name GCLK Settings for the SDR-Widget boards
- */
-//! @{
-
-#define GCLK0        AVR32_PM_GCLK_0_1_PIN
-#define GCLK0_FUNCTION    AVR32_PM_GCLK_0_1_FUNCTION
-#define  GCLK1        AVR32_PM_GCLK_1_1_PIN
-#define GCLK1_FUNCTION    AVR32_PM_GCLK_1_1_FUNCTION
-#define GCLK2        AVR32_PM_GCLK_2_PIN
-#define GCLK2_FUNCTION    AVR32_PM_GCLK_2_FUNCTION
+//! @}
 
 
 // Inhale list of required modules

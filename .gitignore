@@ -12,3 +12,5 @@
 HW/*.?#?
 DOC/__Doxy_DOC/
 .~lock.*#
+.project
+Sonochan_mkII

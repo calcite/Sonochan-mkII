@@ -97,12 +97,12 @@
  * #define BRD_DRV_ADC_PRESCALLED_CLK 0UL
  * \endcode
  */
-#define BRD_DRV_ADC_PRESCALLED_CLK      0
+#define BRD_DRV_ADC_PRESCALLED_CLK      0UL
 
 
 
 /**
- * \name Pin mapping for BRD_DRV driver
+ * \name ADC pin mapping for board
  * @{
  */
 ///\brief ADC volume signal pin
@@ -122,7 +122,14 @@
 
 ///\brief Used ADC channel by con voltage signal
 #define BRD_DRV_ADC_CON_VOLTAGE_CHANNEL         0
+/// @}
 
+
+
+/**
+ * \name Other pin mapping for Sonochan mkII boards
+ * @{
+ */
 ///\brief Mute enable on MCU side
 #define BRD_DRV_MUTE_EN_A_PIN                   AVR32_PIN_PB02
 
@@ -176,11 +183,25 @@
 
 /// @}
 
+/*! \name GCLK Settings for the Sonochan mkII boards
+ *
+ * GCLK0 is used for generating MCLK.\n
+ * GCLK1 is used for generating BCLK.
+ *
+ */
+//! @{
+
+#define GCLK0                   AVR32_PM_GCLK_0_1_PIN
+#define GCLK0_FUNCTION          AVR32_PM_GCLK_0_1_FUNCTION
+#define GCLK1                   AVR32_PM_GCLK_1_1_PIN
+#define GCLK1_FUNCTION          AVR32_PM_GCLK_1_1_FUNCTION
+//! @}
+
 
 
 
 /**
- * \name
+ * \name Fine settings
  *
  * @{
  */
@@ -294,6 +315,9 @@
 
 // Because of sprintf()
 #include <stdio.h>
+
+// Cause of GCLKx stuff
+#include "pm.h"
 
 // SSC driver (on chip AVR32)
 #include "ssc.h"
@@ -884,6 +908,10 @@ void brd_drv_send_error_msg(
     uint8_t i_write_to_DBG,
     uint8_t i_write_to_LCD);
 //===========================| Low level functions |===========================
+GD_RES_CODE brd_drv_set_uac1(uint8_t i_uac1_enable);
+
+GD_RES_CODE brd_drv_get_uac1(uint8_t *p_i_uac1_enable);
+
 GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);
 
 GD_RES_CODE brd_drv_set_mclk_dir(e_brd_drv_dir_t e_mclk_dir);

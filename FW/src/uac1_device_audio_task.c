@@ -124,7 +124,7 @@
  * under Win7 buffer can overflow/underflow.
  */
 static uint8_t i_auto_tune_enable = 1;
-///\todo Move to function if possible
+// Allow switch TX data channels (L+R -> R+L)
 static uint8_t i_switch_LR = 0;
 
 

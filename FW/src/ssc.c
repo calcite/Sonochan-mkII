@@ -9,19 +9,29 @@
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  20.08.2014\n
- * Modified: 29.08.2014
+ * Modified: 05.09.2014
  *
- * \version 0.1
+ * \version 0.2
  * \author Martin Stejskal
  */
-
 #include "ssc.h"
-
-///\todo REMOVE - DEBUG
-#include <stdio.h>
-#include "print_funcs.h"
 //============================| Global variables |=============================
+/**
+ * @brief Structure that keep actual settings in memory
+ */
 static s_ssc_settings_t s_ssc_settings;
+
+/**
+ * @brief Pin mapping for SSC module
+ */
+static const gpio_map_t SSC_GPIO_MAP = {
+  {SSC_RX_CLOCK, SSC_RX_CLOCK_FUNCTION},
+  {SSC_RX_DATA, SSC_RX_DATA_FUNCTION},
+  {SSC_RX_FRAME_SYNC, SSC_RX_FRAME_SYNC_FUNCTION},
+  {SSC_TX_CLOCK, SSC_TX_CLOCK_FUNCTION},
+  {SSC_TX_DATA, SSC_TX_DATA_FUNCTION},
+  {SSC_TX_FRAME_SYNC, SSC_TX_FRAME_SYNC_FUNCTION}
+};
 //================================| Functions |================================
 //==========================| High level functions |===========================
 /**
@@ -30,7 +40,6 @@ static s_ssc_settings_t s_ssc_settings;
  */
 SSC_RES_CODE ssc_init(void)
 {
-  print_dbg("SSC INIT (inter)\n\n");
   // For storing status codes
   SSC_RES_CODE e_status;
 
@@ -38,16 +47,29 @@ SSC_RES_CODE ssc_init(void)
   volatile avr32_ssc_t *p_ssc;
   p_ssc = SSC_DEVICE;
 
+  // Write info message
+  SSC_INFO_FUNC(SSC_MSG_INFO_SSC_INIT);
 
+  //==============================| Set I/O pins |=============================
+  // Assign GPIO to SSC.
+  gpio_enable_module(SSC_GPIO_MAP,
+                     sizeof(SSC_GPIO_MAP) / sizeof(SSC_GPIO_MAP[0]));
 
+  gpio_enable_pin_glitch_filter(SSC_RX_CLOCK);
+  gpio_enable_pin_glitch_filter(SSC_RX_DATA);
+  gpio_enable_pin_glitch_filter(SSC_RX_FRAME_SYNC);
+  gpio_enable_pin_glitch_filter(SSC_TX_CLOCK);
+  gpio_enable_pin_glitch_filter(SSC_TX_DATA);
+  gpio_enable_pin_glitch_filter(SSC_TX_FRAME_SYNC);
+
+  //===============================| Reset codec |=============================
   // First, we must reset codec
   e_status = ssc_reset();
   if(e_status != SSC_SUCCESS)
   {
-    print_dbg("Reset failed\n");
+    SSC_ERR_FUNC(SSC_MSG_ERR_RESET_FAILED);
     return e_status;
   }
-
 
   //===========================| Set default values |==========================
   // Default data length (in bits)
@@ -56,13 +78,13 @@ SSC_RES_CODE ssc_init(void)
   s_ssc_settings.i_frame_length = SSC_DEFAULT_FRAME_LENGTH;
   // Preset default values (because some function need to have set these)
   s_ssc_settings.e_dig_aud_mode = SSC_DEFAULT_DIGITAL_AUDIO_INTERFACE;
-  s_ssc_settings.e_FSYNC_RX_edge = SSC_DEFAULT_FSYNC_EDGE;
-  s_ssc_settings.e_FSYNC_TX_edge = SSC_DEFAULT_FSYNC_EDGE;
+  s_ssc_settings.e_FSYNC_RX_edge = SSC_DEFAULT_FSYNC_RX_EDGE;
+  s_ssc_settings.e_FSYNC_TX_edge = SSC_DEFAULT_FSYNC_TX_EDGE;
   s_ssc_settings.e_FSYNC_role = SSC_DEFAULT_FSYNC_ROLE;
   // Sample data on rising edge (standard)
-  s_ssc_settings.e_BCLK_RX_edge = SSC_EDGE_RISING;
+  s_ssc_settings.e_BCLK_RX_edge = SSC_DEFAULT_BCLK_RX_EDGE;
   // Transmit data on falling edge (standard)
-  s_ssc_settings.e_BCLK_TX_edge = SSC_EDGE_FALLING;
+  s_ssc_settings.e_BCLK_TX_edge = SSC_DEFAULT_BCLK_TX_EDGE;
 
   /* Always get BCLK from "outside world", no matter in which mode operate.
    * RX module work always as slave.
@@ -95,7 +117,7 @@ SSC_RES_CODE ssc_init(void)
                                         SSC_DEFAULT_DIGITAL_AUDIO_INTERFACE);
   if(e_status != SSC_SUCCESS)
   {
-    print_dbg("Setting mode failed :(\n");
+    SSC_ERR_FUNC(SSC_MSG_ERR_SET_DIG_INTFCE_MODE);
     return e_status;
   }
 
@@ -104,7 +126,7 @@ SSC_RES_CODE ssc_init(void)
   e_status = ssc_enable_RX_TX();
   if(e_status != SSC_SUCCESS)
   {
-    print_dbg("SSC enable failed\n");
+    SSC_ERR_FUNC(SSC_MSG_ERR_SSC_ENABLE_FAILED);
     return e_status;
   }
 
@@ -133,6 +155,11 @@ SSC_RES_CODE ssc_reset(void)
 
 
 //===========================| Mid level functions |===========================
+
+/* [Martin] It looks like this function is not being used in future, because of
+ * PDCA synchronization (synchronize once, then do not need SSC -> changes not
+ * applied immediately)
+ */
 /**
  * @brief Wait until correct FSYNC edge is detected
  * @return SSC_SUCCESS (0) if all OK
@@ -155,15 +182,15 @@ inline SSC_RES_CODE ssc_wait_for_FSYNC_RX(void)
     }
     break;  // SSC_I2S
   case SSC_DSP:
-    print_dbg("Feature not completed #0\n");
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
     ///\todo Complete
     break;
   case SSC_LEFT_JUSTIFIED:
-    print_dbg("Feature not completed #1\n");
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
     ///\todo Complete
     break;
   case SSC_RIGHT_JUSTIFIED:
-    print_dbg("Feature not completed #2\n");
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
     ///\todo Complete
     break;
   // Else mode is unknown
@@ -197,11 +224,11 @@ SSC_RES_CODE ssc_set_digital_interface_mode(
   switch(e_mode)
   {
   case SSC_I2S:
-    print_dbg("Setting mode I2S\n");
+    SSC_INFO_FUNC(SSC_MSG_INFO_MODE_I2S);
     e_status =  ssc_set_digital_interface_mode_I2S();
     break; // SSC_I2S
   case SSC_DSP:
-    print_dbg("Feature not completed #3\n");
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
 
     if(s_ssc_settings.e_FSYNC_TX_edge == SSC_EDGE_FALLING)
     {
@@ -221,10 +248,10 @@ SSC_RES_CODE ssc_set_digital_interface_mode(
 
     break;
   case SSC_LEFT_JUSTIFIED:
-    print_dbg("Feature not completed #4\n");
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
     break;
   case SSC_RIGHT_JUSTIFIED:
-    print_dbg("Feature not completed #5\n");
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
     break;
   // Else mode is unknown
   default:
@@ -254,7 +281,12 @@ inline SSC_RES_CODE ssc_get_digital_interface(
 
 
 
-///\todo Complete function and Doxydoc
+/**
+ * @brief Set SSC module for I2S digital interface
+ * Also preset all necessary variables to default value, except e_FSYNC_role\n
+ * which should be set by higher layer.
+ * @return SSC_SUCCESS (0) if all OK
+ */
 inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
 {
   // Store status codes
@@ -314,8 +346,6 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
   p_ssc->RFMR.fsedge = 1;
 
 
-
-
   /* Following functions need to know which mode is active. So we set as
    * active I2S_SSC and if some problem occurs, then we load back backup.
    */
@@ -357,16 +387,20 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
 
 //===========================| Low level functions |===========================
 
+/* [Martin] It looks like this function is not being used in future, because of
+ * PDCA synchronization (synchronize once, then do not need SSC -> changes not
+ * applied immediately)
+ */
 /**
  * @brief Set on which edge will RX module synchronized
  *
  * For synchronization must be used function ssc_wait_for_FSYNC_RX() which\n
  * return when correct FSYNC edge was detected.
  *
- * @param e_edge Options: SSC_FALLING or SSC_RISING
+ * @param e_edge Options: SSC_FALLING, SSC_RISING or SSC_EDGE_DEFAULT
  * @return SSC_SUCCESS (0) if all OK
  */
-SSC_RES_CODE ssc_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
+inline SSC_RES_CODE ssc_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
 {
   // Check input parameter
   if( (e_edge != SSC_EDGE_FALLING) &&
@@ -386,7 +420,7 @@ SSC_RES_CODE ssc_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
 /**
  * @brief Get information on which edge is RX module synchronized
  * @param p_e_edge Address, where result will be written.\n
- * Options: SSC_FALLING or SSC_RISING
+ * Options: SSC_FALLING, SSC_RISING or SSC_EDGE_DEFAULT
  *
  * @return SSC_SUCCESS (0) if all OK
  */
@@ -399,8 +433,20 @@ inline SSC_RES_CODE ssc_get_FSYNC_RX_edge(e_ssc_edge_t *p_e_edge)
 
 
 
-///\todo Doxydoc
-SSC_RES_CODE ssc_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
+
+/* [Martin] It looks like this function is not being used in future, because of
+ * PDCA synchronization (synchronize once, then do not need SSC -> changes not
+ * applied immediately)
+ */
+/**
+ * @brief Set FSYNC synchronization edge for TX module
+ * Edge can be set "on the fly", but when is used PDCA and specific type\n
+ * synchronization, change could not be applied from user point of view.
+ *
+ * @param e_edge Options: SSC_FALLING, SSC_RISING or SSC_EDGE_DEFAULT
+ * @return SSC_SUCCESS (0) if all OK
+ */
+inline SSC_RES_CODE ssc_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
 {
   // Pointer to SSC (memory and structure)
   volatile avr32_ssc_t *p_ssc;
@@ -410,11 +456,9 @@ SSC_RES_CODE ssc_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
   switch(e_edge)
   {
   case SSC_EDGE_FALLING:
-    print_dbg("TX FSYNC edge: falling\n");
     p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
     break;
   case SSC_EDGE_RISING:
-    print_dbg("TX FSYNC edge: rising\n");
     p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_POS_PULSE;
     break;
   case SSC_EDGE_DEFAULT:
@@ -422,16 +466,18 @@ SSC_RES_CODE ssc_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
     switch(s_ssc_settings.e_dig_aud_mode)
     {
     case SSC_I2S:
-      print_dbg("TX FSYNC edge (D): falling\n");
       p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_NEG_PULSE;
       break;
     case SSC_DSP:
+      SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
       ///\todo Complete
       break;
     case SSC_LEFT_JUSTIFIED:
+      SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
       ///\todo Complete
       break;
     case SSC_RIGHT_JUSTIFIED:
+      SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
       ///\todo Complete
       break;
     // Default case should never happen
@@ -453,7 +499,7 @@ SSC_RES_CODE ssc_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
 /**
  * @brief Get information on which edge is TX module synchronized
  * @param p_e_edge Address, where result will be written.\n
- * Options: SSC_FALLING or SSC_RISING
+ * Options: SSC_FALLING, SSC_RISING or SSC_EDGE_DEFAULT
  *
  * @return SSC_SUCCESS (0) if all OK
  */
@@ -487,15 +533,13 @@ SSC_RES_CODE ssc_set_FSYNC_role(e_ssc_Role_Rx_Tx_t e_role)
   {
     // Slave (receive FSYNC)
     case SSC_ROLE_RX:
-      print_dbg("Setting FSYNC role: slave\n");
       p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_INPUT_ONLY;
       break;
     // Master (generate FSYNC with default edge)
     case SSC_ROLE_TX:
-      print_dbg("Setting FSYNC role: master\n");
       ssc_set_FSYNC_TX_edge(SSC_EDGE_DEFAULT);
       break;
-    // UNknown parameter -> fail
+    // Unknown parameter -> fail
     default:
       return SSC_INCORRECT_PARAMETER;
   }
@@ -527,7 +571,14 @@ inline SSC_RES_CODE ssc_get_FSYNC_role(e_ssc_Role_Rx_Tx_t *p_e_role)
 
 
 
-///\todo Doxydoc
+/**
+ * @brief Set BCLK synchronization edge for RX module
+ * Due to flexibility of system, there can be request to sample RX data on\n
+ * different edges.
+ *
+ * @param e_edge Options: SSC_FALLING, SSC_RISING or SSC_EDGE_DEFAULT
+ * @return SSC_SUCCESS (0) if all OK
+ */
 SSC_RES_CODE ssc_set_BCLK_RX_edge(e_ssc_edge_t e_edge)
 {
   // Pointer to SSC (memory and structure)
@@ -567,7 +618,15 @@ SSC_RES_CODE ssc_set_BCLK_RX_edge(e_ssc_edge_t e_edge)
   return SSC_SUCCESS;
 }
 
-///\todo Doxydoc
+/**
+ * @brief Get BCLK synchronization edge for RX module
+ * Due to flexibility of system, there can be request to sample RX data on\n
+ * different edges. This function give actual setting.
+ *
+ * @param p_e_edge Address where result will be written\n
+ * Options: SSC_FALLING, SSC_RISING or SSC_EDGE_DEFAULT
+ * @return SSC_SUCCESS (0) if all OK
+ */
 inline SSC_RES_CODE ssc_get_BCLK_RX_edge(e_ssc_edge_t *p_e_edge)
 {
   *p_e_edge = s_ssc_settings.e_BCLK_RX_edge;
@@ -576,7 +635,14 @@ inline SSC_RES_CODE ssc_get_BCLK_RX_edge(e_ssc_edge_t *p_e_edge)
 
 
 
-///\todo Doxydoc
+/**
+ * @brief Set BCLK synchronization edge for TX module
+ * Due to flexibility of system, there can be request to transmit TX data on\n
+ * different edges.
+ *
+ * @param e_edge Options: SSC_FALLING, SSC_RISING or SSC_EDGE_DEFAULT
+ * @return SSC_SUCCESS (0) if all OK
+ */
 SSC_RES_CODE ssc_set_BCLK_TX_edge(e_ssc_edge_t e_edge)
 {
   // Pointer to SSC (memory and structure)
@@ -616,7 +682,15 @@ SSC_RES_CODE ssc_set_BCLK_TX_edge(e_ssc_edge_t e_edge)
 }
 
 
-///\todo Doxydoc
+/**
+ * @brief Get BCLK synchronization edge for TX module
+ * Due to flexibility of system, there can be request to transmit TX data on\n
+ * different edges. This function give actual setting.
+ *
+ * @param p_e_edge Address where result will be written\n
+ * Options: SSC_FALLING, SSC_RISING or SSC_EDGE_DEFAULT
+ * @return SSC_SUCCESS (0) if all OK
+ */
 inline SSC_RES_CODE ssc_get_BCLK_TX_edge(e_ssc_edge_t *p_e_edge)
 {
   *p_e_edge = s_ssc_settings.e_BCLK_TX_edge;
@@ -627,7 +701,10 @@ inline SSC_RES_CODE ssc_get_BCLK_TX_edge(e_ssc_edge_t *p_e_edge)
 
 
 
-///\todo Doxydoc
+/**
+ * @brief Simply disable RX and TX module
+ * @return SSC_SUCCESS (0) if all right
+ */
 inline SSC_RES_CODE ssc_disable_RX_TX(void)
 {
   // Pointer to SSC (memory and structure)
@@ -642,7 +719,10 @@ inline SSC_RES_CODE ssc_disable_RX_TX(void)
 }
 
 
-///\todo Doxydoc
+/**
+ * Just enable RX and TX module
+ * @return SSC_SUCCESS (0) if all right
+ */
 inline SSC_RES_CODE ssc_enable_RX_TX(void)
 {
   // Pointer to SSC (memory and structure)
