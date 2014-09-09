@@ -66,6 +66,12 @@
 #define BDR_DRV_ADC_ADDRESS                     AVR32_ADC_ADDRESS
 
 
+/**
+ * \brief Address to memory where are PM registers
+ *
+ * Example: AVR32_PM_ADDRESS or (&AVR32_PM) - it is the same
+ */
+#define BRD_DRV_PM_ADDRESS                      AVR32_PM_ADDRESS
 
 /**
  * \brief Clock speed for ADC module in Hz
@@ -306,6 +312,13 @@
  */
 #define BRD_DRV_ADC_START_UP_TIME                       10
 
+
+
+#define BRD_DRV_DEFAULT_MCLK_OVERSAMPLING       256
+
+#define BRD_DRV_DEFAULT_BCLK_OVERSAMPLING       64
+
+#define BRD_DRV_DEFAULT_DATA_WORD_LENGTH        24
 //================================| Includes |=================================
 // IO pins
 #include <avr32/io.h>
@@ -481,7 +494,12 @@ typedef struct{
    * Number of bits (BCLK intervals) before start of actual audio data.
    */
   uint8_t i_word_bit_offset;
-
+  /// Data length in bits
+  uint8_t i_data_length;
+  /// BCLK oversampling
+  uint16_t i_BCLK_ovrsmpling;
+  /// MCLK oversampling
+  uint16_t i_MCLK_ovrsmpling;
 
   //===== Other settings
   /// Auto tune external PLL option
@@ -513,6 +531,12 @@ typedef struct{
    * Number of bits (BCLK intervals) before start of actual audio data.
    */
   uint8_t i_word_bit_offset;
+  /// Data length in bits
+  uint8_t i_data_length;
+  /// BCLK oversampling
+  uint16_t i_BCLK_ovrsmpling;
+  /// MCLK oversampling
+  uint16_t i_MCLK_ovrsmpling;
 }s_brd_drv_ssc_fine_setting_t;
 
 
@@ -653,9 +677,35 @@ typedef struct{
 
 
 /**
+ * \name Warning messages
+ * @{
+ */
+#define BRD_DRV_MSG_WRN_MCLK_RAISED_UP_BCLK     \
+  "MCLK set up to BCLK frequency\n"
+
+#define BRD_DRV_MSG_WRN_DATA_LEN_DECREASED      \
+  "Data length was decreased\n"
+
+/// @}
+
+
+/**
+ * \name Information messages
+ * @{
+ */
+
+#define BRD_DRV_INFO_LOAD_FACTRY_STTNGS         \
+  "Loading factory settings\n"
+
+#define BRD_DRV_INFO_FACTRY_STTNGS_LOADED       \
+  "Factory settings was loaded\n"
+
+/// @}
+
+/**
  * \brief Check code which allow detect correct settings in user flash
  *
- * It should be in range 2 - 254 (0, 1 amd 255 are excluded for safety reasons)
+ * It should be in range 2 - 254 (0, 1 and 255 are excluded for safety reasons)
  */
 #define BRD_DRV_FLASH_CHECK_CODE                38
 //=================================| Macros |==================================
@@ -874,15 +924,26 @@ void brd_drv_task(void);
 
 GD_RES_CODE brd_drv_reset_i2s(void);
 
-GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable);
-
 GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
     e_ssc_digital_audio_interface_t e_mode);
+
+GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling);
+
+GD_RES_CODE brd_drv_get_MCLK_oversampling(uint16_t *p_i_MCLK_oversampling);
+
+GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling);
+
+GD_RES_CODE brd_drv_get_BCLK_oversampling(uint16_t *p_i_BCLK_oversampling);
 
 GD_RES_CODE brd_drv_save_all_settings(void);
 
 GD_RES_CODE brd_drv_restore_all_settings(void);
+
+GD_RES_CODE brd_drv_load_default_settings(void);
 //===========================| Mid level functions |===========================
+GD_RES_CODE brd_drv_set_data_length(uint8_t i_data_length);
+GD_RES_CODE brd_drv_get_data_length(uint8_t *p_i_data_length);
+
 GD_RES_CODE brd_drv_set_FSYNC_RX_edge(e_ssc_edge_t e_edge);
 GD_RES_CODE brd_drv_set_FSYNC_TX_edge(e_ssc_edge_t e_edge);
 
@@ -914,6 +975,8 @@ GD_RES_CODE brd_drv_set_uac1(uint8_t i_uac1_enable);
 
 GD_RES_CODE brd_drv_get_uac1(uint8_t *p_i_uac1_enable);
 
+GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable);
+
 GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);
 
 GD_RES_CODE brd_drv_set_mclk_dir(e_brd_drv_dir_t e_mclk_dir);
@@ -933,6 +996,14 @@ GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag);
 GD_RES_CODE brd_drv_set_rst_i2s_dir(e_brd_drv_dir_t e_rst_i2s_dir);
 
 GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag);
+
+GD_RES_CODE brd_drv_set_BCLK_div(uint16_t i_div);
+
+GD_RES_CODE brd_drv_get_BCLK_div(uint16_t *p_i_div);
+
+GD_RES_CODE brd_drv_set_MCLK_div(uint16_t i_div);
+
+GD_RES_CODE brd_drv_get_MCLK_div(uint16_t *p_i_div);
 
 
 //[DEBUG]
