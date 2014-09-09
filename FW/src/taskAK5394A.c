@@ -166,7 +166,7 @@ void AK5394A_task_init(const Bool uac1) {
   e_status = brd_drv_init();
   if(e_status != GD_SUCCESS)
   {
-    print_dbg("!!! Board initialization failed.\n");
+    print_dbg("!!! Board initialization failed.\n If you do not panic, you should now....\n");
     ///\todo More process
   }
 

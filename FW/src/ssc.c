@@ -311,7 +311,6 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
   // Set frame length
   p_ssc->TCMR.period = s_ssc_settings.i_frame_length -1;
   // Set data length (one sample per one channel)
-
   p_ssc->TFMR.datlen = s_ssc_settings.i_data_length -1;
   // MSB first - true
   p_ssc->TFMR.msbf = 1;
@@ -389,6 +388,127 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
 }
 
 //===========================| Low level functions |===========================
+
+
+/**
+ * @brief Set length of data word
+ * @param i_data_length Data length in bits
+ * @return SSC_SUCCESS (0) if all OK
+ */
+SSC_RES_CODE ssc_set_data_length(uint8_t i_data_length)
+{
+  // Pointer to SSC (memory and structure)
+  volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
+
+
+  // Check input parameter
+  if(i_data_length > 32)
+  {
+    return SSC_INCORRECT_PARAMETER;
+  }
+
+  // Switch according actual interface
+  //[Martin] Not sure if different at all modes, but just for case....
+  switch(s_ssc_settings.e_dig_aud_mode)
+  {
+  case SSC_I2S:
+    p_ssc->TFMR.datlen = i_data_length -1;
+    p_ssc->RFMR.datlen = i_data_length -1;
+    break;
+  case SSC_DSP:
+    ///\todo Complete
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
+    break;
+  case SSC_LEFT_JUSTIFIED:
+    ///\todo Complete
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
+    break;
+  case SSC_RIGHT_JUSTIFIED:
+    ///\todo Complete
+    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
+    break;
+  // Undefined/not supported mode
+  default:
+    return SSC_FAIL;
+  }
+
+  // And save value
+  s_ssc_settings.i_data_length = i_data_length;
+
+  // OK, everything looks OK
+  return SSC_SUCCESS;
+}
+
+/**
+ * @brief Give length of data word
+ * @param p_i_data_length Memory address, where result will be written
+ * @return SSC_SUCCESS (0) if all right
+ */
+SSC_RES_CODE ssc_get_data_length(uint8_t *p_i_data_length)
+{
+  *p_i_data_length = s_ssc_settings.i_data_length;
+  return SSC_SUCCESS;
+}
+
+
+
+/**
+ * @brief Set length of frame sync
+ * @param i_frame_length Frame sync length in bits
+ * @return SSC_SUCCESS (0) if all right
+ */
+SSC_RES_CODE ssc_set_frame_length(uint8_t i_frame_length)
+{
+  // Pointer to SSC (memory and structure)
+  volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
+
+  // Switch according to actual interface
+  switch(s_ssc_settings.e_dig_aud_mode)
+  {
+  case SSC_I2S:
+    // TX module
+    p_ssc->TCMR.period = i_frame_length -1;
+    p_ssc->TFMR.fslen = (i_frame_length -1)
+        & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
+    p_ssc->TFMR.fslenhi = (i_frame_length -1) >>AVR32_SSC_TFMR_FSLEN_SIZE;
+    // RX module
+    p_ssc->RCMR.period = i_frame_length -1;
+    p_ssc->RFMR.fslen = (i_frame_length -1)
+        & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
+    p_ssc->RFMR.fslenhi = (i_frame_length -1) >>AVR32_SSC_TFMR_FSLEN_SIZE;
+    break;
+  case SSC_DSP:
+    break;
+  case SSC_LEFT_JUSTIFIED:
+    break;
+  case SSC_RIGHT_JUSTIFIED:
+    break;
+  // Undefined/not supported mode
+  default:
+    return SSC_FAIL;
+  }
+
+  // Everything look fine, so save setting
+  s_ssc_settings.i_frame_length = i_frame_length;
+
+  return SSC_SUCCESS;
+}
+
+
+/**
+ * @brief Give length of data word
+ * @param p_i_frame_length Memory address, where result will be written
+ * @return SSC_SUCCESS (0) if all right
+ */
+SSC_RES_CODE ssc_get_frame_length(uint8_t *p_i_frame_length)
+{
+  *p_i_frame_length = s_ssc_settings.i_frame_length;
+  return SSC_SUCCESS;
+}
+
+
 
 /* [Martin] It looks like this function is not being used in future, because of
  * PDCA synchronization (synchronize once, then do not need SSC -> changes not

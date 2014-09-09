@@ -287,6 +287,13 @@ SSC_RES_CODE ssc_wait_for_FSYNC_RX(void);
 SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void);
 
 //===========================| Low level functions |===========================
+SSC_RES_CODE ssc_set_data_length(uint8_t i_data_length);
+SSC_RES_CODE ssc_get_data_length(uint8_t *p_i_data_length);
+
+SSC_RES_CODE ssc_set_frame_length(uint8_t i_frame_length);
+SSC_RES_CODE ssc_get_frame_length(uint8_t *p_i_frame_length);
+
+
 SSC_RES_CODE ssc_set_FSYNC_RX_edge(e_ssc_edge_t e_edge);
 SSC_RES_CODE ssc_get_FSYNC_RX_edge(e_ssc_edge_t *p_e_edge);
 

@@ -89,9 +89,10 @@ uint8_t i_brd_drv_settings_check;
 const gd_config_struct BRD_DRV_config_table[] =
   {
     {
-      0,                      // Command ID
-      "Initialize board hardware",  // Name
-      "Initialize I/O and prepare codec",      // Descriptor
+#define BRD_DRV_CMD_INIT        0
+      BRD_DRV_CMD_INIT,                         // Command ID
+      "Initialize board hardware",              // Name
+      "Initialize I/O and prepare codec",       // Descriptor
       void_type,              // Input data type
       {.data_uint32 = 0},     // Minimum input value
       {.data_uint32 = 0},     // Maximum input value
@@ -104,7 +105,8 @@ const gd_config_struct BRD_DRV_config_table[] =
                                        */
     },
     {
-      1,
+#define BRD_DRV_CMD_RESET_CON   BRD_DRV_CMD_INIT+1
+      BRD_DRV_CMD_RESET_CON,
       "Reset connector I/O's",
       "Set all signals to Hi-Z. Codec on board will work.",
       void_type,
@@ -117,7 +119,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_reset_i2s
     },
     {
-      2,
+#define BRD_DRV_CMD_MCLK_DIR    BRD_DRV_CMD_RESET_CON+1
+      BRD_DRV_CMD_MCLK_DIR,
       "MCLK direction",
       "0 - input ; 1 - output ; 2 - Hi-Z",
       uint32_type,      // Cause it is enum and 32 bit system
@@ -130,7 +133,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_mclk_dir
     },
     {
-      3,
+#define BRD_DRV_CMD_BCLK_DIR    BRD_DRV_CMD_MCLK_DIR+1
+      BRD_DRV_CMD_BCLK_DIR,
       "BCLK role and direction",
       "0 - slave, BCLK is input ; 1 - master, BCLK output ; 2 - Hi-z",
       uint32_type,      // Cause it is enum and 32 bit system
@@ -143,7 +147,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_bclk_dir
     },
     {
-      4,
+#define BRD_DRV_CMD_FSYNC_DIR   BRD_DRV_CMD_BCLK_DIR+1
+      BRD_DRV_CMD_FSYNC_DIR,
       "FSYNC role and direction",
       "0 - slave, FSYNC (word clock) is input ; 1 - master, FSYNC (word clock) is output ; 2 - hi-z",
       uint32_type,      // Cause it is enum and 32 bit system
@@ -156,7 +161,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_frame_sync_dir
     },
     {
-      5,
+#define BRD_DRV_CMD_MUTE_DIR    BRD_DRV_CMD_FSYNC_DIR+1
+      BRD_DRV_CMD_MUTE_DIR,
       "MUTE direction",
       "0 - input ; 1 - output ; 2 - Hi-Z",
       uint32_type,      // Cause it is enum and 32 bit system
@@ -169,7 +175,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_mute_dir
     },
     {
-      6,
+#define BRD_DRV_CMD_MUTE_FLAG   BRD_DRV_CMD_MUTE_DIR+1
+      BRD_DRV_CMD_MUTE_FLAG,
       "Set mute flag",
       "0 - mute off ; 1 - mute on",
       uint8_type,
@@ -182,7 +189,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_mute
     },
     {
-      7,
+#define BRD_DRV_CMD_RESET_DIR   BRD_DRV_CMD_MUTE_FLAG+1
+      BRD_DRV_CMD_RESET_DIR,
       "Set RESET_I2S direction",
       "0 - input ; 1 - output ; 2 - Hi-Z",
       uint32_type,      // Cause it is enum and 32 bit system
@@ -195,7 +203,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_rst_i2s_dir
     },
     {
-      8,
+#define BRD_DRV_CMD_RESET_FLAG  BRD_DRV_CMD_RESET_DIR+1
+      BRD_DRV_CMD_RESET_FLAG,
       "Set reset I2S flag",
       "0 - off ; 1 - on",
       uint8_type,
@@ -208,7 +217,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_rst_i2s
     },
     {
-      9,
+#define BRD_DRV_CMD_TX_DATA_DIR BRD_DRV_CMD_RESET_FLAG+1
+      BRD_DRV_CMD_TX_DATA_DIR,
       "Set TX_DATA direction",
       "1 - output ; 2 - HiZ",
       uint32_type,      // Cause it is enum and 32 bit system
@@ -221,7 +231,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_tx_data_dir
     },
     {
-      10,
+#define BRD_DRV_CMD_RX_DATA_DIR BRD_DRV_CMD_TX_DATA_DIR+1
+      BRD_DRV_CMD_RX_DATA_DIR,
       "Set RX_DATA direction",
       "0 - input ; 1 - not allowed ; 2 - HiZ",
       uint32_type,      // Cause it is enum and 32 bit system
@@ -234,7 +245,22 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_rx_data_dir
     },
     {
-      11,
+#define BRD_DRV_CMD_BCLK_OVERSAM        BRD_DRV_CMD_RX_DATA_DIR+1
+      BRD_DRV_CMD_BCLK_OVERSAM,
+      "BCLK frequency",
+      "Options: 16, 32, 64, 128, 256 FSYNC",
+      uint16_type,
+      {.data_uint16 = 1},
+      {.data_uint16 = 512},
+      uint16_type,
+      {.data_uint16 = 1},
+      {.data_uint16 = 512},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling,
+      brd_drv_set_BCLK_oversampling
+    },
+    {
+#define BRD_DRV_CMD_AUTO_TUNE           BRD_DRV_CMD_BCLK_OVERSAM+1
+      BRD_DRV_CMD_AUTO_TUNE,
       "Auto tune PLL when audio feedback not work",
       "Enable (1) or disable (0)",
       uint8_type,
@@ -247,7 +273,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_auto_tune
     },
     {
-      12,
+#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_AUTO_TUNE+1
+      BRD_DRV_CMD_RX_FSYNC_EDGE,
       "RX FSYNC edge",
       "RX FSYNC sync edge ; 0 - falling ; 1 - rising ; 2 - default",
       uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
@@ -260,7 +287,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_FSYNC_RX_edge
     },
     {
-      13,
+#define BRD_DRV_CMD_TX_FSYNC_EDGE    BRD_DRV_CMD_RX_FSYNC_EDGE+1
+      BRD_DRV_CMD_TX_FSYNC_EDGE,
       "TX FSYNC edge",
       "TX FSYNC sync edge ; 0 - falling ; 1- rising ; 2 - default",
       uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
@@ -273,7 +301,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_FSYNC_TX_edge
     },
     {
-      14,
+#define BRD_DRV_CMD_RX_BCLK_EDGE        BRD_DRV_CMD_TX_FSYNC_EDGE+1
+      BRD_DRV_CMD_RX_BCLK_EDGE,
       "RX BCLK sampling edge",
       "RX BCLK sync edge ; 0 - falling ; 1 - rising ; 2 - default",
       uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
@@ -286,7 +315,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_BCLK_RX_edge
     },
     {
-      15,
+#define BRD_DRV_CMD_TX_BCLK_EDGE        BRD_DRV_CMD_RX_BCLK_EDGE+1
+      BRD_DRV_CMD_TX_BCLK_EDGE,
       "TX BCLK transmitting edge",
       "TX BCLK sync edge ; 0 - falling ; 1 - rising ; 2 - default",
       uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
@@ -299,7 +329,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_BCLK_TX_edge
     },
     {
-      16,
+#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_TX_BCLK_EDGE+1
+      BRD_DRV_CMD_DIG_AUD_INTERFACE,
       "Digital audio interface mode",
       "NOT TESTED! ; 0 - I2S ; 1 - DSP ; 2 - Left justified ; 3 - Right justified",
       uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
@@ -312,7 +343,22 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_digital_audio_interface_mode
     },
     {
-      17,
+#define BRD_DRV_CMD_WORD_SIZE   BRD_DRV_CMD_DIG_AUD_INTERFACE+1
+      BRD_DRV_CMD_WORD_SIZE,
+      "Set word size",
+      "Data size in bits. Usually 16, 20, 24 and 32",
+      uint8_type,
+      {.data_uint8 = 1},
+      {.data_uint8 = 32},
+      uint8_type,
+      {.data_uint8 = 1},
+      {.data_uint8 = 32},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_data_length,
+      brd_drv_set_data_length
+    },
+    {
+#define BRD_DRV_CMD_TEST_FUNC   BRD_DRV_CMD_WORD_SIZE+1
+      BRD_DRV_CMD_TEST_FUNC,
       "Test function",
       "For testing",
       uint32_type,
@@ -325,7 +371,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_test_f
     },
     {
-      18,
+#define BRD_DRV_CMD_RESTORE_SETTING     BRD_DRV_CMD_TEST_FUNC+1
+      BRD_DRV_CMD_RESTORE_SETTING,
       "Restore saved settings",
       "Load and apply saved settings",
       void_type,
@@ -338,7 +385,22 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_restore_all_settings
     },
     {
-      19,
+#define BRD_DRV_CMD_DEFAULT_SETTINGS    BRD_DRV_CMD_RESTORE_SETTING+1
+      BRD_DRV_CMD_DEFAULT_SETTINGS,
+      "Load default factory settings (Erase actual settings!)",
+      "This function also erase saved settings! So think twice!",
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      void_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 0},
+      (GD_DATA_VALUE*)&gd_void_value,
+      brd_drv_load_default_settings
+    },
+    {
+#define BRD_DRV_CMD_SAVE_SETTINGS       BRD_DRV_CMD_RESTORE_SETTING+1
+      BRD_DRV_CMD_SAVE_SETTINGS,
       "Save all settings",
       "Just save variables to flash memory",
       void_type,
@@ -353,7 +415,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 
   };
 /// \brief Maximum command ID (is defined by last command)
-#define BRD_DRV_MAX_CMD_ID          19
+#define BRD_DRV_MAX_CMD_ID          BRD_DRV_CMD_SAVE_SETTINGS
 
 
 const gd_metadata BRD_DRV_metadata =
@@ -380,11 +442,7 @@ GD_RES_CODE brd_drv_test_f(uint32_t i32)
 
   print_dbg("TEST FUNCTION ...\n\n");
 
-  switch(i32)
-  {
-  default:
-    return GD_FAIL;
-  }
+
   return GD_SUCCESS;
 }
 
@@ -456,7 +514,6 @@ GD_RES_CODE brd_drv_pre_init(void)
 
   // Set I/O - this should be OK
   brd_drv_set_isolators_to_HiZ();
-
 
   // Clock must be set BEFORE setting UC3 clock
   // Initialize cs2200 library
@@ -555,6 +612,7 @@ GD_RES_CODE brd_drv_init(void)
   if(i_uac1 == 0)
   {
     // UAC2
+    ///\todo Simplify - Just write to registers
     pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
           0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
           1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
@@ -564,6 +622,7 @@ GD_RES_CODE brd_drv_init(void)
   else
   {
     // UAC1
+    ///\todo Simplify - Just write to registers
     pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
           0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
           1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
@@ -659,28 +718,8 @@ GD_RES_CODE brd_drv_init(void)
   e_status = brd_drv_restore_all_settings();
   if(e_status != GD_SUCCESS)
   {
-    // Load value i_auto_tune_pll
-    uac1_device_audio_get_auto_tune(&i_auto_tune_pll);
-
-    // Set as default I2S mode
-    e_status = ssc_set_digital_interface_mode(SSC_I2S);
-    if(e_status != GD_SUCCESS) return e_status;
-
-    // Load SSC default values
-    // FSYNC RX
-    e_status = brd_drv_set_FSYNC_RX_edge(SSC_EDGE_DEFAULT);
-    if(e_status != GD_SUCCESS) return e_status;
-    // FSYNC TX
-    e_status = brd_drv_set_FSYNC_TX_edge(SSC_EDGE_DEFAULT);
-    if(e_status != GD_SUCCESS) return e_status;
-    // BCLK RX
-    e_status = ssc_get_BCLK_RX_edge(
-        &s_brd_drv_ssc_fine_settings.e_BCLK_RX_edge);
-    if(e_status != GD_SUCCESS) return e_status;
-    // BCLK TX
-    e_status = ssc_get_BCLK_TX_edge(
-        &s_brd_drv_ssc_fine_settings.e_BCLK_TX_edge);
-    if(e_status != GD_SUCCESS) return e_status;
+     e_status = brd_drv_load_default_settings();
+     if(e_status != GD_SUCCESS) return e_status;
   }
 
 
@@ -945,7 +984,7 @@ void brd_drv_task(void)
  * \brief Preset I2S connector to default state. Also reset codec.
  * @return GD_SUCCESS (0) if all OK
  */
-GD_RES_CODE brd_drv_reset_i2s(void)
+inline GD_RES_CODE brd_drv_reset_i2s(void)
 {
   const char msg_restart_i2s_done[] = BRD_DRV_MSG_RESET_I2S_DONE;
 
@@ -962,29 +1001,6 @@ GD_RES_CODE brd_drv_reset_i2s(void)
 
 
 /**
- * \brief Enable or disable auto tune feature
- * @param i_enable Enable (1) or disable (0) feature
- * @return GD_SUCCESS (0) if all OK
- */
-GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable)
-{
-  if(i_enable == 0)
-  {
-    uac1_device_audio_set_auto_tune(0);
-    i_auto_tune_pll = 0;
-  }
-  else
-  {
-    uac1_device_audio_set_auto_tune(1);
-    i_auto_tune_pll = 1;
-  }
-
-  return GD_SUCCESS;
-}
-
-
-
-/**
  * @brief Simple function, that allow set digital audio interface
  *
  * Can switch between I2S, DSP, Right justify and so on.
@@ -992,7 +1008,7 @@ GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable)
  *   SSC_RIGHT_JUSTIFIED
  * @return GD_SUCCESS (0) if all OK
  */
-GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
+inline GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
     e_ssc_digital_audio_interface_t e_mode)
 {
   // Status code
@@ -1009,6 +1025,121 @@ GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
 }
 
 
+/**
+ * @brief Set MCLK oversampling frequency in reference to FSYNC
+ * @param i_MCLK_oversampling Options: 16, 32, 64, 128 and 256
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling)
+{
+  ///\todo Complete function (when changing MCLK - very important)
+
+  /* [Martin]
+   * This function must be very flexible and work with PLL CS2200 (set freq.
+   * if needed), set correct divide ratio for GCLK0 and if all OK -> save
+   * actual value (MCLK oversampling)
+   */
+
+  // Save value
+  s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling = i_MCLK_oversampling;
+  return GD_SUCCESS;
+}
+
+
+
+/**
+ * @brief Give MCLK oversampling value in reference to FSYNC
+ * @param p_i_MCLK_oversampling Pointer to memmory, where result will be\n
+ * written. Options: 16, 32, 64, 128 and 256.
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE brd_drv_get_MCLK_oversampling(uint16_t *p_i_MCLK_oversampling)
+{
+  *p_i_MCLK_oversampling = s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling;
+  return GD_SUCCESS;
+}
+
+
+
+/**
+ * @brief Set BCLK oversampling in reference to FSYNC
+ *
+ * Function set GCLK1 (divider) and SSC module to produce right clock
+ *
+ * @param i_BCLK_ovrsmpling Options: 16, 32, 64, 128 and 256
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling)
+{
+  // Store status code
+  GD_RES_CODE e_status;
+
+  // Variable for store settings of MCLK divider
+  uint16_t i_MCLK_div;
+
+  // Relative divide (MCLK oversampling)/(BLCK oversampling) ratio
+  uint16_t i_MCLK_rel_div = s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling /
+                            i_BCLK_ovrsmpling;
+
+
+  // Check MCLK oversampling value. BCLK must not be higher than MCLK
+  if(i_BCLK_ovrsmpling > s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling)
+  {
+    // We must set correct oversampling value for MCLK
+    brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_MCLK_RAISED_UP_BCLK,1,1);
+    // So, MCLK should be equal BCLK
+    e_status = brd_drv_set_MCLK_oversampling(i_BCLK_ovrsmpling);
+    if(e_status != GD_SUCCESS) return e_status;
+  }
+  // Also must check data word size.
+  if((i_BCLK_ovrsmpling>>1) < s_brd_drv_ssc_fine_settings.i_data_length )
+  {
+    /* This case means, that we have for example 24 bit resolution, but
+     * due to BCLK oversampling value, we can process less bits. So we must
+     * set also SSC, PDCA and so on..... This is not "normal" behavior but user
+     * may not check all input parameters. So write warning message
+     */
+    brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_DATA_LEN_DECREASED,1,1);
+    e_status = brd_drv_set_data_length(i_BCLK_ovrsmpling>>1);
+    if(e_status != GD_SUCCESS) return e_status;
+  }
+
+
+  /* Because divider for MCLK can have already set some ratio, we need to add
+   * both values to get correct value for divider
+   */
+  e_status = brd_drv_get_MCLK_div(&i_MCLK_div);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  // Calculate complete ratio
+  i_MCLK_rel_div = i_MCLK_rel_div * i_MCLK_div;
+
+  // Set correct BCLK
+  e_status = brd_drv_set_BCLK_div(i_MCLK_rel_div);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  // Also need to set SSC module - frame length is 1/2 of BCLK oversampling
+  e_status = ssc_set_frame_length(i_BCLK_ovrsmpling>>1);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  // If all OK, save actual value
+  s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling = i_BCLK_ovrsmpling;
+
+  return e_status;
+}
+
+
+/**
+ * @brief Give BCLK oversampling value in reference to FSYNC
+ * @param p_i_BCLK_oversampling Memory address, where result will be written.\n
+ * Options: 16, 32, 64, 128 and 256
+ * @return GD_SUCCESS (0) if all right
+ */
+inline GD_RES_CODE brd_drv_get_BCLK_oversampling(uint16_t *p_i_BCLK_oversampling)
+{
+  *p_i_BCLK_oversampling = s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling;
+  return GD_SUCCESS;
+}
 
 /**
  * \brief Save all needed settings to EEPROM like memory
@@ -1079,10 +1210,25 @@ GD_RES_CODE brd_drv_save_all_settings(void){
       1);
 
   // SSC fine settings
+  flashc_memset8(
+      (void *)&s_brd_drv_user_settings.i_data_length,
+      s_brd_drv_ssc_fine_settings.i_data_length,
+      sizeof(s_brd_drv_ssc_fine_settings.i_data_length),
+      1);
   flashc_memset32(
       (void *)&s_brd_drv_user_settings.e_dig_audio_mode,
       s_brd_drv_ssc_fine_settings.e_dig_aud_mode,
       sizeof(s_brd_drv_ssc_fine_settings.e_dig_aud_mode),
+      1);
+  flashc_memset16(
+      (void *)&s_brd_drv_user_settings.i_MCLK_ovrsmpling,
+      s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling,
+      sizeof(s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling),
+      1);
+  flashc_memset16(
+      (void *)&s_brd_drv_user_settings.i_BCLK_ovrsmpling,
+      s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling,
+      sizeof(s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling),
       1);
   flashc_memset32(
       (void *)&s_brd_drv_user_settings.e_BCLK_RX_edge,
@@ -1145,7 +1291,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   if(i_brd_drv_settings_check != BRD_DRV_FLASH_CHECK_CODE)
   {
     // Not equal -> can not restore settings
-    print_dbg("> Non valid settings in user flash. Loading default\n");
+    print_dbg("Non valid settings in user flash.\n");
     return GD_FAIL;
   }
 
@@ -1211,7 +1357,25 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
     return e_status;
   }
 
+
+
+  // Auto tune PLL
+  e_status = brd_drv_auto_tune(s_brd_drv_user_settings.i_auto_tune_pll);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! Auto tune PLL fail ! ");
+    return e_status;
+  }
+
+
+
   // SSC fine settings
+  e_status = brd_drv_set_data_length(s_brd_drv_user_settings.i_data_length);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! Set data length failed ! ");
+    return e_status;
+  }
   e_status = brd_drv_set_digital_audio_interface_mode(
       s_brd_drv_user_settings.e_dig_audio_mode);
   if(e_status != GD_SUCCESS)
@@ -1219,17 +1383,18 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
     print_dbg(" ! Set dig. aud. itfce failed ! ");
     return e_status;
   }
-  e_status = brd_drv_set_FSYNC_RX_edge(
-      s_brd_drv_user_settings.e_FSYNC_RX_edge);
+  e_status = brd_drv_set_MCLK_oversampling(
+      s_brd_drv_user_settings.i_MCLK_ovrsmpling);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! RX FSYNC dir fail ! ");
+    print_dbg(" ! Set MCLK overampling failed ! ");
     return e_status;
   }
-  e_status = brd_drv_set_FSYNC_TX_edge(s_brd_drv_user_settings.e_FSYNC_TX_edge);
+  e_status = brd_drv_set_BCLK_oversampling(
+      s_brd_drv_user_settings.i_BCLK_ovrsmpling);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! FSYNC TX edge fail ! ");
+    print_dbg(" ! Set BCLK oversampling failed ! ");
     return e_status;
   }
   e_status = brd_drv_set_BCLK_RX_edge(
@@ -1246,15 +1411,22 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
     print_dbg(" ! BCLK TX edge fail ! ");
     return e_status;
   }
-
-
-  // Auto tune PLL
-  e_status = brd_drv_auto_tune(s_brd_drv_user_settings.i_auto_tune_pll);
+  e_status = brd_drv_set_FSYNC_RX_edge(
+      s_brd_drv_user_settings.e_FSYNC_RX_edge);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! Auto tune PLL fail ! ");
+    print_dbg(" ! RX FSYNC dir fail ! ");
     return e_status;
   }
+  e_status = brd_drv_set_FSYNC_TX_edge(
+      s_brd_drv_user_settings.e_FSYNC_TX_edge);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! FSYNC TX edge fail ! ");
+    return e_status;
+  }
+  ///\todo Set through FSYNC pulse function
+  ///\todo Set through word offset function
 
   // Just return status of last function
   return e_status;
@@ -1266,9 +1438,93 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
 
 
 
+inline GD_RES_CODE brd_drv_load_default_settings(void)
+{
+  // Store status codes
+  GD_RES_CODE e_status;
 
+  brd_drv_send_msg(BRD_DRV_INFO_LOAD_FACTRY_STTNGS,1,0,-1);
+  // Delete actual settings by changing check Byte
+  flashc_memset8(
+      (void *)&i_brd_drv_settings_check,
+      BRD_DRV_FLASH_CHECK_CODE+1, // Make sure, that code will be different
+      sizeof(BRD_DRV_FLASH_CHECK_CODE),
+      1);
+
+  // Load value i_auto_tune_pll
+  uac1_device_audio_get_auto_tune(&i_auto_tune_pll);
+
+  // Set as default I2S mode
+  e_status = ssc_set_digital_interface_mode(SSC_I2S);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  // Load SSC default values
+  // Data length
+  e_status = brd_drv_set_data_length(BRD_DRV_DEFAULT_DATA_WORD_LENGTH);
+  if(e_status != GD_SUCCESS) return e_status;
+  // FSYNC RX
+  e_status = brd_drv_set_FSYNC_RX_edge(SSC_EDGE_DEFAULT);
+  if(e_status != GD_SUCCESS) return e_status;
+  // FSYNC TX
+  e_status = brd_drv_set_FSYNC_TX_edge(SSC_EDGE_DEFAULT);
+  if(e_status != GD_SUCCESS) return e_status;
+  // BCLK RX
+  e_status = ssc_get_BCLK_RX_edge(
+      &s_brd_drv_ssc_fine_settings.e_BCLK_RX_edge);
+  if(e_status != GD_SUCCESS) return e_status;
+  // BCLK TX
+  e_status = ssc_get_BCLK_TX_edge(
+      &s_brd_drv_ssc_fine_settings.e_BCLK_TX_edge);
+  if(e_status != GD_SUCCESS) return e_status;
+  // MCLK oversampling (Default)
+  e_status=brd_drv_set_MCLK_oversampling(BRD_DRV_DEFAULT_MCLK_OVERSAMPLING);
+  if(e_status != GD_SUCCESS) return e_status;
+  // BCLK oversampling (Default)
+  e_status=brd_drv_set_BCLK_oversampling(BRD_DRV_DEFAULT_BCLK_OVERSAMPLING);
+  if(e_status != GD_SUCCESS) return e_status;
+
+
+  brd_drv_send_msg(BRD_DRV_INFO_FACTRY_STTNGS_LOADED,1,0,-1);
+  // Return last code anyway
+  return e_status;
+}
 
 //===========================| Mid level functions |===========================
+/**
+ * @brief Set data word length
+ * @param i_data_length Data length in bits (one channel)
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_set_data_length(uint8_t i_data_length)
+{
+  // Status code
+  GD_RES_CODE e_status;
+
+  ///\todo More processing (set also codec and PDCA!!!)
+
+  e_status = ssc_set_data_length(i_data_length);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  // If all OK, then save value
+  s_brd_drv_ssc_fine_settings.i_data_length = i_data_length;
+
+  // Anyway, return status
+  return e_status;
+}
+
+
+/**
+ * @brief Give information about actual settings of data word length
+ * @param p_i_data_length Pointer to memory, where result will be written
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_get_data_length(uint8_t *p_i_data_length)
+{
+  *p_i_data_length = s_brd_drv_ssc_fine_settings.i_data_length;
+  return GD_SUCCESS;
+}
+
+
 
 /**
  * @brief Set on which FSYNC edge will SSC RX unit begin
@@ -1649,6 +1905,27 @@ GD_RES_CODE brd_drv_get_uac1(uint8_t *p_i_uac1_enable)
   return GD_SUCCESS;
 }
 
+
+/**
+ * \brief Enable or disable auto tune feature
+ * @param i_enable Enable (1) or disable (0) feature
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable)
+{
+  if(i_enable == 0)
+  {
+    uac1_device_audio_set_auto_tune(0);
+    i_auto_tune_pll = 0;
+  }
+  else
+  {
+    uac1_device_audio_set_auto_tune(1);
+    i_auto_tune_pll = 1;
+  }
+
+  return GD_SUCCESS;
+}
 
 /**
  * \brief Set pins, that control signal direction at digital isolators, to low
@@ -2166,6 +2443,102 @@ GD_RES_CODE brd_drv_set_frame_sync_dir(e_brd_drv_dir_t e_frame_sync_dir)
 
   return GD_SUCCESS;
 }
+
+
+
+inline GD_RES_CODE brd_drv_set_BCLK_div(uint16_t i_div)
+{
+  // When need to read from PM registers
+  volatile avr32_pm_t *p_pm;
+  p_pm = (avr32_pm_t*)BRD_DRV_PM_ADDRESS;
+
+  // Check input values
+  if(i_div == 0) return GD_INCORRECT_PARAMETER;
+  if(i_div > 512) return GD_INCORRECT_PARAMETER;
+
+  if(i_div == 1)
+  {
+    // Turn off divider
+    p_pm->GCCTRL[1].diven = 0;
+    p_pm->GCCTRL[1].div = 0;
+  }
+  else
+  {
+    // Turn on divider and set correct value. Note that >>1 is better than /2
+    p_pm->GCCTRL[1].diven = 1;
+    p_pm->GCCTRL[1].div = (i_div>>1) -1;
+  }
+
+  return GD_SUCCESS;
+}
+
+inline GD_RES_CODE brd_drv_get_BCLK_div(uint16_t *p_i_div)
+{
+  // When need to read from PM registers
+  volatile avr32_pm_t *p_pm;
+  p_pm = (avr32_pm_t*)BRD_DRV_PM_ADDRESS;
+
+  if(p_pm->GCCTRL[1].diven == 0)
+  {
+    // If divider disabled -> div = 1;
+    *p_i_div = 1;
+  }
+  else
+  {
+    // There is some divider set
+    *p_i_div = 2*(p_pm->GCCTRL[1].div +1);
+  }
+
+  return GD_SUCCESS;
+}
+
+inline GD_RES_CODE brd_drv_set_MCLK_div(uint16_t i_div)
+{
+  // When need to read from PM registers
+  volatile avr32_pm_t *p_pm;
+  p_pm = (avr32_pm_t*)BRD_DRV_PM_ADDRESS;
+
+  // Check input values
+  if(i_div == 0) return GD_INCORRECT_PARAMETER;
+  if(i_div > 512) return GD_INCORRECT_PARAMETER;
+
+  if(i_div == 1)
+  {
+    // Turn off divider
+    p_pm->GCCTRL[0].diven = 0;
+    p_pm->GCCTRL[0].div = 0;
+  }
+  else
+  {
+    // Turn on divider and set correct value. Note that >>1 is better than /2
+    p_pm->GCCTRL[0].diven = 1;
+    p_pm->GCCTRL[0].div = (i_div>>1) -1;
+  }
+
+  return GD_SUCCESS;
+}
+
+inline GD_RES_CODE brd_drv_get_MCLK_div(uint16_t *p_i_div)
+{
+  // When need to read from PM registers
+  volatile avr32_pm_t *p_pm;
+  p_pm = (avr32_pm_t*)BRD_DRV_PM_ADDRESS;
+
+  if(p_pm->GCCTRL[0].diven == 0)
+  {
+    // If divider disabled -> div = 1;
+    *p_i_div = 1;
+  }
+  else
+  {
+    // There is some divider set. Shifting is better than *2
+    *p_i_div = (p_pm->GCCTRL[0].div +1)<<1;
+  }
+
+  return GD_SUCCESS;
+}
+
+
 
 
 //=========================| Functions not for user |==========================
