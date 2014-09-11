@@ -4,9 +4,9 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 20.08.2014
+ * Modified: 10.09.2014
  *
- * \version 0.7.1
+ * \version 0.7.3
  * \author Martin Stejskal
  */
 
@@ -136,7 +136,7 @@ const gd_config_struct CS2200_config_table[] =
       {.data_uint8 = 0},
       {.data_uint8 = 1},
       (GD_DATA_VALUE*)&s_virtual_reg_img.i_save_change_ratio_by_1,
-      cs2200_set_save_change_ratio_by_1
+      cs2200_set_safe_change_ratio_by_1
     },
     {
       7,
@@ -159,7 +159,7 @@ const gd_config_struct CS2200_config_table[] =
 const gd_metadata CS2200_metadata =
 {
         CS2200_MAX_CMD_ID,              // Max CMD ID
-        "Fractional PLL CS2200-CP v0.7.1",     // Description
+        "Fractional PLL CS2200-CP v0.7.3",     // Description
         (gd_config_struct*)&CS2200_config_table[0],
         0x21    // Serial number (0~255)
 };
@@ -311,7 +311,13 @@ GD_RES_CODE cs2200_set_PLL_freq(uint32_t i_freq)
    * frequency
    */
 #if CS2200_REF_CLK_FREQ != 0
-  /* Calculate ratio form frequency. Result will be saved to u_tmp as 32 bit
+  // If we know input frequency, we should check input parameter range (6-75MHz)
+  if((i_freq < 6000000UL) || (i_freq > 75000000UL))
+  {
+    return GD_INCORRECT_PARAMETER;
+  }
+
+  /* Calculate ratio form frequency. Result will be saved to i_ratio as 32 bit
    * value
    */
   e_status = cs2200_calc_ratio(i_freq, &i_ratio);
@@ -677,9 +683,9 @@ inline GD_RES_CODE cs2200_get_out_divider_multiplier(
  *  0 - "dangerous" frequency change by 1, but with very short clock shortage
  * @return GD_SUCCESS (0) if all right
  */
-GD_RES_CODE cs2200_set_save_change_ratio_by_1(uint8_t i_save_change)
+GD_RES_CODE cs2200_set_safe_change_ratio_by_1(uint8_t i_safe_change)
 {
-  if(i_save_change == 0)
+  if(i_safe_change == 0)
   {
     s_virtual_reg_img.i_save_change_ratio_by_1 = 0;
   }
@@ -706,9 +712,9 @@ GD_RES_CODE cs2200_set_save_change_ratio_by_1(uint8_t i_save_change)
  * @param p_save_change Address where result will be saved
  * @return GD_SUCCESS (0) if all right
  */
-inline GD_RES_CODE cs2200_get_save_change_ratio_by_1(uint8_t *p_save_change)
+inline GD_RES_CODE cs2200_get_safe_change_ratio_by_1(uint8_t *p_i_safe_change)
 {
-  *p_save_change = s_virtual_reg_img.i_save_change_ratio_by_1;
+  *p_i_safe_change = s_virtual_reg_img.i_save_change_ratio_by_1;
   return GD_SUCCESS;
 }
 //===========================| Mid level functions |===========================

@@ -4,11 +4,12 @@
  * \brief Driver for fractional PLL CS2200
  *
  * Created:  12.03.2014\n
- * Modified: 20.08.2014
+ * Modified: 10.09.2014
  *
- * \version 0.7.1
+ * \version 0.7.3
  * \author Martin Stejskal
  */
+
 
 #ifndef _CS2200_H_
 #define _CS2200_H_
@@ -428,9 +429,9 @@ GD_RES_CODE cs2200_set_out_divider_multiplier(cs2200_r_mod_t e_out_div_mul);
 
 GD_RES_CODE cs2200_get_out_divider_multiplier(cs2200_r_mod_t *p_e_out_div_mul);
 
-GD_RES_CODE cs2200_set_save_change_ratio_by_1(uint8_t i_save_change);
+GD_RES_CODE cs2200_set_safe_change_ratio_by_1(uint8_t i_safe_change);
 
-GD_RES_CODE cs2200_get_save_change_ratio_by_1(uint8_t *p_save_change);
+GD_RES_CODE cs2200_get_safe_change_ratio_by_1(uint8_t *p_i_safe_change);
 //===========================| Mid level functions |===========================
 GD_RES_CODE cs2200_set_ratio(uint32_t i_ratio);
 

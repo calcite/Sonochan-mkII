@@ -87,9 +87,7 @@
 #include "uac1_device_audio_task.h"
 
 //[Martin]
-///\TODO Remove to sync_control.*
-#include "cs2200.h"
-#include "print_funcs.h"
+#include "brd_driver_hw_03.h"
 #include <stdio.h>
 
 //_____ M A C R O S ________________________________________________________
@@ -104,15 +102,6 @@
 
 //_____ P R I V A T E   D E C L A R A T I O N S ____________________________
 
-// U8 usb_feature_report[3];
-// U8 usb_report[3];
-
-// U8 g_u8_report_rate=0;
-
-// S_line_coding   line_coding;
-
-// S_freq current_freq;
-// Bool freq_changed = FALSE;
 
 static U8    usb_type;
 static U8    wValue_msb;
@@ -210,7 +199,7 @@ static Bool uac1_user_get_interface_descriptor() {
     pbuffer          = usb_hid_report_descriptor;
     break;
   case HID_PHYSICAL_DESCRIPTOR:
-    // TODO
+    // TODO [Martin] Missing in SDR-Widget too. If you are boring, try to complete this
     return FALSE;
     break;
 
@@ -486,6 +475,7 @@ void audio_get_cur(void)
    Usb_reset_endpoint_fifo_access(EP_CONTROL);
 
    if ((usb_type == USB_SETUP_GET_CLASS_ENDPOINT) && (wValue_msb == UAC_EP_CS_ATTR_SAMPLE_RATE)){
+    ///\todo [Martin] Check this code once more, because device now support more frequencies
     if (speed == 0){
          Usb_write_endpoint_data(EP_CONTROL, 8, 0x44);
          Usb_write_endpoint_data(EP_CONTROL, 8, 0xac);
@@ -541,6 +531,11 @@ void audio_get_cur(void)
 
 void audio_set_cur(void)
 {
+  /* [Martin] In this function should not be ANY sprintf() function. When
+   * there is some, then unpredicted behavior can occur. So far I do not know
+   * exactly why, but it seems that it is RAM issue (because of RTOS).
+   */
+
    U16 i_unit;
    U16 length;
    i_unit = wIndex % 256;
@@ -550,119 +545,24 @@ void audio_set_cur(void)
    while(!Is_usb_control_out_received());
    Usb_reset_endpoint_fifo_access(EP_CONTROL);
 
-   if ((usb_type == USB_SETUP_SET_CLASS_ENDPOINT) && (wValue_msb == UAC_EP_CS_ATTR_SAMPLE_RATE)){
+   if ((usb_type == USB_SETUP_SET_CLASS_ENDPOINT) &&
+       (wValue_msb == UAC_EP_CS_ATTR_SAMPLE_RATE))
+   {
      // Read speed (frequency)
      current_freq.frequency = (U32)usb_format_usb_to_mcu_data(16, Usb_read_endpoint_data(EP_CONTROL, 16));
 
 
     freq_changed = TRUE;
 
-    char c_tmp[40];
-    sprintf(&c_tmp[0],
-        "Sampling frequency set to %lu Hz\n",
-        current_freq.frequency);
-    print(DBG_USART, &c_tmp[0]);
+    //[Martin] We got a request from USB side to set FSYNC
 
-    // When need write to PM registers
-    volatile avr32_pm_t *pm = &AVR32_PM;
-
-    switch(current_freq.frequency)
+    // OK, set FSYNC according to actual value
+    /* Note, that following function should be simple as possible, because now
+     * this code is in USB environment.
+     */
+    if(brd_drv_set_FSYNC_freq(current_freq.frequency) != GD_SUCCESS)
     {
-    case 48000:
-      cs2200_set_PLL_freq(12288000UL);
-      // Turn off divider on GLCK0
-      pm->GCCTRL[0].diven = 0;
-
-      // Set GLCK1 to 1/4 of PLL OUT
-      pm->GCCTRL[1].div = 1;
-      pm->GCCTRL[1].diven = 1;
-      gpio_set_gpio_pin(AVR32_PIN_PX53);
-      break;
-    case 44100:
-      cs2200_set_PLL_freq(11289600UL);
-      // Turn off divider on GLCK0
-      pm->GCCTRL[0].diven = 0;
-
-      // Set GLCK1 to 1/4 of PLL OUT
-      pm->GCCTRL[1].div = 1;
-      pm->GCCTRL[1].diven = 1;
-      gpio_clr_gpio_pin(AVR32_PIN_PX53);
-      break;
-    case 32000:
-      cs2200_set_PLL_freq(8192000UL);
-      // Turn off divider on GLCK0
-      pm->GCCTRL[0].diven = 0;
-
-      // Set GLCK1 to 1/4 of PLL OUT
-      pm->GCCTRL[1].div = 1;
-      pm->GCCTRL[1].diven = 1;
-      break;
-    case 24000:
-      // Need 6144000 MCLK, BCLK @ 1536000 (32 bits)
-      cs2200_set_PLL_freq(6144000);
-      // Turn off divide on GCLK 0
-      pm->GCCTRL[0].diven = 0;
-
-      // Set GCLK1 to 1/4 of PLL OUT
-      pm->GCCTRL[1].div = 1;
-      pm->GCCTRL[1].diven = 1;
-      break;
-    case 22050:
-      // Need 5644800 MCLK, BCLK @ 1411200 (32 bits)
-      cs2200_set_PLL_freq(11289600UL);
-      // On GCLK set divider to 2 (2*(0+1))
-      pm->GCCTRL[0].div = 0;
-      pm->GCCTRL[0].diven = 1;
-
-      // Also set BCLK divider (GCLK1) to get 1/4 MCLK
-      pm->GCCTRL[1].div = 3;
-      pm->GCCTRL[1].diven = 1;
-      break;
-    case 16000:
-      // Need 4096000 MCLK, BLCK @ 1024000 (32 bits)
-      // PLL can not set lower freq. than 6 MHz -> use GCLK0 divider
-      cs2200_set_PLL_freq(8192000UL);
-      // On GCLK0 set divider to 2 ( 2*(0+1))
-      pm->GCCTRL[0].div = 0;
-      pm->GCCTRL[0].diven = 1;
-
-      // Also set BCLK divider (GLCK1) to get 1/4 MCLK
-      pm->GCCTRL[1].div = 3;
-      pm->GCCTRL[1].diven = 1;
-      break;
-    case 11025:
-      // Need 28822400 MCLK, BCLK @ 705600 (32 bits)
-      // PLL can not set lower freq. than 6 MHz -> use GCLK0 divider
-      cs2200_set_PLL_freq(11289600UL);
-      // On GCLK0 set divider to 4 ( 2*(0+1))
-      pm->GCCTRL[0].div = 1;
-      pm->GCCTRL[0].diven = 1;
-
-      // Also set BCLK divider (GLCK1) to get 1/4 MCLK
-      pm->GCCTRL[1].div = 7;
-      pm->GCCTRL[1].diven = 1;
-      break;
-    case 8000:
-      // Need 2048000 MCLK @ BCLK @ 512000 (32 bits)
-      // PLL can not set lower freq. than 6 MHz -> use GCLK0 divider
-      cs2200_set_PLL_freq(8192000UL);
-      // On GCLK0 set divider to 4 ( 2*(1+1))
-      pm->GCCTRL[0].div = 1;
-      pm->GCCTRL[0].diven = 1;
-
-      // Also set BCLK divider (GLCK1) to get 1/4 MCLK
-      pm->GCCTRL[1].div = 7;
-      pm->GCCTRL[1].diven = 1;
-      break;
-    default:
-      /* Should not happen, but just for case. Set frequency to unused
-       * frequency, so for user/developer it will be obvious error, which will
-       * be easy to track ;)
-       */
-      cs2200_set_PLL_freq(20000000UL);
-
-      pm->GCCTRL[1].diven = 0;
-      pm->GCCTRL[1].diven = 0;
+      brd_drv_send_error_msg("USB spec. req. SET FSYNC FAILED!\n",1,1);
     }
 
   }
@@ -750,7 +650,7 @@ Bool uac1_user_read_request(U8 type, U8 request)
               switch (wValue_msb)
                 {
                 case HID_REPORT_INPUT:
-                  // TODO
+                  // TODO [Martin] Missing in SDR-Widget too. Complete?
                   break;
 
                 case HID_REPORT_OUTPUT:
@@ -783,7 +683,7 @@ Bool uac1_user_read_request(U8 type, U8 request)
               return TRUE;
    
             case HID_SET_PROTOCOL:
-              // TODO
+              // TODO [Martin] Missing in SDR-Widget too. Complete?
               break;
             }
         }
@@ -826,7 +726,7 @@ Bool uac1_user_read_request(U8 type, U8 request)
               usb_hid_get_idle(wValue_lsb);
               return TRUE;
             case HID_GET_PROTOCOL:
-              // TODO
+              // TODO [Martin] Missing in SDR-Widget too. Complete?
               break;
             }
         }

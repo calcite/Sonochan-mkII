@@ -7,7 +7,7 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 05.09.2014
+ * Modified: 09.09.2014
  *
  * \version 0.3
  * \author  Martin Stejskal
@@ -245,7 +245,21 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_rx_data_dir
     },
     {
-#define BRD_DRV_CMD_BCLK_OVERSAM        BRD_DRV_CMD_RX_DATA_DIR+1
+#define BRD_DRV_CMD_MCLK_OVERSAM        BRD_DRV_CMD_RX_DATA_DIR+1
+      BRD_DRV_CMD_MCLK_OVERSAM,
+      "MCLK frequency",
+      "Options: 16, 32, 64, 128, 256 FSYNC",
+      uint16_type,
+      {.data_uint16 = 1},
+      {.data_uint16 = 512},
+      uint16_type,
+      {.data_uint16 = 1},
+      {.data_uint16 = 512},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling,
+      brd_drv_set_MCLK_oversampling
+    },
+    {
+#define BRD_DRV_CMD_BCLK_OVERSAM        BRD_DRV_CMD_MCLK_OVERSAM+1
       BRD_DRV_CMD_BCLK_OVERSAM,
       "BCLK frequency",
       "Options: 16, 32, 64, 128, 256 FSYNC",
@@ -346,7 +360,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 #define BRD_DRV_CMD_WORD_SIZE   BRD_DRV_CMD_DIG_AUD_INTERFACE+1
       BRD_DRV_CMD_WORD_SIZE,
       "Set word size",
-      "Data size in bits. Usually 16, 20, 24 and 32",
+      "NOT TESTED! Data size in bits. Usually 16, 20, 24 and 32",
       uint8_type,
       {.data_uint8 = 1},
       {.data_uint8 = 32},
@@ -399,7 +413,7 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_load_default_settings
     },
     {
-#define BRD_DRV_CMD_SAVE_SETTINGS       BRD_DRV_CMD_RESTORE_SETTING+1
+#define BRD_DRV_CMD_SAVE_SETTINGS       BRD_DRV_CMD_DEFAULT_SETTINGS+1
       BRD_DRV_CMD_SAVE_SETTINGS,
       "Save all settings",
       "Just save variables to flash memory",
@@ -536,7 +550,7 @@ GD_RES_CODE brd_drv_pre_init(void)
      * again, until some frequency will be set. Without valid clock this is
      * just a garbage. OK, so at least try report this fail
      */
-    print_dbg("\n\n!!! Warning: Can not set external PLL. Trying again.\n");
+    brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_CAN_NOT_SET_PLL_TRYING_AGAIN,1,1);
     e_status = cs2200_set_PLL_freq(8000000);
   }
 
@@ -566,7 +580,7 @@ GD_RES_CODE brd_drv_init(void)
   // So far so good
   i_error_occurred = 0;
 
-    //=================================| IO pins |===============================
+  //=================================| IO pins |===============================
   // Set isolators I/O (recommended default)
   brd_drv_set_isolators_to_HiZ();
 
@@ -667,7 +681,7 @@ GD_RES_CODE brd_drv_init(void)
   /* Turn of save setting when changing frequency by 1. We want continuous
    * clock at "any price". PLL CLK OUT should work as expected.
    */
-  e_status = cs2200_set_save_change_ratio_by_1(0);
+  e_status = cs2200_set_safe_change_ratio_by_1(0);
   if(e_status != GD_SUCCESS)
   {
     const char msg_set_pll_save_flag_when_change_by_1[] =
@@ -1025,24 +1039,152 @@ inline GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
 }
 
 
+
+/**
+ * @brief Set FSYNC frequency
+ * Because all is based from external PLL frequency, function set also\n
+ * external PLL, MCLK and BCLK dividers (on UC3A). As result of all this\n
+ * should be correct FSYNC frequency.
+ * @note This function is used by USB driver, so that is main reason why all\n
+ * messages (debug/info) are commened
+ * @param i_FSYNC_freq FSYNC frequency in Hz
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq)
+{
+  // Store status code
+  GD_RES_CODE e_status;
+
+  /* Because function set MCLK oversampling need know frequency, we just backup
+   * actual value, and if something fucks up, then just restore it.
+   */
+  uint32_t i_FSYNC_freq_backup = s_brd_drv_ssc_fine_settings.i_FSYNC_freq;
+
+  // Rewrite with actual value
+  s_brd_drv_ssc_fine_settings.i_FSYNC_freq = i_FSYNC_freq;
+
+  // Set MCLK. Because function can change PLL freq, itlsef set BCLK again
+  e_status = brd_drv_set_MCLK_oversampling(
+      s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling);
+  if(e_status != GD_SUCCESS)
+  {
+    // If fail, restore previous value
+    s_brd_drv_ssc_fine_settings.i_FSYNC_freq = i_FSYNC_freq_backup;
+    return e_status;
+  }
+
+  return e_status;
+}
+
+
+/**
+ * @brief Give last FSYNC value, which was set
+ *
+ * This is only value, that was set. Due to some drifts and possible problems\n
+ * with feedback EP can be frequency slightly different.
+ * @param p_i_FSYNC_freq Pointer to memory, where result will be written.\n
+ *  Frequency is in Hz.
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE brd_drv_get_FSYNC_freq(uint32_t *p_i_FSYNC_freq)
+{
+  *p_i_FSYNC_freq = s_brd_drv_ssc_fine_settings.i_FSYNC_freq;
+  return GD_SUCCESS;
+}
+
+
 /**
  * @brief Set MCLK oversampling frequency in reference to FSYNC
+ * Also set again BCLK, because function itself can change PLL frequency,\n
+ * but BCLK divider ratio would stayed unchanged -> wrong BCLK. So that is\n
+ * why function set also BCLK again.
+ *
  * @param i_MCLK_oversampling Options: 16, 32, 64, 128 and 256
  * @return GD_SUCCESS (0) if all right
  */
 GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling)
 {
-  ///\todo Complete function (when changing MCLK - very important)
+  ///\todo Check input parameter (512 max???)
 
   /* [Martin]
-   * This function must be very flexible and work with PLL CS2200 (set freq.
-   * if needed), set correct divide ratio for GCLK0 and if all OK -> save
+   * This function must be very flexible and work with PLL CS2200 (set freq.),
+   * set correct divide ratio for GCLK0 and if all OK -> save
    * actual value (MCLK oversampling)
    */
 
-  // Save value
+  // Keep result code in memory
+  GD_RES_CODE e_status;
+
+  // Temporary variable for calculating MLCLK divider on UC3A GCLK0
+  uint16_t i_MCLK_div = 1;
+
+  // Temporary variable to keep calculated PLL frequency
+  uint32_t i_PLL_freq;
+
+  // Get some guess - FSYNC freq * MCLK oversampling value
+  i_PLL_freq = ((uint32_t)i_MCLK_oversampling) *
+                          s_brd_drv_ssc_fine_settings.i_FSYNC_freq;
+
+  // Find correct PLL frequency
+  while(1)
+  {
+    /* Because PLL CS2200 have own limitations, we must check if frequency is
+     * not too high or low.
+     */
+    if(i_PLL_freq > 75000000UL)
+    {
+      // PLL can not produce higher frequency :( Return fail
+      brd_drv_send_error_msg(BRD_DRV_MSG_ERR_PLL_HIGH_FREQ,1,1);
+      return GD_FAIL;
+    }
+    if(i_PLL_freq < 6000000UL)
+    {
+      /* Can not produce such a low frequency, but can set divider. So just
+       * double PLL frequency and double MCLK divider.
+       */
+      i_PLL_freq = i_PLL_freq<<1;
+      i_MCLK_div = i_MCLK_div<<1;
+    }
+    else // Else PLL frequency is OK
+    {
+      break;
+    }
+  }
+
+  // OK, so now we have PLL frequency and MCLK divider value
+  // Set MCLK divider
+  e_status = brd_drv_set_MCLK_div(i_MCLK_div);
+  if(e_status != GD_SUCCESS)
+  {
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_MCLK_DIV_FAIL,1,1);
+    return e_status;
+  }
+
+  // Set PLL frequency
+  e_status = cs2200_set_PLL_freq(i_PLL_freq);
+  if(e_status != GD_SUCCESS)
+  {
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CAN_NOT_SET_PLL_FREQ,1,1);
+    return e_status;
+  }
+
+  // So far so good. So let's set MCLK oversampling value
   s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling = i_MCLK_oversampling;
-  return GD_SUCCESS;
+
+  /* Set again BCLK divider (resp. oversampling value)
+   * This function SHOULD NOT fail, but just for case there is if condition.
+   * If there is any problem, it is probably bug, not user fail.
+   */
+  e_status = brd_drv_set_BCLK_oversampling(
+      s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling);
+  if(e_status != GD_SUCCESS)
+  {
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_MCLK_OVRSAM_CAN_NOT_SET_BCLK_OVRSAM,
+                           1,1);
+    return e_status;
+  }
+
+  return e_status;
 }
 
 
@@ -1078,8 +1220,13 @@ GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling)
   uint16_t i_MCLK_div;
 
   // Relative divide (MCLK oversampling)/(BLCK oversampling) ratio
-  uint16_t i_MCLK_rel_div = s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling /
-                            i_BCLK_ovrsmpling;
+  uint16_t i_MCLK_rel_div;
+
+
+  // BCLK oversampling value backup (If something goes wrong, restore it)
+  uint16_t i_BCLK_ovrsmpling_backup =
+      s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling;
+  s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling = i_BCLK_ovrsmpling;
 
 
   // Check MCLK oversampling value. BCLK must not be higher than MCLK
@@ -1089,7 +1236,11 @@ GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling)
     brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_MCLK_RAISED_UP_BCLK,1,1);
     // So, MCLK should be equal BCLK
     e_status = brd_drv_set_MCLK_oversampling(i_BCLK_ovrsmpling);
-    if(e_status != GD_SUCCESS) return e_status;
+    if(e_status != GD_SUCCESS)
+    {
+      s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling = i_BCLK_ovrsmpling_backup;
+      return e_status;
+    }
   }
   // Also must check data word size.
   if((i_BCLK_ovrsmpling>>1) < s_brd_drv_ssc_fine_settings.i_data_length )
@@ -1101,29 +1252,45 @@ GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling)
      */
     brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_DATA_LEN_DECREASED,1,1);
     e_status = brd_drv_set_data_length(i_BCLK_ovrsmpling>>1);
-    if(e_status != GD_SUCCESS) return e_status;
+    if(e_status != GD_SUCCESS)
+    {
+      s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling = i_BCLK_ovrsmpling_backup;
+      return e_status;
+    }
   }
 
+  // Calculate relative ratio
+  i_MCLK_rel_div = s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling /
+                            i_BCLK_ovrsmpling;
 
   /* Because divider for MCLK can have already set some ratio, we need to add
    * both values to get correct value for divider
    */
   e_status = brd_drv_get_MCLK_div(&i_MCLK_div);
-  if(e_status != GD_SUCCESS) return e_status;
+  if(e_status != GD_SUCCESS)
+  {
+    s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling = i_BCLK_ovrsmpling_backup;
+    return e_status;
+  }
 
   // Calculate complete ratio
   i_MCLK_rel_div = i_MCLK_rel_div * i_MCLK_div;
 
   // Set correct BCLK
   e_status = brd_drv_set_BCLK_div(i_MCLK_rel_div);
-  if(e_status != GD_SUCCESS) return e_status;
+  if(e_status != GD_SUCCESS)
+  {
+    s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling = i_BCLK_ovrsmpling_backup;
+    return e_status;
+  }
 
   // Also need to set SSC module - frame length is 1/2 of BCLK oversampling
   e_status = ssc_set_frame_length(i_BCLK_ovrsmpling>>1);
-  if(e_status != GD_SUCCESS) return e_status;
-
-  // If all OK, save actual value
-  s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling = i_BCLK_ovrsmpling;
+  if(e_status != GD_SUCCESS)
+  {
+    s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling = i_BCLK_ovrsmpling_backup;
+    return e_status;
+  }
 
   return e_status;
 }
@@ -1210,6 +1377,11 @@ GD_RES_CODE brd_drv_save_all_settings(void){
       1);
 
   // SSC fine settings
+  flashc_memset32(
+      (void *)&s_brd_drv_user_settings.i_FSYNC_freq,
+      s_brd_drv_ssc_fine_settings.i_FSYNC_freq,
+      sizeof(s_brd_drv_ssc_fine_settings.i_FSYNC_freq),
+      1);
   flashc_memset8(
       (void *)&s_brd_drv_user_settings.i_data_length,
       s_brd_drv_ssc_fine_settings.i_data_length,
@@ -1291,12 +1463,12 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   if(i_brd_drv_settings_check != BRD_DRV_FLASH_CHECK_CODE)
   {
     // Not equal -> can not restore settings
-    print_dbg("Non valid settings in user flash.\n");
+    brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_FLASH_NOT_VALID_SETTINGS,1,0);
     return GD_FAIL;
   }
 
   // Settings is correct
-  print_dbg("Valid settings found. Lading\n");
+  brd_drv_send_msg(BRD_DRV_MSG_INFO_FLASH_VALID_SETTINGS,1,0,-1);
 
   // Apply settings
   ///\todo Remove debug messages when all tested and everything work
@@ -1383,20 +1555,20 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
     print_dbg(" ! Set dig. aud. itfce failed ! ");
     return e_status;
   }
-  e_status = brd_drv_set_MCLK_oversampling(
-      s_brd_drv_user_settings.i_MCLK_ovrsmpling);
+  /* Set FSYNC frequency. Also function set MCLK and BCLK oversampling values
+   * so we need to set them first
+   */
+  s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling =
+      s_brd_drv_user_settings.i_MCLK_ovrsmpling;
+  s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling =
+      s_brd_drv_user_settings.i_BCLK_ovrsmpling;
+  e_status = brd_drv_set_FSYNC_freq(s_brd_drv_user_settings.i_FSYNC_freq);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! Set MCLK overampling failed ! ");
+    print_dbg(" ! Set FSYNC FREQ failed ! ");
     return e_status;
   }
-  e_status = brd_drv_set_BCLK_oversampling(
-      s_brd_drv_user_settings.i_BCLK_ovrsmpling);
-  if(e_status != GD_SUCCESS)
-  {
-    print_dbg(" ! Set BCLK oversampling failed ! ");
-    return e_status;
-  }
+
   e_status = brd_drv_set_BCLK_RX_edge(
       s_brd_drv_user_settings.e_BCLK_RX_edge);
   if(e_status != GD_SUCCESS)
@@ -1443,7 +1615,7 @@ inline GD_RES_CODE brd_drv_load_default_settings(void)
   // Store status codes
   GD_RES_CODE e_status;
 
-  brd_drv_send_msg(BRD_DRV_INFO_LOAD_FACTRY_STTNGS,1,0,-1);
+  brd_drv_send_msg(BRD_DRV_MSG_INFO_LOAD_FACTRY_STTNGS,1,0,-1);
   // Delete actual settings by changing check Byte
   flashc_memset8(
       (void *)&i_brd_drv_settings_check,
@@ -1476,15 +1648,17 @@ inline GD_RES_CODE brd_drv_load_default_settings(void)
   e_status = ssc_get_BCLK_TX_edge(
       &s_brd_drv_ssc_fine_settings.e_BCLK_TX_edge);
   if(e_status != GD_SUCCESS) return e_status;
-  // MCLK oversampling (Default)
-  e_status=brd_drv_set_MCLK_oversampling(BRD_DRV_DEFAULT_MCLK_OVERSAMPLING);
-  if(e_status != GD_SUCCESS) return e_status;
-  // BCLK oversampling (Default)
-  e_status=brd_drv_set_BCLK_oversampling(BRD_DRV_DEFAULT_BCLK_OVERSAMPLING);
+  // MCLK and BCLK oversampling (Default);
+  s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling =
+      BRD_DRV_DEFAULT_MCLK_OVERSAMPLING;
+  s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling =
+      BRD_DRV_DEFAULT_BCLK_OVERSAMPLING;
+  // And call set FSYNC frequency, which set MCLK and BCLK dividers
+  e_status = brd_drv_set_FSYNC_freq(BRD_DRV_DEFAULT_FSYNC_FREQ);
   if(e_status != GD_SUCCESS) return e_status;
 
 
-  brd_drv_send_msg(BRD_DRV_INFO_FACTRY_STTNGS_LOADED,1,0,-1);
+  brd_drv_send_msg(BRD_DRV_MSG_INFO_FACTRY_STTNGS_LOADED,1,0,-1);
   // Return last code anyway
   return e_status;
 }
@@ -1500,10 +1674,35 @@ GD_RES_CODE brd_drv_set_data_length(uint8_t i_data_length)
   // Status code
   GD_RES_CODE e_status;
 
-  ///\todo More processing (set also codec and PDCA!!!)
+  ///\todo More processing (set also PDCA!!!)
 
+  // Set data length on SSC module
   e_status = ssc_set_data_length(i_data_length);
   if(e_status != GD_SUCCESS) return e_status;
+
+  /* Set data length on TLV codec, but codec
+   * support only 16, 20, 24 and 32. Not 8, 9, 12 and so on...
+   */
+  if((i_data_length != 16) && (i_data_length != 20) && (i_data_length != 24) &&
+     (i_data_length != 32))
+  {
+    // Unsupported value
+    if(i_data_length >= 32){
+      e_status = tlv320aic33_set_word_length(32);}
+    else if(i_data_length >= 24){
+      e_status = tlv320aic33_set_word_length(24);}
+    else if(i_data_length >= 20){
+      e_status = tlv320aic33_set_word_length(20);}
+    else{
+      e_status = tlv320aic33_set_word_length(16);}
+  }
+  else  // Supported value
+  {
+    e_status = tlv320aic33_set_word_length(i_data_length);
+  }
+  // Check status code
+  if(e_status != GD_SUCCESS) return e_status;
+
 
   // If all OK, then save value
   s_brd_drv_ssc_fine_settings.i_data_length = i_data_length;
@@ -1734,13 +1933,14 @@ inline GD_RES_CODE brd_drv_show_volume(void)
  */
 inline void brd_drv_send_msg(
     const char * p_msg,
-    uint8_t i_write_to_DBG,
-    uint8_t i_write_to_LCD,
-    uint8_t i_LCD_line)
+    const uint8_t i_write_to_DBG,
+    const uint8_t i_write_to_LCD,
+    const uint8_t i_LCD_line)
 {
   // If want write to debug interface
   if(i_write_to_DBG != 0)
   {
+    print_dbg("Info > ");
     print_dbg(p_msg);
   }
 
@@ -1807,14 +2007,15 @@ inline GD_RES_CODE brd_drv_draw_logo(void)
  */
 inline void brd_drv_send_warning_msg(
     const char * p_msg,
-    uint8_t i_write_to_DBG,
-    uint8_t i_write_to_LCD)
+    const uint8_t i_write_to_DBG,
+    const uint8_t i_write_to_LCD)
 {
   // Blink LCD backlight - turn off
   LCD_5110_backlight_off();
 
   if(i_write_to_DBG != 0)
   {
+    print_dbg("Warn > ");
     print_dbg(p_msg);
   }
   if(i_write_to_LCD != 0)
@@ -1844,8 +2045,8 @@ inline void brd_drv_send_warning_msg(
  */
 inline void brd_drv_send_error_msg(
     const char * p_msg,
-    uint8_t i_write_to_DBG,
-    uint8_t i_write_to_LCD)
+    const uint8_t i_write_to_DBG,
+    const uint8_t i_write_to_LCD)
 {
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
@@ -1858,6 +2059,7 @@ inline void brd_drv_send_error_msg(
   // If want write to debug interface
   if(i_write_to_DBG != 0)
   {
+    print_dbg("Error > ");
     print_dbg(p_msg);
   }
 
