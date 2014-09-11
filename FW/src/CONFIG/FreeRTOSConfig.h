@@ -90,7 +90,9 @@
 #define configMINIMAL_STACK_SIZE  ( ( unsigned portSHORT ) 2048 )
 //#define configMINIMAL_STACK_SIZE  ( ( unsigned portSHORT ) 1024 )
 /* configTOTAL_HEAP_SIZE is not used when heap_3.c is used. */
-#define configTOTAL_HEAP_SIZE     ( ( size_t ) ( 1024*50 ) )
+
+//[Martin] Original value: 1024*50
+#define configTOTAL_HEAP_SIZE     ( ( size_t ) ( 1024*40 ) )
 #define configMAX_TASK_NAME_LEN   ( 20 )
 #define configUSE_TRACE_FACILITY  0
 #define configUSE_16_BIT_TICKS    0
@@ -139,18 +141,21 @@ to exclude the API function. */
 
 /* USB task definitions. */
 #define configTSK_USB_NAME                    ((const signed portCHAR *)"USB")
+// [Martin] Original: 256
 #define configTSK_USB_STACK_SIZE              256
 #define configTSK_USB_PRIORITY                (tskIDLE_PRIORITY + 4)
 
 /* USB device task definitions. */
 #define configTSK_USB_DEV_NAME                ((const signed portCHAR *)"USB Device")
+// [Martin] Original: 256
 #define configTSK_USB_DEV_STACK_SIZE          256
 #define configTSK_USB_DEV_PRIORITY            (tskIDLE_PRIORITY + 3)
-#define UAC1_configTSK_USB_DEV_PERIOD              10
-#define UAC2_configTSK_USB_DEV_PERIOD              2
+#define UAC1_configTSK_USB_DEV_PERIOD         10
+#define UAC2_configTSK_USB_DEV_PERIOD         2
 
 /* USB host task definitions. */
 #define configTSK_USB_HST_NAME                ((const signed portCHAR *)"USB Host")
+// [Martin] Original: 256
 #define configTSK_USB_HST_STACK_SIZE          256
 #define configTSK_USB_HST_PRIORITY            (tskIDLE_PRIORITY + 2)
 #define configTSK_USB_HST_PERIOD              200
@@ -159,7 +164,7 @@ to exclude the API function. */
 
 
 //=============================| USB device HID |==============================
-#define configTSK_USB_DHID_NAME         ((const signed portCHAR *)"USB Device generic HID")
+#define configTSK_USB_DHID_NAME         ((const signed portCHAR *)"USB Device HID")
 #define configTSK_USB_DHID_STACK_SIZE   128
 #define configTSK_USB_DHID_PRIORITY     (tskIDLE_PRIORITY + 0)
 #define configTSK_USB_DHID_PERIOD       100
@@ -167,12 +172,14 @@ to exclude the API function. */
 //=======================| HW bridge task definitions |========================
 #define configTSK_HW_bridge_uniprot_NAME       \
                                 ((const signed portCHAR *)"HW bridge uniprot")
+// [Martin] Original: 1024
 #define configTSK_HW_bridge_uniprot_STACK_SIZE  1024
 #define configTSK_HW_bridge_uniprot_PRIORITY    (tskIDLE_PRIORITY + 0)
 #define configTSK_HW_bridge_uniprot_PERIOD      200
 //==============================| Board driver |===============================
 #define configTSK_brd_drv_NAME                  \
                                 ((const signed portCHAR *)"Board driver")
+// [Martin] Original: 2048
 #define configTSK_brd_drv_STACK_SIZE            2048
 #define configTSK_brd_drv_PRIORITY              (tskIDLE_PRIORITY + 0)
 #define configTSK_brd_drv_PERIOD                1000
@@ -184,6 +191,7 @@ to exclude the API function. */
 
 /* USB device Audio task definitions. */
 #define configTSK_USB_DAUDIO_NAME          ((const signed portCHAR *)"USB Device Audio")
+// [Martin] Original: 256
 #define configTSK_USB_DAUDIO_STACK_SIZE    256
 #define configTSK_USB_DAUDIO_PRIORITY      (tskIDLE_PRIORITY + 2)
 #define UAC1_configTSK_USB_DAUDIO_PERIOD   2
@@ -192,6 +200,7 @@ to exclude the API function. */
 
 /* AK5394A task definitions. */
 #define configTSK_AK5394A_NAME             ((const signed portCHAR *)"AK5394A")
+// [Martin]  Original: 256
 #define configTSK_AK5394A_STACK_SIZE       256
 #define UAC1_configTSK_AK5394A_PRIORITY    (tskIDLE_PRIORITY + 2)// Was 1
 #define UAC2_configTSK_AK5394A_PRIORITY    (tskIDLE_PRIORITY + 3)// Was +1, then +2

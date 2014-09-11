@@ -9,7 +9,7 @@
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  20.08.2014\n
- * Modified: 05.09.2014
+ * Modified: 09.09.2014
  *
  * \version 0.2
  * \author Martin Stejskal

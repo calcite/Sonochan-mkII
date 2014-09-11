@@ -7,7 +7,7 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 05.09.2014
+ * Modified: 09.09.2014
  *
  * \version 0.3
  * \author  Martin Stejskal
@@ -305,9 +305,9 @@
  *
  * Start up time can be calculated as:\n
  *  tsup = (BRD_DRV_ADC_START_UP_TIME+1)*8\n
- * If you are unsure, set this value to 5. Example:\n
+ * If you are unsure, set this value to 10. Example:\n
  * \code
- * #define BRD_DRV_ADC_START_UP_TIME 5
+ * #define BRD_DRV_ADC_START_UP_TIME 10
  * \endcode
  */
 #define BRD_DRV_ADC_START_UP_TIME                       10
@@ -319,6 +319,8 @@
 #define BRD_DRV_DEFAULT_BCLK_OVERSAMPLING       64
 
 #define BRD_DRV_DEFAULT_DATA_WORD_LENGTH        24
+
+#define BRD_DRV_DEFAULT_FSYNC_FREQ              48000UL
 //================================| Includes |=================================
 // IO pins
 #include <avr32/io.h>
@@ -501,6 +503,9 @@ typedef struct{
   /// MCLK oversampling
   uint16_t i_MCLK_ovrsmpling;
 
+  /// FSYNC frequency
+  uint32_t i_FSYNC_freq;
+
   //===== Other settings
   /// Auto tune external PLL option
   uint8_t i_auto_tune_pll;
@@ -537,6 +542,9 @@ typedef struct{
   uint16_t i_BCLK_ovrsmpling;
   /// MCLK oversampling
   uint16_t i_MCLK_ovrsmpling;
+
+  /// FSYNC frequency
+  uint32_t i_FSYNC_freq;
 }s_brd_drv_ssc_fine_setting_t;
 
 
@@ -547,6 +555,7 @@ typedef struct{
  * This is set of error messages, which will be written to debug UART or LCD
  * @{
  */
+///\todo Sort messages to ERROR, WARNING and INFO
 /// Can not initialize LCD display
 #define BRD_DRV_MSG_LCD_INIT_FAIL       \
   {"LCD initialization failed!\n"}
@@ -671,7 +680,21 @@ typedef struct{
 #define BRD_DRV_MSG_ERROR_CLEANED               \
   {"ERROR message deleted\n\n\n"}
 
+/// When setting MCLK oversampling value and PLL value is too high
+#define BRD_DRV_MSG_ERR_PLL_HIGH_FREQ           \
+  "MCLK ovrsam. Too high freq on PLL\n"
 
+/// Can not set MCLK divider when settings MCLK oversampling
+#define BRD_DRV_MSG_ERR_MCLK_DIV_FAIL           \
+  "MCLK ovrsam. Can't set divider\n"
+
+/// Can not set PLL frequency
+#define BRD_DRV_MSG_ERR_CAN_NOT_SET_PLL_FREQ    \
+  "MCLK ovrsam. Can not set PLL\n"
+
+/// Can not set BCLK oversampling value
+#define BRD_DRV_MSG_ERR_MCLK_OVRSAM_CAN_NOT_SET_BCLK_OVRSAM     \
+  "MCLK ovrsam. Can not set BLCK ovrsam.\n"
 
 /// @}
 
@@ -681,11 +704,17 @@ typedef struct{
  * @{
  */
 #define BRD_DRV_MSG_WRN_MCLK_RAISED_UP_BCLK     \
-  "MCLK set up to BCLK frequency\n"
+  "MCLK low. Setting up to BCLK frequency\n"
 
 #define BRD_DRV_MSG_WRN_DATA_LEN_DECREASED      \
   "Data length was decreased\n"
 
+#define BRD_DRV_MSG_WRN_FLASH_NOT_VALID_SETTINGS        \
+  "Non valid settings in user flash.\n"
+
+
+#define BRD_DRV_MSG_WRN_CAN_NOT_SET_PLL_TRYING_AGAIN    \
+  "Can not set external PLL. Trying again...\n"
 /// @}
 
 
@@ -694,11 +723,14 @@ typedef struct{
  * @{
  */
 
-#define BRD_DRV_INFO_LOAD_FACTRY_STTNGS         \
+#define BRD_DRV_MSG_INFO_LOAD_FACTRY_STTNGS         \
   "Loading factory settings\n"
 
-#define BRD_DRV_INFO_FACTRY_STTNGS_LOADED       \
+#define BRD_DRV_MSG_INFO_FACTRY_STTNGS_LOADED       \
   "Factory settings was loaded\n"
+
+#define BRD_DRV_MSG_INFO_FLASH_VALID_SETTINGS           \
+  "Valid user settings in user flash. Loading...\n"
 
 /// @}
 
@@ -927,6 +959,8 @@ GD_RES_CODE brd_drv_reset_i2s(void);
 GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
     e_ssc_digital_audio_interface_t e_mode);
 
+GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq);
+
 GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling);
 
 GD_RES_CODE brd_drv_get_MCLK_oversampling(uint16_t *p_i_MCLK_oversampling);
@@ -957,19 +991,19 @@ GD_RES_CODE brd_drv_draw_logo(void);
 
 void brd_drv_send_msg(
     const char * p_msg,
-    uint8_t i_write_to_DBG,
-    uint8_t i_write_to_LCD,
-    uint8_t i_LCD_line);
+    const uint8_t i_write_to_DBG,
+    const uint8_t i_write_to_LCD,
+    const uint8_t i_LCD_line);
 
 void brd_drv_send_warning_msg(
     const char * p_msg,
-    uint8_t i_write_to_DBG,
-    uint8_t i_write_to_LCD);
+    const uint8_t i_write_to_DBG,
+    const uint8_t i_write_to_LCD);
 
 void brd_drv_send_error_msg(
     const char * p_msg,
-    uint8_t i_write_to_DBG,
-    uint8_t i_write_to_LCD);
+    const uint8_t i_write_to_DBG,
+    const uint8_t i_write_to_LCD);
 //===========================| Low level functions |===========================
 GD_RES_CODE brd_drv_set_uac1(uint8_t i_uac1_enable);
 
