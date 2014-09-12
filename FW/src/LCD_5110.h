@@ -8,9 +8,9 @@
  * Please include correct HAL driver files.
  *
  * Created:  04.07.2012\n
- * Modified: 06.05.2014
+ * Modified: 11.09.2014
  *
- * \version 1.1
+ * \version 1.2
  * \author Martin Stejskal
  */
 
@@ -185,7 +185,7 @@ e_lcd_5110_status LCD_5110_init(void);
  *  @return LCD_5110_OK (0) if all OK
  */
  e_lcd_5110_status LCD_5110_write_xy(const char * p_txt_to_show,
-                                     int x_position, int y_line);
+                                     uint8_t x_position, uint8_t y_line);
 
  /**
   * \brief Clear selected line and set cursor to X position 0

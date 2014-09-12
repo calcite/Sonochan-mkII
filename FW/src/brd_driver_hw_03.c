@@ -1977,15 +1977,24 @@ inline GD_RES_CODE brd_drv_draw_logo(void)
   // For return result code
   GD_RES_CODE e_status;
 
-  const char snchn_txt[] = BRD_DRV_MSG_SONOCHAN_MK_II;
-  // Select line
-  e_status = LCD_5110_set_line(BRD_DRV_LCD_LOGO_LINE);
-  if(e_status != GD_SUCCESS)
-  {
-    return e_status;
-  }
+  ///\todo Audo DATE and time only for debug. In release version number
+  char snchn_date[] = {__DATE__};
+  char snchn_time[] = {__TIME__};
+  // Put null to "corrct place"
+  snchn_date[6] = 0x00;
+  snchn_time[5] = 0x00;
 
-  e_status = LCD_5110_write(&snchn_txt[0]);
+
+  e_status = LCD_5110_write_xy(BRD_DRV_MSG_INFO_SONOCHAN_MK_II,
+      1,
+      BRD_DRV_LCD_LOGO_LINE);
+  if(e_status != GD_SUCCESS) return e_status;
+
+
+  e_status = LCD_5110_write_xy(&snchn_date[0], 0, BRD_DRV_LCD_LOGO_LINE+1);
+  if(e_status != GD_SUCCESS) return e_status;
+  e_status = LCD_5110_write_xy(&snchn_time[0], 8*6, BRD_DRV_LCD_LOGO_LINE+1);
+  if(e_status != GD_SUCCESS) return e_status;
 
   return e_status;
 }

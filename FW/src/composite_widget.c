@@ -175,7 +175,6 @@
 //[Martin] For board pre init function
 #include "brd_driver_hw_03.h"
 
-
 /*
  *  A few global variables.
  */
