@@ -561,8 +561,8 @@ typedef struct{
   {"LCD initialization failed!\n"}
 
 /// Sonochan mk II
-#define BRD_DRV_MSG_SONOCHAN_MK_II      \
-  {"Sonochan mk II\n > v0.2\n"}
+#define BRD_DRV_MSG_INFO_SONOCHAN_MK_II         \
+  "Sonochan mkII"
 
 /// Can not draw logo
 #define BRD_DRV_MSG_DRAW_LOGO_FAIL      \

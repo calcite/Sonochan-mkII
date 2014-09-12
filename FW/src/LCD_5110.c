@@ -7,9 +7,9 @@
  * It need HAL driver (which depend on used architecture) to work properly.\n
  *
  * Created:  04.07.2012\n
- * Modified: 06.05.2014
+ * Modified: 11.09.2014
  *
- * \version 1.1
+ * \version 1.2
  * \author Martin Stejskal
  */
 
@@ -420,8 +420,7 @@ e_lcd_5110_status LCD_5110_write(const char * p_txt_to_show)
 
     {
       // Set X address to zero
-      i_LCD_x_position = 0
-          ;
+      i_LCD_x_position = 0;
       // Move to next line
       i_LCD_line_counter++;
 
@@ -503,37 +502,42 @@ e_lcd_5110_status LCD_5110_write(const char * p_txt_to_show)
 
 
 inline e_lcd_5110_status LCD_5110_write_xy(const char * p_txt_to_show,
-                                           int x_position, int y_line)
+                                           uint8_t x_position, uint8_t y_line)
 {
   // Variable for status value - default value as error - just for case
   e_lcd_5110_status e_status = LCD_5110_ERROR;
+
+  // Temporary variable for backup auto clear feature
+  uint8_t i_autoclear_backup = i_auto_clear_line_flag;
 
   // If You like counting started 1, instead of 0 -> uncomment following two lines
   //y_line--;		// LCDs calculate lines by 0 -> minus one
   //x_position--;	// again, for LCD is begin 0
 
   // Coordinates set, so set them on N5110 LCD
-  e_status = LCD_5110_set_X(x_position);
-  if( e_status != LCD_5110_OK)
-  {
-    return e_status;
-  }
-
   e_status = LCD_5110_set_line(y_line);
   if( e_status != LCD_5110_OK)
   {
     return e_status;
   }
 
-  // And finally write data on LCD(s)
-  e_status = LCD_5110_write( p_txt_to_show);
+  e_status = LCD_5110_set_X(x_position);
   if( e_status != LCD_5110_OK)
   {
     return e_status;
   }
 
+  // Temporary turn off auto clear feature
+  i_auto_clear_line_flag = 0;
+
+  // And finally write data on LCD(s)
+  e_status = LCD_5110_write( p_txt_to_show);
+
+  // Anyway restore auto clear value
+  i_auto_clear_line_flag = i_autoclear_backup;
+
   // If all OK -> return OK
-  return LCD_5110_OK;
+  return e_status;
 }
 
 //=============================================================================
