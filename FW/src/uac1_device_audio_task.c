@@ -204,6 +204,10 @@ void uac1_device_audio_task(void *pvParameters)
   // Time when not in start up
   uint32_t time = 0;
 
+  //[Martin] Keep wanted sample length
+  uint8_t i_sample_length;
+  brd_drv_get_data_length(&i_sample_length);
+
 
   // Just 4 debug - if needed, then uncomment
   //char c[20];
@@ -429,10 +433,33 @@ void uac1_device_audio_task(void *pvParameters)
             }
           }
 
+          //[Martin] Get actual word length
+          brd_drv_get_data_length(&i_sample_length);
+
           Usb_reset_endpoint_fifo_access(EP_AUDIO_IN);
           for( i=0 ; i < num_samples ; i++ ) {
             // Fill endpoint with sample raw
             if (mute==FALSE) {
+              //[Martin] Shift data in register if we have lower bit resolution
+              if(audio_buffer_out == 0)
+              {
+                // Audio buffer out 0
+                audio_buffer_0[index+IN_LEFT] =
+                    audio_buffer_0[index+IN_LEFT]<<(24-i_sample_length);
+                audio_buffer_0[index+IN_RIGHT] =
+                    audio_buffer_0[index+IN_RIGHT]<<(24-i_sample_length);
+              }
+              else
+              {
+                // Audio buffer out 1
+                audio_buffer_1[index+IN_LEFT] =
+                    audio_buffer_1[index+IN_LEFT]<<(24-i_sample_length);
+                audio_buffer_1[index+IN_RIGHT] =
+                    audio_buffer_1[index+IN_RIGHT]<<(24-i_sample_length);
+              }
+
+
+
               if (audio_buffer_out == 0) {
                 // Swap RX data if needed
                 if(i_swap_LR_RX == 0)
@@ -515,7 +542,7 @@ void uac1_device_audio_task(void *pvParameters)
                 index=0;
                 audio_buffer_out = 1 - audio_buffer_out;
               }
-            } else {
+            } else {// Mute is true
               Usb_write_endpoint_data(EP_AUDIO_IN, 8, 0x00);
               Usb_write_endpoint_data(EP_AUDIO_IN, 8, 0x00);
               Usb_write_endpoint_data(EP_AUDIO_IN, 8, 0x00);
@@ -647,9 +674,11 @@ void uac1_device_audio_task(void *pvParameters)
           }
 
         if (Is_usb_out_received(EP_AUDIO_OUT)) {
-
           Usb_reset_endpoint_fifo_access(EP_AUDIO_OUT);
           num_samples = Usb_byte_count(EP_AUDIO_OUT) / 6;       // Bit resolution (6)
+
+          //[Martin] Get actual word length
+          brd_drv_get_data_length(&i_sample_length);
 
           if(!playerStarted)
           {
@@ -674,6 +703,9 @@ void uac1_device_audio_task(void *pvParameters)
             }
 
             sample = (((U32) sample_MSB) << 16) + (((U32)sample_SB) << 8) + sample_LSB;
+            //[Martin] If we want lower resolution than 24b, we must "cut"
+            // sample
+            sample = sample>>(24-i_sample_length);
 
             // Switch TX data
             if(i_swap_LR_TX == 0)
@@ -700,6 +732,9 @@ void uac1_device_audio_task(void *pvParameters)
             };
 
             sample = (((U32) sample_MSB) << 16) + (((U32)sample_SB) << 8) + sample_LSB;
+            //[Martin] If we want lower resolution than 24b, we must "cut"
+            // sample
+            sample = sample>>(24-i_sample_length);
 
             // Switch TX data
             if(i_swap_LR_TX == 0)
