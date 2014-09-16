@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 09.09.2014
+ * Modified: 16.09.2014
  *
- * \version 0.3
+ * \version 0.3.1
  * \author  Martin Stejskal
  */
 
@@ -1674,7 +1674,10 @@ GD_RES_CODE brd_drv_set_data_length(uint8_t i_data_length)
   // Status code
   GD_RES_CODE e_status;
 
-  ///\todo More processing (set also PDCA!!!)
+  /**\note Because whole system is Big endian (thanks :( ), samples must be
+   * shifted right way. But this can not be done on SSC layer, so it is up to
+   * higher layer (USB driver) to shift samples correctly.
+   */
 
   // Set data length on SSC module
   e_status = ssc_set_data_length(i_data_length);
@@ -1717,7 +1720,7 @@ GD_RES_CODE brd_drv_set_data_length(uint8_t i_data_length)
  * @param p_i_data_length Pointer to memory, where result will be written
  * @return GD_SUCCESS (0) if all OK
  */
-GD_RES_CODE brd_drv_get_data_length(uint8_t *p_i_data_length)
+inline GD_RES_CODE brd_drv_get_data_length(uint8_t *p_i_data_length)
 {
   *p_i_data_length = s_brd_drv_ssc_fine_settings.i_data_length;
   return GD_SUCCESS;
