@@ -264,10 +264,10 @@ const gd_config_struct BRD_DRV_config_table[] =
       "BCLK frequency",
       "Options: 16, 32, 64, 128, 256 FSYNC",
       uint16_type,
-      {.data_uint16 = 1},
+      {.data_uint16 = 2},
       {.data_uint16 = 512},
       uint16_type,
-      {.data_uint16 = 1},
+      {.data_uint16 = 2},
       {.data_uint16 = 512},
       (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling,
       brd_drv_set_BCLK_oversampling
@@ -787,6 +787,20 @@ void brd_drv_task(void)
   // Set undefined state as default
   static e_brd_drv_con_state e_con_vol = brd_drv_con_undefined;
 
+  // Keep information about sampling frequency and if changed, then write to
+  // display
+  static uint32_t i_FSYNC_freq_old_value;
+
+  // Keep information about MCLK frequency and if changed, then write to
+  // display
+  static uint32_t i_PLL_freq_old_value;
+
+  // Store actual value (just temporary variable)
+  uint32_t i_PLL_freq_actual_value;
+
+  // Store information about BLCK oversampling value
+  static uint32_t i_BCLK_ovrsam_old_value;
+
 
 
 
@@ -861,7 +875,7 @@ void brd_drv_task(void)
         brd_drv_show_volume();
       }
     }
-    else
+    else // if(i_actual_volume > i_saved_volume_value)
     {
       // Actual volume is lower or equal
       if((i_saved_volume_value - i_actual_volume) >
@@ -969,7 +983,7 @@ void brd_drv_task(void)
       {
         // Mute button pressed - write to LCD info
         brd_drv_send_msg(&msg_con_not_powered[0],0,1,
-            BRD_DRV_LCD_INFO_MSG_LINE);
+            BRD_DRV_LCD_LINE_INFO_MSG);
       }
     }
     // Anyway process mute button. Maybe user set up volume too high
@@ -978,7 +992,66 @@ void brd_drv_task(void)
     // Reset button process
     brd_drv_process_rst_i2s_button();
 
+    //=========================| Show information to LCD |=====================
+    // Show only if there is not any error
+    if(i_error_occurred == 0)
+    {
+      // FSYNC frequency
+      if(i_FSYNC_freq_old_value != s_brd_drv_ssc_fine_settings.i_FSYNC_freq)
+      {
+        e_status = brd_drv_show_FSYNC_freq(BRD_DRV_LCD_LINE_FSYNC_FREQ);
+        if(e_status != GD_SUCCESS)
+        {
+          brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CAN_NOT_SHOW_FSYNC_FREQ,1,1);
+        }
+        else // show FSYNC was OK
+        {
+          i_FSYNC_freq_old_value = s_brd_drv_ssc_fine_settings.i_FSYNC_freq;
+        }// FSYNC show status
+      }// FSYNC frequency
 
+      // MCLK frequency
+      e_status = cs2200_get_PLL_freq(&i_PLL_freq_actual_value);
+      if(e_status != GD_SUCCESS)
+      {
+        brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CAN_NOT_GET_PLL_FREQ,1,1);
+      }
+      else // Get PLL frequency was success. Continue
+      {
+        // Compare values
+        if(i_PLL_freq_old_value != i_PLL_freq_actual_value)
+        {
+          e_status = brd_drv_show_MCLK_freq(BRD_DRV_LCD_LINE_MCLK_FREQ);
+          if(e_status != GD_SUCCESS)
+          {
+            brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CAN_NOT_SHOW_MCLK_FREQ,1,1);
+          }
+          else
+          {
+            i_PLL_freq_old_value = i_PLL_freq_actual_value;
+          }// MCLK frequency show - status
+        }// PLL frequency compare
+      }// MCLK frequency
+
+
+      // BCLK oversampling frequency
+      if(i_BCLK_ovrsam_old_value !=
+         s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling)
+      {
+        e_status = brd_drv_show_BCLK_ovrsampling(
+            BRD_DRV_LCD_LINE_BCLK_OVRSAMPLING);
+        if(e_status != GD_SUCCESS)
+        {
+          brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CAN_NOT_SHOW_BCLK_OVRSMPLING,
+              1,1);
+        }
+        else
+        {
+          i_BCLK_ovrsam_old_value =
+              s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling;
+        }
+      }// BCLK frequency
+    }// If there is no error
   }/* Check if all ADC conversions are done and if there is "time" for some
     * data processing
     */
@@ -1631,9 +1704,6 @@ inline GD_RES_CODE brd_drv_load_default_settings(void)
   if(e_status != GD_SUCCESS) return e_status;
 
   // Load SSC default values
-  // Data length
-  e_status = brd_drv_set_data_length(BRD_DRV_DEFAULT_DATA_WORD_LENGTH);
-  if(e_status != GD_SUCCESS) return e_status;
   // FSYNC RX
   e_status = brd_drv_set_FSYNC_RX_edge(SSC_EDGE_DEFAULT);
   if(e_status != GD_SUCCESS) return e_status;
@@ -1656,7 +1726,9 @@ inline GD_RES_CODE brd_drv_load_default_settings(void)
   // And call set FSYNC frequency, which set MCLK and BCLK dividers
   e_status = brd_drv_set_FSYNC_freq(BRD_DRV_DEFAULT_FSYNC_FREQ);
   if(e_status != GD_SUCCESS) return e_status;
-
+  // Data length - must be done after setting BCLK and MCLK
+  e_status = brd_drv_set_data_length(BRD_DRV_DEFAULT_DATA_WORD_LENGTH);
+  if(e_status != GD_SUCCESS) return e_status;
 
   brd_drv_send_msg(BRD_DRV_MSG_INFO_FACTRY_STTNGS_LOADED,1,0,-1);
   // Return last code anyway
@@ -1678,6 +1750,16 @@ GD_RES_CODE brd_drv_set_data_length(uint8_t i_data_length)
    * shifted right way. But this can not be done on SSC layer, so it is up to
    * higher layer (USB driver) to shift samples correctly.
    */
+  // Check if data length in not bigger than 1/2 BCLK oversampling value
+  if(i_data_length > (s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling>>1))
+  {
+    // We must increase BCLK, otherwise on output will be mess. Send warning
+    // message
+    brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_BCLK_OVRSMPLING_INCREASED,1,1);
+    e_status = brd_drv_set_BCLK_oversampling(i_data_length<<1);
+    if(e_status != GD_SUCCESS) return e_status;
+  }
+
 
   // Set data length on SSC module
   e_status = ssc_set_data_length(i_data_length);
@@ -1896,6 +1978,81 @@ GD_RES_CODE brd_drv_set_BCLK_TX_edge(e_ssc_edge_t e_edge)
 
 
 
+/**
+ * @brief Show FSYNC frequency to LCD (on defined line) and debug output
+ * @param i_line Line on which will be written value (display only).\n
+ *   Options: 0-5
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE brd_drv_show_FSYNC_freq(uint8_t i_line)
+{
+  // For sprintf operations
+  char c[15];
+
+  sprintf(&c[0],"FS %lu Hz\n", s_brd_drv_ssc_fine_settings.i_FSYNC_freq);
+  brd_drv_send_msg(&c[0],1,1,i_line);
+  return GD_SUCCESS;
+}
+
+/**
+ * @brief Show MCLK frequency to LCD (on defined line) and debug output
+ * @param i_line Line on which will be written value (display only).\n
+ *   Options: 0-5
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE brd_drv_show_MCLK_freq(uint8_t i_line)
+{
+  // Keep status
+  GD_RES_CODE e_status;
+
+  // For sprintf operations
+  char c[15];
+  // Keep MCLK frequency (from PLL)
+  uint32_t i_MCLK_actual_freq;
+
+  // MCLK divider
+  uint16_t i_MCLK_divider;
+
+  e_status = cs2200_get_PLL_freq(&i_MCLK_actual_freq);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  e_status = brd_drv_get_MCLK_div(&i_MCLK_divider);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  i_MCLK_actual_freq = i_MCLK_actual_freq / i_MCLK_divider;
+
+  sprintf(&c[0],"MCLK %lu\n", i_MCLK_actual_freq);
+  // Send message about frequency to debug output only if auto tune option is
+  // disabled to avoid writing too verbose output on debug output
+
+  if(i_auto_tune_pll == 0)
+  {
+    brd_drv_send_msg(&c[0],1,1,i_line);
+  }
+  else
+  {
+    brd_drv_send_msg(&c[0],0,1,i_line);
+  }
+  return e_status;
+}
+
+
+/**
+ * @brief Show BLCK oversampling value
+ * @param i_line Line on which will be written value (display only).\n
+ *   Options: 0-5
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE brd_drv_show_BCLK_ovrsampling(uint8_t i_line)
+{
+  // For sprintf operations
+  char c[15];
+
+  sprintf(&c[0],"BCLK %uxFS\n", s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling);
+  brd_drv_send_msg(&c[0],1,1,i_line);
+  return GD_SUCCESS;
+}
+
 
 
 /**
@@ -1913,7 +2070,7 @@ inline GD_RES_CODE brd_drv_show_volume(void)
   char c[15];
   tlv320aic33_get_headphones_volume_db(&f_volume);
   sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
-  brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_HP_VOLUME_LINE);
+  brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_LINE_HP_VOLUME);
 
   return GD_SUCCESS;
 }
@@ -1990,13 +2147,13 @@ inline GD_RES_CODE brd_drv_draw_logo(void)
 
   e_status = LCD_5110_write_xy(BRD_DRV_MSG_INFO_SONOCHAN_MK_II,
       1,
-      BRD_DRV_LCD_LOGO_LINE);
+      BRD_DRV_LCD_LINE_LOGO);
   if(e_status != GD_SUCCESS) return e_status;
 
 
-  e_status = LCD_5110_write_xy(&snchn_date[0], 0, BRD_DRV_LCD_LOGO_LINE+1);
+  e_status = LCD_5110_write_xy(&snchn_date[0], 0, BRD_DRV_LCD_LINE_LOGO+1);
   if(e_status != GD_SUCCESS) return e_status;
-  e_status = LCD_5110_write_xy(&snchn_time[0], 8*6, BRD_DRV_LCD_LOGO_LINE+1);
+  e_status = LCD_5110_write_xy(&snchn_time[0], 8*6, BRD_DRV_LCD_LINE_LOGO+1);
   if(e_status != GD_SUCCESS) return e_status;
 
   return e_status;
@@ -2033,7 +2190,7 @@ inline void brd_drv_send_warning_msg(
   if(i_write_to_LCD != 0)
   {
     // Select line
-    LCD_5110_set_line(BRD_DRV_LCD_WARN_MSG_LINE);
+    LCD_5110_set_line(BRD_DRV_LCD_LINE_WARN_MSG);
     LCD_5110_write(p_msg);
     // Enable auto clear LCD when writing again to line 0
   }
@@ -3097,6 +3254,9 @@ inline void brd_drv_process_rst_i2s_button(void)
       // Short press - just clean LCD
       LCD_5110_clear();
       brd_drv_draw_logo();
+      brd_drv_show_FSYNC_freq(BRD_DRV_LCD_LINE_FSYNC_FREQ);
+      brd_drv_show_MCLK_freq(BRD_DRV_LCD_LINE_MCLK_FREQ);
+      brd_drv_show_BCLK_ovrsampling(BRD_DRV_LCD_LINE_BCLK_OVRSAMPLING);
       brd_drv_show_volume();
 
       // Turn off ERROR_SIG LED
