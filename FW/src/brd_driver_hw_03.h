@@ -256,7 +256,7 @@
  *
  * This should be set to 0 or at least same as BRD_DRV_LCD_WARN_MSG_LINE
  */
-#define BRD_DRV_LCD_LOGO_LINE                   0
+#define BRD_DRV_LCD_LINE_LOGO                   0
 
 /**
  * \brief Define on which line begin write warning message
@@ -264,7 +264,7 @@
  * This should be set to 0, because when warning message disappear logo is\n
  * written on these lines.
  */
-#define BRD_DRV_LCD_WARN_MSG_LINE               0
+#define BRD_DRV_LCD_LINE_WARN_MSG               0
 
 /**
  * \brief Define on which line begin write info message
@@ -272,11 +272,28 @@
  * It is recommended to leave BRD_DRV_LCD_WARN_MSG_LINE 2 lines and rest\n
  * for info message. This value define where info message start
  */
-#define BRD_DRV_LCD_INFO_MSG_LINE               2
+#define BRD_DRV_LCD_LINE_INFO_MSG               2
+
+/**
+ * \brief Define on which line will be FSYNC frequency written
+ */
+#define BRD_DRV_LCD_LINE_FSYNC_FREQ             2
+
+/**
+ * \brief Define on which line will be written MCLK frequency
+ */
+#define BRD_DRV_LCD_LINE_MCLK_FREQ              3
+
+/**
+ * \brief Define on which line will be written BCLK oversampling value
+ */
+#define BRD_DRV_LCD_LINE_BCLK_OVRSAMPLING       4
+
+
 /**
  * \brief Define on which line will be displayed headphone volume
  */
-#define BRD_DRV_LCD_HP_VOLUME_LINE              5
+#define BRD_DRV_LCD_LINE_HP_VOLUME              5
 
 ///@}
 
@@ -568,6 +585,22 @@ typedef struct{
 #define BRD_DRV_MSG_DRAW_LOGO_FAIL      \
   {"Write logo failed\n"}
 
+/// Can not show FSYNC frequency
+#define BRD_DRV_MSG_ERR_CAN_NOT_SHOW_FSYNC_FREQ                         \
+  "Can not show FSYNC freq.\n"
+
+/// Can not show MCLK frequency
+#define BRD_DRV_MSG_ERR_CAN_NOT_SHOW_MCLK_FREQ                          \
+  "Can not show MCLK freq.\n"
+
+/// Can not show BCLK oversampling value
+#define BRD_DRV_MSG_ERR_CAN_NOT_SHOW_BCLK_OVRSMPLING                    \
+  "Can not show BCLK oversampling value\n"
+
+/// Can not get PLL frequency
+#define BRD_DRV_MSG_ERR_CAN_NOT_GET_PLL_FREQ                            \
+  "Can not get PLL frequency\n"
+
 /// Can not initialize ADC
 #define BRD_DRV_MSG_ADC_INIT_FAIL       \
   {"Can not initialize internal ADC\n"}
@@ -708,6 +741,9 @@ typedef struct{
 
 #define BRD_DRV_MSG_WRN_DATA_LEN_DECREASED      \
   "Data length was decreased\n"
+
+#define BRD_DRV_MSG_WRN_BCLK_OVRSMPLING_INCREASED       \
+  "BCLK oversampling value increased\n"
 
 #define BRD_DRV_MSG_WRN_FLASH_NOT_VALID_SETTINGS        \
   "Non valid settings in user flash.\n"
@@ -984,6 +1020,11 @@ GD_RES_CODE brd_drv_set_FSYNC_TX_edge(e_ssc_edge_t e_edge);
 GD_RES_CODE brd_drv_set_BCLK_RX_edge(e_ssc_edge_t e_edge);
 GD_RES_CODE brd_drv_set_BCLK_TX_edge(e_ssc_edge_t e_edge);
 
+GD_RES_CODE brd_drv_show_FSYNC_freq(uint8_t i_line);
+
+GD_RES_CODE brd_drv_show_MCLK_freq(uint8_t i_line);
+
+GD_RES_CODE brd_drv_show_BCLK_ovrsampling(uint8_t i_line);
 
 GD_RES_CODE brd_drv_show_volume(void);
 
