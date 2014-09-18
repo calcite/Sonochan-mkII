@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 16.09.2014
+ * Modified: 18.09.2014
  *
- * \version 0.3.1
+ * \version 0.4
  * \author  Martin Stejskal
  */
 
@@ -43,6 +43,14 @@ static s_brd_drv_ssc_fine_setting_t s_brd_drv_ssc_fine_settings;
  * \brief Store auto tune PLL value
  */
 static uint8_t i_auto_tune_pll;
+
+/**
+ * \brief Copied value from USB descriptors. Number added behind device name
+ *
+ * This value should be copied, else optimizer set it as constant and this is\n
+ * something that we do not want.
+ */
+static uint8_t i_product_name_number;
 
 /**
  * \brief Store information about actual UAC (USB Audio Class)
@@ -385,7 +393,21 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_test_f
     },
     {
-#define BRD_DRV_CMD_RESTORE_SETTING     BRD_DRV_CMD_TEST_FUNC+1
+#define BRD_DRV_CMD_SET_NAME_NUMBER     BRD_DRV_CMD_TEST_FUNC+1
+      BRD_DRV_CMD_SET_NAME_NUMBER,
+      "Add number behind device name",
+      "After that, device MUST be restarted. 0 means no number (erase number).",
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 15},
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 15},
+      (GD_DATA_VALUE*)&i_product_name_number,
+      brd_drv_set_number_to_product_name
+    },
+    {
+#define BRD_DRV_CMD_RESTORE_SETTING     BRD_DRV_CMD_SET_NAME_NUMBER+1
       BRD_DRV_CMD_RESTORE_SETTING,
       "Restore saved settings",
       "Load and apply saved settings",
@@ -443,10 +465,6 @@ const gd_metadata BRD_DRV_metadata =
 //[DEBUG]
 ///\todo REMOVE THIS DEBUG STUFF
 #include "ssc.h"
-#include "sync_control.h"
-#include "pdca.h"
-#include "taskAK5394A.h"
-
 
 GD_RES_CODE brd_drv_test_f(uint32_t i32)
 {
@@ -455,7 +473,6 @@ GD_RES_CODE brd_drv_test_f(uint32_t i32)
   //char c[150];
 
   print_dbg("TEST FUNCTION ...\n\n");
-
 
   return GD_SUCCESS;
 }
@@ -579,6 +596,9 @@ GD_RES_CODE brd_drv_init(void)
 
   // So far so good
   i_error_occurred = 0;
+
+  // Load product name number (must be done in runtime)
+  i_product_name_number = usb_desc_get_number_from_product_name();
 
   //=================================| IO pins |===============================
   // Set isolators I/O (recommended default)
@@ -964,11 +984,11 @@ void brd_drv_task(void)
     if((e_con_vol == brd_drv_con_save_vol) ||
        (e_con_vol == brd_drv_con_high_vol))
     {
-      // Mute signal
-      brd_drv_process_mute_signal();
+      // Mute signal - done after anyway
+      //brd_drv_process_mute_signal();
 
-      // Reset signal
-      brd_drv_process_rst_i2s_signal();
+      // Reset signal - done after anyway
+      //brd_drv_process_rst_i2s_signal();
     }
     // Process when connector side is not powered
     if(e_con_vol == brd_drv_con_low_vol)
@@ -1380,6 +1400,35 @@ inline GD_RES_CODE brd_drv_get_BCLK_oversampling(uint16_t *p_i_BCLK_oversampling
   *p_i_BCLK_oversampling = s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling;
   return GD_SUCCESS;
 }
+
+
+/**
+ * @brief Set number behind device name
+ *
+ * This number is part of device name, so it will be shown in all\n
+ * applications. Also change PID value, so every single device can be\n
+ * recognized.
+ *
+ *
+ * @param i_number Options: 0-16 set custom number (also PID)
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_set_number_to_product_name(uint8_t i_number)
+{
+  // Check input parameter
+  if(i_number > 15) return GD_INCORRECT_PARAMETER;
+
+  usb_desc_set_number_to_product_name(i_number);
+
+  uac1_usb_desc_set_PID(AUDIO_PRODUCT_ID_1+i_number);
+
+  // OK, but for taking effect we must reset device. So just for case show
+  // error message to make sure, that user will notice.
+  brd_drv_send_error_msg(BRD_DRV_MSG_ERR_DEVICE_RESTART_REQUIRED,1,1);
+
+  return GD_SUCCESS;
+}
+
 
 /**
  * \brief Save all needed settings to EEPROM like memory
@@ -3262,6 +3311,9 @@ inline void brd_drv_process_rst_i2s_button(void)
       // Turn off ERROR_SIG LED
       BRD_DRV_IO_LOW(BRD_DRV_ERROR_SIG_PIN);
 
+      // Set number of errors back to zero
+      i_error_occurred = 0;
+
       brd_drv_send_msg(&msg_rst_i2s_err_cleared[0], 1, 0, -1);
     }// Short button press
     else
@@ -3271,7 +3323,7 @@ inline void brd_drv_process_rst_i2s_button(void)
       brd_drv_set_rst_i2s(0);
       i_rst_i2s_already_set = 0;
     }// Long button press
-    // Reset timer
+    // Always Reset timer
     i_time = 0;
   }// Falling edge
 

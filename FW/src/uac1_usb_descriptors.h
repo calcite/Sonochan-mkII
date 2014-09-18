@@ -49,6 +49,14 @@
 #include "usb_descriptors.h"
 #include "hid.h"
 
+//[Martin]
+#include "flashc.h"
+
+//================================| Functions |================================
+void uac1_usb_desc_set_PID(uint16_t i_PID);
+
+uint16_t uac1_usb_desc_get_PID(void);
+
 //_____ M A C R O S ________________________________________________________
 
 

@@ -37,7 +37,10 @@
 
 //_____ D E F I N I T I O N S ______________________________________________
 
-
+//[Martin] This section can be re written
+#if defined (__GNUC__)
+__attribute__((__section__(".userpage")))
+#endif
 const S_usb_device_descriptor uac1_audio_usb_dev_desc =
 {
   sizeof(S_usb_device_descriptor),
@@ -709,4 +712,39 @@ const S_usb_device_qualifier_descriptor uac1_usb_qualifier_desc =
 };
 #endif
 #endif
+
+
+
+//================================| Functions |================================
+/**
+ * @brief Set PID when using UAC1
+ * @param i_PID PID for USB layer
+ */
+void uac1_usb_desc_set_PID(uint16_t i_PID)
+{
+  flashc_memset16(
+      (void*)&uac1_audio_usb_dev_desc.idProduct,
+      Usb_format_mcu_to_usb_data(16, (U16)(i_PID)),
+      sizeof(uac1_audio_usb_dev_desc.idProduct),
+      1);
+}
+
+
+/**
+ * @brief Return actual PID value for UAC1
+ * @return PID value for USB layer
+ */
+uint16_t uac1_usb_desc_get_PID(void)
+{
+  uint16_t i_PID;
+
+  // Pointer to memory, because of optimizer
+  uint16_t *p_mem;
+
+  p_mem = (uint16_t*)&uac1_audio_usb_dev_desc.idProduct;
+
+  i_PID = Usb_format_usb_to_mcu_data(16, (U16)*p_mem);
+
+  return i_PID;
+}
 

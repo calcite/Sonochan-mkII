@@ -94,8 +94,16 @@
 #include "usb_standard_request.h"
 #include "usb_task.h"
 #include "image.h"
+//[Martin]
+#include "flashc.h"
 
-//_____ functions  ________________________________________________________
+//================================| Functions |================================
+void usb_desc_set_number_to_product_name(uint8_t i_number);
+
+uint8_t usb_desc_get_number_from_product_name(void);
+
+
+
 
 //_____ M A C R O S ________________________________________________________
 
@@ -123,7 +131,7 @@
 
 #define AUDIO_VENDOR_ID      0x16d0    //!  Audio device
 //#define AUDIO_PRODUCT_ID_1    0x0761    //!  UAC1 PID
-#define AUDIO_PRODUCT_ID_1    0x0763    //!  Sonochan mk II UAC1 PID
+#define AUDIO_PRODUCT_ID_1    0x0763    //!  Sonochan mk II UAC1 PID (default)
 #define AUDIO_PRODUCT_ID_2    0x0762    //!  UAC2 PID
 
 #define RELEASE_NUMBER        0x1000
@@ -160,11 +168,15 @@
   Usb_unicode('Z')\
 }
 
-#define USB_PN_LENGTH         13
+#define USB_PN_LENGTH         17
+//[Martin] Default device name
 #define USB_PRODUCT_NAME {\
-  Usb_unicode('S'), Usb_unicode('o'), Usb_unicode('n'), Usb_unicode('o'), Usb_unicode('c'),\
-  Usb_unicode('h'), Usb_unicode('a'), Usb_unicode('n'), Usb_unicode(' '), \
-  Usb_unicode('m'), Usb_unicode('k'), Usb_unicode('I'), Usb_unicode('I')\
+  Usb_unicode('S'), Usb_unicode('o'), Usb_unicode('n'), Usb_unicode('o'),\
+  Usb_unicode('c'), Usb_unicode('h'), Usb_unicode('a'), Usb_unicode('n'),\
+  Usb_unicode(' '), \
+  Usb_unicode('m'), Usb_unicode('k'), Usb_unicode('I'), Usb_unicode('I'),\
+  Usb_unicode(' '), Usb_unicode('#'),\
+      Usb_unicode('0'),Usb_unicode('0'),\
 }
 
 
@@ -1375,5 +1387,9 @@ extern const S_usb_aia usb_user_aia;
 extern const U8 usb_hid_report_descriptor[USB_HID_REPORT_DESC];
 
 extern U16 configTSK_USB_DEV_PERIOD;
+
+//[Martin] PID as constant in user flash (can be changed)
+extern const uint16_t uac1_PID;
+
 
 #endif  // _USB_DESCRIPTORS_H_

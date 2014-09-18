@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 16.09.2014
+ * Modified: 18.09.2014
  *
- * \version 0.3.1
+ * \version 0.4
  * \author  Martin Stejskal
  */
 
@@ -228,7 +228,7 @@
  * RTOS priority and many other stuff.\n
  * Scan "mute", "reset I2S", ADC volume control, ADC con voltage and so on.
  */
-#define BRD_DRV_BUTTON_REFRESH_PERIOD           4
+#define BRD_DRV_BUTTON_REFRESH_PERIOD           6
 
 
 /**
@@ -371,6 +371,10 @@
 
 // Because of uac1_device_audio_set_auto_tune() function
 #include "uac1_device_audio_task.h"
+
+// USB descriptors can be changed :P#include "usb_descriptors.h"
+#include "usb_descriptors.h"
+#include "uac1_usb_descriptors.h"
 
 // GPIO operations
 ///\todo Try to remove this dependency
@@ -584,6 +588,10 @@ typedef struct{
 /// Can not draw logo
 #define BRD_DRV_MSG_DRAW_LOGO_FAIL      \
   {"Write logo failed\n"}
+
+/// To apply changes, please restart device
+#define BRD_DRV_MSG_ERR_DEVICE_RESTART_REQUIRED                         \
+  "Device MUST be restarted to apply settings!\n"
 
 /// Can not show FSYNC frequency
 #define BRD_DRV_MSG_ERR_CAN_NOT_SHOW_FSYNC_FREQ                         \
@@ -1004,6 +1012,8 @@ GD_RES_CODE brd_drv_get_MCLK_oversampling(uint16_t *p_i_MCLK_oversampling);
 GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling);
 
 GD_RES_CODE brd_drv_get_BCLK_oversampling(uint16_t *p_i_BCLK_oversampling);
+
+GD_RES_CODE brd_drv_set_number_to_product_name(uint8_t i_number);
 
 GD_RES_CODE brd_drv_save_all_settings(void);
 
