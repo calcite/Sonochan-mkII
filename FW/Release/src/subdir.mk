@@ -1,17 +1,19 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/ssc.c \
+../src/brd_driver_hw_03.c \
 ../src/cs2200_HAL_AVR32_UC3A3_HW_interface.c \
 ../src/cs2200.c \
 ../src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.c \
 ../src/tlv320aic33.c \
-../src/brd_driver_hw_03.c \
 ../src/LCD_5110_HAL_AVR32_UC3A3_HW_interface.c \
 ../src/LCD_5110.c \
+../src/usb_descriptors.c \
+../src/usb_specific_request.c \
 ../src/generic_driver.c \
 ../src/HW.c \
 ../src/HW_bridge_uniprot.c \
 ../src/uniprot.c \
+../src/ssc.c \
 ../src/sync_control.c \
 ../src/composite_widget.c \
 ../src/device_audio_task.c \
@@ -30,23 +32,24 @@ C_SRCS += \
 ../src/uac2_taskAK5394A.c \
 ../src/uac2_usb_descriptors.c \
 ../src/uac2_usb_specific_request.c \
-../src/usb_descriptors.c \
-../src/usb_specific_request.c \
+
 
 
 OBJS += \
-./src/ssc.o \
+./src/brd_driver_hw_03.o \
 ./src/cs2200_HAL_AVR32_UC3A3_HW_interface.o \
 ./src/cs2200.o \
 ./src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.o \
 ./src/tlv320aic33.o \
-./src/brd_driver_hw_03.o \
 ./src/LCD_5110_HAL_AVR32_UC3A3_HW_interface.o \
 ./src/LCD_5110.o \
+./src/usb_descriptors.o \
+./src/usb_specific_request.o \
 ./src/generic_driver.o \
 ./src/HW.o \
 ./src/HW_bridge_uniprot.o \
 ./src/uniprot.o \
+./src/ssc.o \
 ./src/sync_control.o \
 ./src/composite_widget.o \
 ./src/device_audio_task.o \
@@ -65,23 +68,24 @@ OBJS += \
 ./src/uac2_taskAK5394A.o \
 ./src/uac2_usb_descriptors.o \
 ./src/uac2_usb_specific_request.o \
-./src/usb_descriptors.o \
-./src/usb_specific_request.o \
+
 
 
 C_DEPS += \
-./src/ssc.d \
+./src/brd_driver_hw_03.d \
 ./src/cs2200_HAL_AVR32_UC3A3_HW_interface.d \
 ./src/cs2200.d \
 ./src/tlv320aic33_HAL_AVR32_UC3A3_HW_interface.d \
 ./src/tlv320aic33.d \
-./src/brd_driver_hw_03.d \
 ./src/LCD_5110_HAL_AVR32_UC3A3_HW_interface.d \
 ./src/LCD_5110.d \
+./src/usb_descriptors.d \
+./src/usb_specific_request.d \
 ./src/generic_driver.d \
 ./src/HW.d \
 ./src/HW_bridge_uniprot.d \
 ./src/uniprot.d \
+./src/ssc.d \
 ./src/sync_control.d \
 ./src/composite_widget.d \
 ./src/device_audio_task.d \
@@ -100,8 +104,7 @@ C_DEPS += \
 ./src/uac2_taskAK5394A.d \
 ./src/uac2_usb_descriptors.d \
 ./src/uac2_usb_specific_request.d \
-./src/usb_descriptors.d \
-./src/usb_specific_request.d \
+
 
 
 # Each subdirectory must supply rules for building sources it contributes

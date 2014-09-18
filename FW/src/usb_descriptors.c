@@ -109,9 +109,16 @@ const S_usb_manufacturer_string_descriptor usb_user_manufacturer_string_descript
 
 
 // usb_user_product_string_descriptor
+//[Martin] This section will be re written
+#if defined (__GNUC__)
+__attribute__((__section__(".userpage")))
+#endif
 const S_usb_product_string_descriptor usb_user_product_string_descriptor =
 {
-  sizeof(S_usb_product_string_descriptor),
+  /* USB will see (by default) only name (not number). When user change number,
+   * after restart name will be changed.
+   */
+  (sizeof(S_usb_product_string_descriptor)),
   STRING_DESCRIPTOR,
   USB_PRODUCT_NAME
 };
@@ -129,76 +136,141 @@ const S_usb_serial_number usb_user_serial_number =
 //usb_user_wl
 const S_usb_wl usb_user_wl =
 {
-	sizeof(S_usb_wl),
-	STRING_DESCRIPTOR,
-	USB_WL
+  sizeof(S_usb_wl),
+  STRING_DESCRIPTOR,
+  USB_WL
 };
 
 //usb_user_ait
 const S_usb_ait usb_user_ait =
 {
-	sizeof(S_usb_ait),
-	STRING_DESCRIPTOR,
-	USB_AIT
+  sizeof(S_usb_ait),
+  STRING_DESCRIPTOR,
+  USB_AIT
 };
 
 //usb_user_aot
 const S_usb_aot usb_user_aot =
 {
-	sizeof(S_usb_aot),
-	STRING_DESCRIPTOR,
-	USB_AOT
+  sizeof(S_usb_aot),
+  STRING_DESCRIPTOR,
+  USB_AOT
 };
 
 //usb_user_ain
 const S_usb_ain usb_user_ain =
 {
-	sizeof(S_usb_ain),
-	STRING_DESCRIPTOR,
-	USB_AIN
+  sizeof(S_usb_ain),
+  STRING_DESCRIPTOR,
+  USB_AIN
 };
 
 //usb_user_aia
 const S_usb_aia usb_user_aia =
 {
-	sizeof(S_usb_aia),
-	STRING_DESCRIPTOR,
-	USB_AIA
+  sizeof(S_usb_aia),
+  STRING_DESCRIPTOR,
+  USB_AIA
 };
 
 // usb_hid_report_descriptor
 const U8 usb_hid_report_descriptor[USB_HID_REPORT_DESC] =
 {
-	  	0x06, 0xA0, 0xFF,	// Usage page (vendor defined)
-	  	0x09, 0x01,	// Usage ID (vendor defined)
-	  	0xA1, 0x01,	// Collection (application)
+      0x06, 0xA0, 0xFF,  // Usage page (vendor defined)
+      0x09, 0x01,  // Usage ID (vendor defined)
+      0xA1, 0x01,  // Collection (application)
 
-		// The Input report
-        0x09, 0x03,     	// Usage ID - vendor defined
-        0x15, 0x00,     	// Logical Minimum (0)
+    // The Input report
+        0x09, 0x03,       // Usage ID - vendor defined
+        0x15, 0x00,       // Logical Minimum (0)
         0x26, 0xFF, 0x00,   // Logical Maximum (255)
-        0x75, 0x08,     	// Report Size (8 bits)
-        0x95, 0x08,     	// Report Count (8 fields)
-        0x81, 0x02,     	// Input (Data, Variable, Absolute)
+        0x75, 0x08,       // Report Size (8 bits)
+        0x95, 0x08,       // Report Count (8 fields)
+        0x81, 0x02,       // Input (Data, Variable, Absolute)
 
-		// The Output report
-        0x09, 0x04,     	// Usage ID - vendor defined
-        0x15, 0x00,     	// Logical Minimum (0)
+    // The Output report
+        0x09, 0x04,       // Usage ID - vendor defined
+        0x15, 0x00,       // Logical Minimum (0)
         0x26, 0xFF, 0x00,   // Logical Maximum (255)
-        0x75, 0x08,     	// Report Size (8 bits)
-        0x95, 0x08,     	// Report Count (8 fields)
-        0x91, 0x02,      	// Output (Data, Variable, Absolute)
+        0x75, 0x08,       // Report Size (8 bits)
+        0x95, 0x08,       // Report Count (8 fields)
+        0x91, 0x02,        // Output (Data, Variable, Absolute)
 
-		// The Feature report
-        0x09, 0x05,     	// Usage ID - vendor defined
-        0x15, 0x00,     	// Logical Minimum (0)
+    // The Feature report
+        0x09, 0x05,       // Usage ID - vendor defined
+        0x15, 0x00,       // Logical Minimum (0)
         0x26, 0xFF, 0x00,   // Logical Maximum (255)
-        0x75, 0x08,			// Report Size (8 bits)
-        0x95, 0x08, 		// Report Count	(8 fields)
-        0xB1, 0x02,     	// Feature (Data, Variable, Absolute)
+        0x75, 0x08,      // Report Size (8 bits)
+        0x95, 0x08,     // Report Count  (8 fields)
+        0xB1, 0x02,       // Feature (Data, Variable, Absolute)
 
-	  	0xC0	// end collection
+      0xC0  // end collection
 
 };
+
+
+
+
+
+//================================| Functions |================================
+
+/**
+ * @brief Add user defined number to product name
+ * This function allow user simply set custom number to every single device.
+ * @param i_number Options: 0-99 (else set 0)
+ */
+inline void usb_desc_set_number_to_product_name(uint8_t i_number)
+{
+  uint8_t i_10  =  0;
+  uint8_t i_1   =   0;
+
+  // Check input parameter
+  if(i_number >99) i_number = 99;
+
+  // Get tens
+  i_10  = i_number/10;
+  i_number = i_number - (10*i_10);
+
+  // Get units
+  i_1   = i_number;
+
+  // To get correct character is enough just add ASCII value 0x30 :)
+  flashc_memset16((void*)&usb_user_product_string_descriptor.wstring[USB_PN_LENGTH-2],
+      Usb_unicode(i_10  + 0x30),2,1);
+  flashc_memset16((void*)&usb_user_product_string_descriptor.wstring[USB_PN_LENGTH-1],
+      Usb_unicode(i_1   + 0x30),2,1);
+}
+
+/**
+ * @brief Get number behind product name
+ * @return Number behind device name
+ */
+inline uint8_t usb_desc_get_number_from_product_name(void)
+{
+  uint8_t i_number = 0;
+
+  // To access memory we must use pointer, else optimizer set all as constants
+  // and reading actual value will be fake (just old one value)
+  volatile uint16_t *p_mem;
+
+  // Get from ASCII value number - minus 0x30 ('0')
+
+  // 10x
+  p_mem = (uint16_t*)
+          &(usb_user_product_string_descriptor.wstring[USB_PN_LENGTH-2]);
+
+  i_number = i_number + 10*(uint8_t)
+       (Usb_format_usb_to_mcu_data(16, (U16)(*p_mem))    -'0' );
+
+  // 1x
+  p_mem = (uint16_t*)
+          &(usb_user_product_string_descriptor.wstring[USB_PN_LENGTH-1]);
+
+  i_number = i_number +(uint8_t)
+      (Usb_format_usb_to_mcu_data(16, (U16)(*p_mem))     -'0');
+
+  return i_number;
+}
+
 
 #endif  // USB_DEVICE_FEATURE == ENABLED
