@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 18.09.2014
+ * Modified: 19.09.2014
  *
- * \version 0.4
+ * \version 0.4.1
  * \author  Martin Stejskal
  */
 
@@ -583,7 +583,7 @@ typedef struct{
 
 /// Sonochan mk II
 #define BRD_DRV_MSG_INFO_SONOCHAN_MK_II         \
-  "Sonochan mkII"
+  "Snchn mkII"
 
 /// Can not draw logo
 #define BRD_DRV_MSG_DRAW_LOGO_FAIL      \

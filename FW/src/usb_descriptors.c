@@ -236,9 +236,11 @@ inline void usb_desc_set_number_to_product_name(uint8_t i_number)
 
   // To get correct character is enough just add ASCII value 0x30 :)
   flashc_memset16((void*)&usb_user_product_string_descriptor.wstring[USB_PN_LENGTH-2],
-      Usb_unicode(i_10  + 0x30),2,1);
+      Usb_format_mcu_to_usb_data(16, (U16)(i_10  + 0x30)),
+      2,1);
   flashc_memset16((void*)&usb_user_product_string_descriptor.wstring[USB_PN_LENGTH-1],
-      Usb_unicode(i_1   + 0x30),2,1);
+      Usb_format_mcu_to_usb_data(16, (U16)(i_1   + 0x30)),
+      2,1);
 }
 
 /**

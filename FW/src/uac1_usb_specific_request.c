@@ -109,9 +109,6 @@ static U8    wValue_lsb;
 static U16   wIndex;
 static U16   wLength;
 
-static U8      speed = 1;    // speed == 0, sample rate = 44.1khz
-                  // speed == 1, sample rate = 48khz
-
 extern const    void *pbuffer;
 extern          U16   data_to_transfer;
 
@@ -471,22 +468,19 @@ void audio_get_cur(void)
    i_unit = wIndex % 256;
    length = wLength;
 
+
    Usb_ack_setup_received_free();
    Usb_reset_endpoint_fifo_access(EP_CONTROL);
 
-   if ((usb_type == USB_SETUP_GET_CLASS_ENDPOINT) && (wValue_msb == UAC_EP_CS_ATTR_SAMPLE_RATE)){
-    ///\todo [Martin] Check this code once more, because device now support more frequencies
-    if (speed == 0){
-         Usb_write_endpoint_data(EP_CONTROL, 8, 0x44);
-         Usb_write_endpoint_data(EP_CONTROL, 8, 0xac);
-         Usb_write_endpoint_data(EP_CONTROL, 8, 0x00);
-    }
-    else {
-         Usb_write_endpoint_data(EP_CONTROL, 8, 0x80);
-         Usb_write_endpoint_data(EP_CONTROL, 8, 0xbb);
-         Usb_write_endpoint_data(EP_CONTROL, 8, 0x00);
-    }
-    }
+   if ((usb_type == USB_SETUP_GET_CLASS_ENDPOINT) &&
+       (wValue_msb == UAC_EP_CS_ATTR_SAMPLE_RATE))
+   {
+     //[Martin] Change according to actual FSYNC frequency. LSByte first
+     // Example: 48000 -> 0x00BB80 -> 0x80 ; 0xBB ; 0x00
+     Usb_write_endpoint_data(EP_CONTROL, 8, current_freq.freq_bytes[3]);
+     Usb_write_endpoint_data(EP_CONTROL, 8, current_freq.freq_bytes[2]);
+     Usb_write_endpoint_data(EP_CONTROL, 8, current_freq.freq_bytes[1]);
+   }
 
    else if( i_unit==MIC_FEATURE_UNIT_ID )
    {

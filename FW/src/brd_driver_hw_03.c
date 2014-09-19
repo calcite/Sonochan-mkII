@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 18.09.2014
+ * Modified: 19.09.2014
  *
- * \version 0.4
+ * \version 0.4.1
  * \author  Martin Stejskal
  */
 
@@ -1664,19 +1664,6 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
 
 
   // SSC fine settings
-  e_status = brd_drv_set_data_length(s_brd_drv_user_settings.i_data_length);
-  if(e_status != GD_SUCCESS)
-  {
-    print_dbg(" ! Set data length failed ! ");
-    return e_status;
-  }
-  e_status = brd_drv_set_digital_audio_interface_mode(
-      s_brd_drv_user_settings.e_dig_audio_mode);
-  if(e_status != GD_SUCCESS)
-  {
-    print_dbg(" ! Set dig. aud. itfce failed ! ");
-    return e_status;
-  }
   /* Set FSYNC frequency. Also function set MCLK and BCLK oversampling values
    * so we need to set them first
    */
@@ -1684,12 +1671,28 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       s_brd_drv_user_settings.i_MCLK_ovrsmpling;
   s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling =
       s_brd_drv_user_settings.i_BCLK_ovrsmpling;
+  e_status = brd_drv_set_data_length(s_brd_drv_user_settings.i_data_length);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! Set data length failed ! ");
+    return e_status;
+  }
+
   e_status = brd_drv_set_FSYNC_freq(s_brd_drv_user_settings.i_FSYNC_freq);
   if(e_status != GD_SUCCESS)
   {
     print_dbg(" ! Set FSYNC FREQ failed ! ");
     return e_status;
   }
+
+  e_status = brd_drv_set_digital_audio_interface_mode(
+      s_brd_drv_user_settings.e_dig_audio_mode);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! Set dig. aud. itfce failed ! ");
+    return e_status;
+  }
+
 
   e_status = brd_drv_set_BCLK_RX_edge(
       s_brd_drv_user_settings.e_BCLK_RX_edge);
@@ -2194,10 +2197,21 @@ inline GD_RES_CODE brd_drv_draw_logo(void)
   snchn_time[5] = 0x00;
 
 
+  // Device name (short Sonochan - Snchn)
   e_status = LCD_5110_write_xy(BRD_DRV_MSG_INFO_SONOCHAN_MK_II,
-      1,
+      0,
       BRD_DRV_LCD_LINE_LOGO);
   if(e_status != GD_SUCCESS) return e_status;
+  // Add name number
+  // Turn off auto clean flag, set line, x position and then write number
+  LCD_5110_auto_clear_line(0);
+  LCD_5110_set_line(BRD_DRV_LCD_LINE_LOGO);
+  LCD_5110_set_X(6*sizeof(BRD_DRV_MSG_INFO_SONOCHAN_MK_II) +6);// 6 - font size
+  LCD_5110_write_dec8_unsigned(i_product_name_number);
+  if(e_status != GD_SUCCESS) return e_status;
+  // Enable auto clean flag
+  LCD_5110_auto_clear_line(1);
+
 
 
   e_status = LCD_5110_write_xy(&snchn_date[0], 0, BRD_DRV_LCD_LINE_LOGO+1);
