@@ -4,9 +4,9 @@
  * \brief Driver for codec TLV320AIC33
  *
  * Created:  02.04.2014\n
- * Modified: 21.08.2014
+ * Modified: 19.09.2014
  *
- * \version 0.2a
+ * \version 0.2
  * \author Martin Stejskal, Tomas Bajus
  */
 
@@ -48,7 +48,7 @@
  * Options: 0 (disabled) or 1 (enabled). When enabled, then FreeRTOS features\n
  * are enabled.
  */
-#define TLV320AIC33_SUPPORT_RTOS             1
+#define TLV320AIC33_SUPPORT_RTOS             0
 
 /**
  * \brief Allow create mutex mutexI2C when TLV320AIC33_init is called.
@@ -142,6 +142,20 @@ extern xSemaphoreHandle mutexI2C;
    (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)) ||                               \
   defined(__AVR32__))
 
+typedef enum{
+	fsref_divided_by_1   = 0,
+	fsref_divided_by_1_5 = 1,
+	fsref_divided_by_2   = 2,
+	fsref_divided_by_2_5 = 3,
+	fsref_divided_by_3   = 4,
+	fsref_divided_by_3_5 = 5,
+	fsref_divided_by_4   = 6,
+	fsref_divided_by_4_5 = 7,
+	fsref_divided_by_5   = 8,
+	fsref_divided_by_5_5 = 9,
+	fsref_divided_by_6   = 10,
+}e_ADCandDACSampleRate;
+
 #if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
@@ -181,7 +195,7 @@ typedef union{
 typedef union{
   struct{
     uint8_t JValue                :6;
-    uint8_t                       :2;
+    uint8_t reserved              :2;
   }s;
   uint8_t i_reg;
 }p0_r4_PLL_Programming_B_t;
@@ -196,7 +210,7 @@ typedef union{
 typedef union{
   struct{
     uint8_t DValueLSB             :6;
-    uint8_t                       :2;
+    uint8_t reserved              :2;
   }s;
   uint8_t i_reg;
 }p0_r6_PLL_Programming_D_t;
@@ -239,7 +253,7 @@ typedef union{
 
 typedef union{
   struct{
-    uint8_t                       :2;
+    uint8_t reserved              :2;
     uint8_t JValue                :6;
   }s;
   uint8_t i_reg;
@@ -254,7 +268,7 @@ typedef union{
 
 typedef union{
   struct{
-    uint8_t                       :2;
+    uint8_t reserved              :2;
     uint8_t DValueLSB             :6;
   }s;
   uint8_t i_reg;
@@ -290,18 +304,7 @@ typedef enum
   right_dac_datapath_plays_left_channel_input_data = 2,
   right_dac_datapath_plays_mono_mix_left_and_right_channel_input_data = 3
 }e_RightDACDatapathControl;
-typedef enum{
-	loss_0_0db = 0,
-	loss_1_5db = 1,
-	loss_3_0db = 2,
-  loss_4_5db = 3,
-  loss_6_0db = 4,
-  loss_7_5db = 5,
-  loss_9_0db = 6,
-  loss_10_5db = 7,
-  loss_12_0db = 8,
-	disconnected = 15
-}e_ADCInputGain;
+
 
 #if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
@@ -404,7 +407,7 @@ typedef enum{
   serial_data_bus_uses_DSP_mode = 1,            //!< DSP mode
   serial_data_bus_uses_right_justified_mode = 2,//!< Right justified mode
   serial_data_bus_uses_left_justified_mode = 3  //!< Left justified mode
-}e_AudioSerialDataInterfaceTransferMode;
+}e_AudioSerialDataInterface;
 typedef enum{
   audio_data_word_length_16bit = 0,
   audio_data_word_length_20bit = 1,
@@ -422,7 +425,7 @@ typedef enum{
 #if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
-    e_AudioSerialDataInterfaceTransferMode
+    e_AudioSerialDataInterface
       AudioSerialDataInterfaceTransferMode                      :2;
     e_AudioSerialDataWordLengthControl
       AudioSerialDataWordLengthControl                          :2;
@@ -442,7 +445,7 @@ typedef union{
     e_BitClockRateControl BitClockRateControl                   :1;
     e_AudioSerialDataWordLengthControl
       AudioSerialDataWordLengthControl                          :2;
-    e_AudioSerialDataInterfaceTransferMode
+    e_AudioSerialDataInterface
       AudioSerialDataInterfaceTransferMode                      :2;
   }s;
   uint8_t i_reg;
@@ -781,6 +784,8 @@ typedef union{
 
 
 
+//registers 26 - 35    automatic gain control
+//
 
 
 typedef enum{
@@ -1079,6 +1084,45 @@ typedef union{
 
 
 
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
+typedef union{
+  struct{
+    uint8_t LINE2LRouteToHPLOUTEnable                    :1;
+    uint8_t LINE2LRouteToHPLOUTVolume                    :7;
+  }s;
+  uint8_t i_reg;
+}p0_r45_LINE2L_To_HPLOUT_Volume_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t LINE2LRouteToHPLOUTVolume                    :7;
+    uint8_t LINE2LRouteToHPLOUTEnable                    :1;
+  }s;
+  uint8_t i_reg;
+}p0_r45_LINE2L_To_HPLOUT_Volume_Control_t;
+#endif
+
+
+
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
+typedef union{
+  struct{
+    uint8_t PGALRouteToHPLOUTEnable                    :1;
+    uint8_t PGALRouteToHPLOUTVolume                    :7;
+  }s;
+  uint8_t i_reg;
+}p0_r46_PGA_L_To_HPLOUT_Volume_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t PGALRouteToHPLOUTVolume                    :7;
+    uint8_t PGALRouteToHPLOUTEnable                    :1;
+  }s;
+  uint8_t i_reg;
+}p0_r46_PGA_L_To_HPLOUT_Volume_Control_t;
+#endif
+
+
 
 
 #if TLV320AIC33_BIG_ENDIAN_CONDITION
@@ -1139,6 +1183,25 @@ typedef union{
   }s;
   uint8_t i_reg;
 }p0_r51_HPLOUT_Output_Level_Control_t;
+#endif
+
+
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
+typedef union{
+  struct{
+    uint8_t LINE2RRouteToHPROUTEnable                    :1;
+    uint8_t LINE2RRouteToHPROUTVolume                    :7;
+  }s;
+  uint8_t i_reg;
+}p0_r62_LINE2R_To_HPROUT_Volume_Control_t;
+#else
+typedef union{
+  struct{
+    uint8_t LINE2RRouteToHPROUTVolume                    :7;
+    uint8_t LINE2RRouteToHPROUTEnable                    :1;
+  }s;
+  uint8_t i_reg;
+}p0_r62_LINE2R_To_HPROUT_Volume_Control_t;
 #endif
 
 
@@ -1372,27 +1435,47 @@ typedef union{
 #endif
 
 
+typedef enum{
+	CODEC_CLKIN_uses_PLLDIV_OUT = 0,
+	CODEC_CLKIN_uses_CLKDIV_OUT = 1,
+}e_CODEC_CLKINSourceSel;
 
-
+#if TLV320AIC33_BIG_ENDIAN_CONDITION
+typedef union{
+  struct{
+    uint8_t i_MFPControl                                  			:6;
+    e_CODEC_CLKINSourceSel CODEC_CLKINSourceSelection     :2;
+  }s;
+  uint8_t i_reg;
+}p0_r101_Additional_GPIO_Control_t;
+#else
+typedef union{
+  struct{
+    e_CODEC_CLKINSourceSel CODEC_CLKINSourceSelection     :2;
+    uint8_t i_MFPControl                                  			:6;
+  }s;
+  uint8_t i_reg;
+}p0_r101_Additional_GPIO_Control_t;
+#endif
 
 
 typedef enum{
   CLKDIV_IN_uses_MCLK = 0,
   CLKDIV_IN_uses_GPIO2 = 1,
   CLKDIV_IN_uses_BCLK = 2
-}e_CLKDIV_INSourceSelection;
+}e_CLKDIV_INSourceSel;
 typedef enum{
   PLLCLK_IN_uses_MCLK = 0,
   PLLCLK_IN_uses_GPIO2 = 1,
   PLLCLK_IN_uses_BLCK = 2
-}e_PLLCLK_INSourceSelection;
+}e_PLLCLK_INSourceSel;
 
 #if TLV320AIC33_BIG_ENDIAN_CONDITION
 typedef union{
   struct{
-    e_CLKDIV_INSourceSelection
+    e_CLKDIV_INSourceSel
       CLKDIV_INSourceSelection                                  :2;
-    e_PLLCLK_INSourceSelection PLLCLK_INSourceSelection         :2;
+    e_PLLCLK_INSourceSel PLLCLK_INSourceSelection         :2;
     // 0b0000 -> 16 ; 0b0001 -> 17 ; 0b0010 -> 2 ; 0b0011 -> 3 ; 0b1111 -> 15
     uint8_t PLLClockDividerNValue                               :4;
   }s;
@@ -1403,8 +1486,8 @@ typedef union{
   struct{
     // 0b0000 -> 16 ; 0b0001 -> 17 ; 0b0010 -> 2 ; 0b0011 -> 3 ; 0b1111 -> 15
     uint8_t PLLClockDividerNValue                               :4;
-    e_PLLCLK_INSourceSelection PLLCLK_INSourceSelection         :2;
-    e_CLKDIV_INSourceSelection
+    e_PLLCLK_INSourceSel PLLCLK_INSourceSelection         :2;
+    e_CLKDIV_INSourceSel
       CLKDIV_INSourceSelection                                  :2;
   }s;
   uint8_t i_reg;
@@ -1413,12 +1496,31 @@ typedef union{
 #endif
 ///@}
 
+typedef enum{
+	loss_0_0db = 0,
+	loss_1_5db = 1,
+	loss_3_0db = 2,
+  loss_4_5db = 3,
+  loss_6_0db = 4,
+  loss_7_5db = 5,
+  loss_9_0db = 6,
+  loss_10_5db = 7,
+  loss_12_0db = 8,
+	disconnected = 15
+}e_ADCInputGain;
+
 
 #if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
 // This structure have meaning only if generic driver is enabled
 typedef struct{
-  // Headphones volume level in dB
+  // Headphones volume level in dB // actually DAC1 to HP to routing
   float f_headphones_volume_db;
+
+  // LINE2 L routing to HPLOUT
+  float f_line2l_to_hplout_db;
+
+  // LINE2 R routing to HPROUT
+  float f_line2r_to_hprout_db;
 
   // DAC volume level in dB
   float f_dac_volume_db;
@@ -1429,13 +1531,59 @@ typedef struct{
   // Digital interface master(BLCK,WCLK out)/slave(BLCK,WCLK in) mode
   uint8_t i_digital_interface_master_slave;
 
-  /* Digital interface data mode
-   * 0  - I2S ; 1 - DSP ; 2 - right justified ; 3 - left justified
-   */
+  // Digital interface data mode 0-I2S 1-DSP 2-right justified 3-left justified
   uint8_t i_digital_inteface_data_mode;
 
   // Word length (16, 20, 24, 32)
   uint8_t i_word_length;
+
+  // BCLK rate control
+  uint8_t i_bclk_rate_control;
+
+  // Audio serial data offset
+  uint8_t i_audio_serial_data_offset;
+
+  // CODEC_CLKINSourceSelection
+  e_CODEC_CLKINSourceSel e_codec_clkin_source;
+
+  // CLKDIV_INSourceSelection
+  e_CLKDIV_INSourceSel e_clkdiv_in_source;
+
+  // PLLCLK_INSourceSelection
+  e_PLLCLK_INSourceSel e_pllclk_in_source;
+
+  // PLL divider value
+  uint8_t i_pll_clock_divider_N_value;
+
+  // PLL control bit (enable pll)
+  uint8_t i_pll_enable;
+
+  // PLL Q value
+  uint8_t i_pll_q_value;
+
+  // PLL P value
+  uint8_t i_pll_p_value;
+
+  // PLL J value
+  uint8_t i_pll_j_value;
+
+  // PLL D value
+  uint16_t i_pll_d_value;
+
+  // PLL R value
+  uint8_t i_pll_r_value;
+
+  // Fsref setting
+  e_FsrefSetting e_fsref;
+
+  // ADC sample rate select
+  e_ADCandDACSampleRate e_adc_sample_rate;
+
+  // DAC sample rate select
+  e_ADCandDACSampleRate e_dac_sample_rate;
+
+  // ADC and DAC dual rate control
+  e_ADCDualRateControl e_adc_dac_dual_rate;
 
   // Headphone driver output
   uint8_t i_headphones_output_single_ended;
@@ -1452,8 +1600,20 @@ typedef struct{
   // ADC power
   uint8_t i_adc_power;
 
+  // HP_OUT power
+  uint8_t i_hp_out_power;
+
+  // HP_OUT mute
+  uint8_t i_hp_out_mute;
+
   // ADC gain dB
   float f_adc_gain_db;
+
+  // left DAC output switching control
+  uint8_t i_left_DAC_output;
+
+  // right DAC output switching control
+  uint8_t i_right_DAC_output;
 
   // MIC3R to ADC Right gain
   e_ADCInputGain e_mic3r_to_adc_right_gain;
@@ -1484,6 +1644,18 @@ typedef struct{
 
   // LINE1L to ADC Left gain
   e_ADCInputGain e_line1l_to_adc_left_gain;
+
+  // LINE2L bypass
+  uint8_t i_line2l_bypass_enable;
+
+  // LINE2R bypass
+  uint8_t i_line2r_bypass_enable;
+
+  // module power status register
+  uint8_t i_module_power_status_reg;
+
+  // ADC flag register
+  uint8_t i_adc_flag_reg;
 
 }tlv320aic33_virtual_reg_img_t;
 
@@ -1530,42 +1702,85 @@ typedef struct{
 
 //==========================| High level functions |===========================
 
+GD_RES_CODE tlv320aic33_init(void);
 
-//not accesible from uniprot
+//  clock settings
+
+GD_RES_CODE tlv320aic33_set_PLL_enable(uint8_t i_enable);
+GD_RES_CODE tlv320aic33_set_PLL_Q_value(uint8_t i_q_val);
+GD_RES_CODE tlv320aic33_set_PLL_P_value(uint8_t i_p_val);
+GD_RES_CODE tlv320aic33_set_PLL_J_value(uint8_t i_j_val);
+GD_RES_CODE tlv320aic33_set_PLL_D_value(uint16_t i_d_val);
+GD_RES_CODE tlv320aic33_set_Fsref(e_FsrefSetting e_setting);
+GD_RES_CODE tlv320aic33_set_PLL_R_value(uint8_t i_r_val);
+GD_RES_CODE tlv320aic33_set_CODEC_CLKIN_source(e_CODEC_CLKINSourceSel e_source);
+GD_RES_CODE tlv320aic33_set_CLKDIV_IN_source(e_CLKDIV_INSourceSel e_source);
+GD_RES_CODE tlv320aic33_set_PLLCLK_IN_source(e_PLLCLK_INSourceSel e_source);
+GD_RES_CODE tlv320aic33_set_PLL_clock_divider_N_value(uint8_t i_pll_divider);
+
+//  digital interface settings
+
+GD_RES_CODE tlv320aic33_set_digital_interface_mode(uint8_t i_master);
+GD_RES_CODE tlv320aic33_set_data_interface(e_AudioSerialDataInterface e_mode);
+GD_RES_CODE tlv320aic33_set_word_length(uint8_t i_word_length);
+GD_RES_CODE tlv320aic33_set_BCLK_rate(e_BitClockRateControl e_bclk_rate);
+GD_RES_CODE tlv320aic33_set_data_offset(uint8_t i_offset);
+
+//  ADC and DAC settings
+
+GD_RES_CODE tlv320aic33_set_ADC_power(uint8_t enable_ADCs);
+GD_RES_CODE tlv320aic33_set_DAC_power(uint8_t enable_DACs);
+GD_RES_CODE tlv320aic33_set_ADC_mute(uint8_t i_mute_flag);
+GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag);
+GD_RES_CODE tlv320aic33_set_ADC_sample_rate(e_ADCandDACSampleRate e_samplerate);
+GD_RES_CODE tlv320aic33_set_DAC_sample_rate(e_ADCandDACSampleRate e_samplerate);
+GD_RES_CODE tlv320aic33_set_ADC_and_DAC_dual_rate(uint8_t i_enable);
+GD_RES_CODE tlv320aic33_set_DAC_play_input_data(uint8_t i_play_stereo);//todo move to higher layer
+GD_RES_CODE tlv320aic33_set_DAC_left_output_routing(uint8_t i_dac_output);
+GD_RES_CODE tlv320aic33_set_DAC_right_output_routing(uint8_t i_dac_output);
+
+
+//  signal routing
+
+GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE2_L(e_ADCInputGain e_gain);
+GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE2_R(e_ADCInputGain e_gain);
 GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE1_L(e_ADCInputGain e_gain);
 GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE1_R(e_ADCInputGain e_gain);
-GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE2_L(e_ADCInputGain e_gain);
-//ADC L from LINE2 R not supported
 GD_RES_CODE tlv320aic33_set_ADC_L_from_MIC3_L(e_ADCInputGain e_gain);
 GD_RES_CODE tlv320aic33_set_ADC_L_from_MIC3_R(e_ADCInputGain e_gain);
 GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE1_L(e_ADCInputGain e_gain);
 GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE1_R(e_ADCInputGain e_gain);
-//ADC R from LINE2 L not supported
-GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE2_R(e_ADCInputGain e_gain);
 GD_RES_CODE tlv320aic33_set_ADC_R_from_MIC3_L(e_ADCInputGain e_gain);
 GD_RES_CODE tlv320aic33_set_ADC_R_from_MIC3_R(e_ADCInputGain e_gain);
+//ADC R from LINE2 L and ADC L from LINE2 R not supported
+GD_RES_CODE tlv320aic33_set_LINE2L_bypass(uint8_t i_enable);
+GD_RES_CODE tlv320aic33_set_LINE2R_bypass(uint8_t i_enable);
+GD_RES_CODE tlv320aic33_set_LINE2L_to_HPLOUT(float f_volume_dB);
+GD_RES_CODE tlv320aic33_set_LINE2R_to_HPROUT(float f_volume_dB);
 
-//accesible from uniprot
-GD_RES_CODE tlv320aic33_init(void);
-GD_RES_CODE tlv320aic33_set_ADC_gain_dB(float f_gain);
-GD_RES_CODE tlv320aic33_set_ADC_power(uint8_t enable_ADCs);
-GD_RES_CODE tlv320aic33_set_ADC_mute(uint8_t i_mute_flag);
-GD_RES_CODE tlv320aic33_set_digital_interface_as_master(uint8_t i_master);
-GD_RES_CODE tlv320aic33_set_data_interface_mode(
-    e_AudioSerialDataInterfaceTransferMode e_mode);
-GD_RES_CODE tlv320aic33_set_word_length(uint8_t i_word_length);
-GD_RES_CODE tlv320aic33_set_DAC_play_input_data(uint8_t i_play_stereo);
+// line out and high power output control
+GD_RES_CODE tlv320aic33_set_HP_out_power(uint8_t i_power);
+GD_RES_CODE tlv320aic33_set_HP_out_mute(uint8_t i_mute);
+
+
+//  gain and volume settings
+
+// this is actually routing DACL1 to HPLOUT and DACR1 to HPROUT //todo rename
 GD_RES_CODE tlv320aic33_set_headphones_volume_dB(float f_volume);
-GD_RES_CODE tlv320aic33_set_headphones_single_ended(uint8_t i_single_ended);
-GD_RES_CODE tlv320aic33_set_DAC_power(uint8_t enable_DACs);
-GD_RES_CODE tlv320aic33_set_DAC_mute(uint8_t i_mute_flag);
-GD_RES_CODE tlv320aic33_set_DAC_volume_dB(float f_volume);
-GD_RES_CODE tlv320aic33_set_CLKDIV_IN_source(
-    e_CLKDIV_INSourceSelection e_source);
-GD_RES_CODE tlv320aic33_set_PLLCLK_IN_source(
-    e_PLLCLK_INSourceSelection e_source);
 
-GD_RES_CODE tlv320aic33_get_headphones_volume_db(float *p_f_volume);
+GD_RES_CODE tlv320aic33_get_headphones_volume_db(float *p_f_volume); //not completed
+GD_RES_CODE tlv320aic33_set_DAC_volume_dB(float f_volume);
+GD_RES_CODE tlv320aic33_set_ADC_gain_dB(float f_gain);
+
+//  another high level functions
+
+GD_RES_CODE tlv320aic33_get_ADC_flag_register(void);
+GD_RES_CODE tlv320aic33_get_module_power_status(void);
+
+GD_RES_CODE tlv320aic33_set_headphones_single_ended(uint8_t i_single_ended);
+//this function is meaningless because headphones can by connected only as
+//single ended and that is default setting of audio codec
+
 //===========================| Mid level functions |===========================
 GD_RES_CODE tlv320aic33_reset(void);
 GD_RES_CODE tlv320aic33_set_output_driver_power_on_delay(
@@ -1574,6 +1789,7 @@ GD_RES_CODE tlv320aic33_set_driver_ramp_up_step_time(
     e_DriverRampUpStepTimingControl e_time);
 GD_RES_CODE tlv320aic33_set_DAC_volume(uint8_t i_volume);
 GD_RES_CODE tlv320aic33_set_headphones_volume(uint8_t i_volume);
+
 //===========================| Low level functions |===========================
 GD_RES_CODE tlv320aic33_write_data(
     const uint8_t i_register_number,
@@ -1581,6 +1797,5 @@ GD_RES_CODE tlv320aic33_write_data(
 GD_RES_CODE tlv320aic33_read_data(
     uint8_t i_register_number,
     uint8_t *p_data);
-
 
 #endif

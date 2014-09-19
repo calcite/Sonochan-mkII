@@ -3000,14 +3000,14 @@ inline GD_RES_CODE brd_drv_TLV_default(void)
   }
 
   // Set codec as slave
-  e_status = tlv320aic33_set_digital_interface_as_master(0);
+  e_status = tlv320aic33_set_digital_interface_mode(0);
   if(e_status != GD_SUCCESS)
   {
     return e_status;
   }
 
   // Set data interface to I2S
-  e_status = tlv320aic33_set_data_interface_mode(
+  e_status = tlv320aic33_set_data_interface(
       serial_data_bus_uses_I2S_mode);
   if(e_status != GD_SUCCESS)
   {
