@@ -248,6 +248,12 @@ uint16_t uac1_usb_desc_get_PID(void);
 #define FORMAT_NB_CHANNELS              0x02  // Two Channels
 #define FORMAT_FRAME_SIZE               0x03  // 3 bytes per audio sample
 #define FORMAT_BIT_RESOLUTION           0x18  // 24 bits per sample
+
+/* [Martin] PLEASE IF UPDATE VALUES HERE, ALSO LOOK TO
+ * "uac1_usb_descriptors.c" TO STRUCTURE
+ * "S_usb_user_configuration_descriptor". DO NOT FORGET ADD NEW SAMPLING
+ * FREQUENCY TO THIS STRUCTURE (JUST USE FIND FUNCTION ;] )
+ */
 #define FORMAT_SAMPLE_FREQ_NB           0x08  // 8 frequency supported
 #define FORMAT_LSBYTE_SAMPLE_FREQ_8     8000    // 8 kHz
 #define FORMAT_LSBYTE_SAMPLE_FREQ_11025 11025   // 11 025 Hz
