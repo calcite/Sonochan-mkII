@@ -129,9 +129,15 @@ uint8_t usb_desc_get_number_from_product_name(void);
 #define DEVICE_PROTOCOL       0x01          //! IAD Device
 #define EP_CONTROL_LENGTH     64
 
-#define AUDIO_VENDOR_ID      0x16d0    //!  Audio device
+//[Martin] Old SDR-Widget values
+//#define AUDIO_VENDOR_ID      0x16d0    //!  Audio device
 //#define AUDIO_PRODUCT_ID_1    0x0761    //!  UAC1 PID
+
+//[Martin] New ALPS VID
+#define AUDIO_VENDOR_ID       0x0433
 #define AUDIO_PRODUCT_ID_1    0x0763    //!  Sonochan mk II UAC1 PID (default)
+
+// Old SDR-Widget UAC2 value
 #define AUDIO_PRODUCT_ID_2    0x0762    //!  UAC2 PID
 
 #define RELEASE_NUMBER        0x1000

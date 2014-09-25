@@ -295,7 +295,21 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_auto_tune
     },
     {
-#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_AUTO_TUNE+1
+#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_AUTO_TUNE+1
+      BRD_DRV_CMD_DIG_AUD_INTERFACE,
+      "Digital audio interface mode",
+      "NOT IMPLEMENTED! ; 0 - I2S ; 1 - DSP ; 2 - Left justified ; 3 - Right justified",
+      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
+      {.data_uint32 = 0},
+      {.data_uint32 = 3},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 3},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_dig_aud_mode,
+      brd_drv_set_digital_audio_interface_mode
+    },
+    {
+#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_DIG_AUD_INTERFACE+1
       BRD_DRV_CMD_RX_FSYNC_EDGE,
       "RX FSYNC edge",
       "RX FSYNC sync edge ; 0 - falling ; 1 - rising ; 2 - default",
@@ -351,24 +365,10 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_BCLK_TX_edge
     },
     {
-#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_TX_BCLK_EDGE+1
-      BRD_DRV_CMD_DIG_AUD_INTERFACE,
-      "Digital audio interface mode",
-      "NOT TESTED! ; 0 - I2S ; 1 - DSP ; 2 - Left justified ; 3 - Right justified",
-      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
-      {.data_uint32 = 0},
-      {.data_uint32 = 3},
-      uint32_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 3},
-      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_dig_aud_mode,
-      brd_drv_set_digital_audio_interface_mode
-    },
-    {
-#define BRD_DRV_CMD_WORD_SIZE   BRD_DRV_CMD_DIG_AUD_INTERFACE+1
+#define BRD_DRV_CMD_WORD_SIZE           BRD_DRV_CMD_TX_BCLK_EDGE+1
       BRD_DRV_CMD_WORD_SIZE,
       "Set word size",
-      "NOT TESTED! Data size in bits. Usually 16, 20, 24 and 32",
+      "Data size in bits. Usually 16, 20, 24 and 32",
       uint8_type,
       {.data_uint8 = 1},
       {.data_uint8 = 32},
@@ -457,7 +457,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 const gd_metadata BRD_DRV_metadata =
 {
         BRD_DRV_MAX_CMD_ID,              // Max CMD ID
-        "Board driver for Sonochan mkII v0.3",     // Description
+        "Board driver for Sonochan mkII v0.4.1",     // Description
         (gd_config_struct*)&BRD_DRV_config_table[0],
         0x0F    // Serial number (0~255)
 };
@@ -498,6 +498,8 @@ void brd_drv_process_mute_signal(void);
 void brd_drv_process_rst_i2s_button(void);
 
 void brd_drv_process_rst_i2s_signal(void);
+
+void brd_drv_clean_up_error_msg(void);
 
 //=============================| FreeRTOS stuff |==============================
 // If RTOS support is enabled, create this
@@ -792,10 +794,8 @@ void brd_drv_task(void)
   // Error/warning/info messages
   const char msg_tlv_failed_set_headphone_volume_dB[] =
       BRD_DRV_TLV_FAILED_SET_HEADPHONE_VOL_DB;
-  const char msg_con_vol_low[] = BRD_DRV_CON_VOL_LOW;
   const char msg_con_vol_save[] = BRD_DRV_CON_VOL_SAVE;
   const char msg_con_vol_high[] = BRD_DRV_CON_VOL_HIGH;
-  const char msg_con_not_powered[] = BRD_DRV_CON_NOT_POWERED;
 
 
   // Simple time counter
@@ -837,8 +837,8 @@ void brd_drv_task(void)
   volatile avr32_adc_t *p_adc;
   p_adc = (avr32_adc_t*)BDR_DRV_ADC_ADDRESS;
 
-  // Pointer to GPIO memory
-  volatile avr32_gpio_port_t *gpio_port;
+  // Pointer to GPIO memory (if needed, then uncomment following line)
+  //volatile avr32_gpio_port_t *gpio_port;
 
 
   /* Check if all ADC conversions are done and if there is "time" for some
@@ -891,8 +891,11 @@ void brd_drv_task(void)
           // Print do debug output and LCD
           brd_drv_send_error_msg(&msg_tlv_failed_set_headphone_volume_dB[0],1,1);
         }
-        // Show volume value
-        brd_drv_show_volume();
+        // Show volume value only if there is not any problem
+        if(i_error_occurred == 0)
+        {
+          brd_drv_show_volume();
+        }
       }
     }
     else // if(i_actual_volume > i_saved_volume_value)
@@ -908,8 +911,11 @@ void brd_drv_task(void)
         {
           brd_drv_send_error_msg(&msg_tlv_failed_set_headphone_volume_dB[0],1,1);
         }
-        // Show volume value
-        brd_drv_show_volume();
+        // Show volume value only if there is not any problem
+        if(i_error_occurred == 0)
+        {
+          brd_drv_show_volume();
+        }
       }
     }// Test if volume value has been changed
 
@@ -924,8 +930,7 @@ void brd_drv_task(void)
     // Check CON_VOLTAGE value
     if(i_voltage_connector_side >= BRD_DRV_ADC_SAVE_VOL_MIN)
     {
-      // Power off or very low voltage. Do not scan mute and reset_i2s signals
-      // Check if state is different and not high voltage
+      // Power off or very low voltage.
       if((e_con_vol != brd_drv_con_low_vol) &&
          (e_con_vol != brd_drv_con_high_vol))
       {
@@ -933,14 +938,19 @@ void brd_drv_task(void)
         e_con_vol = brd_drv_con_low_vol;
 
         // Send message
-        brd_drv_send_msg(&msg_con_vol_low[0], 1, 0, -1);
-
+        brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CON_NOT_POWERED,1,1);
         // Nothing more to do
-      }// Check if state is different
+      }// Low voltage
     }// Check CON_VOLTAGE value
     else if(i_voltage_connector_side >BRD_DRV_ADC_HIGH_VOL_MIN)
     {
       // Connector side is powered and voltage is in save area
+      // Check if previous state was low voltage. If yes, then delete error
+      if(e_con_vol == brd_drv_con_low_vol)
+      {
+        brd_drv_clean_up_error_msg();
+      }
+
       // Check if state is not high voltage (previous state) and save voltage
       if((e_con_vol != brd_drv_con_high_vol) &&
          (e_con_vol != brd_drv_con_save_vol))
@@ -980,32 +990,6 @@ void brd_drv_task(void)
 
 
     //=============================| Process signals |=========================
-    // Process only if connector side is powered
-    if((e_con_vol == brd_drv_con_save_vol) ||
-       (e_con_vol == brd_drv_con_high_vol))
-    {
-      // Mute signal - done after anyway
-      //brd_drv_process_mute_signal();
-
-      // Reset signal - done after anyway
-      //brd_drv_process_rst_i2s_signal();
-    }
-    // Process when connector side is not powered
-    if(e_con_vol == brd_drv_con_low_vol)
-    {
-      // Load button values
-      uint8_t i_mute_btn;
-      uint8_t i_rst_i2s_btn;
-      BRD_DRV_IO_READ(i_mute_btn, BRD_DRV_MUTE_BTN_PIN);
-      BRD_DRV_IO_READ(i_rst_i2s_btn, BRD_DRV_RESET_I2S_BTN_PIN);
-
-      if(i_mute_btn != 0)
-      {
-        // Mute button pressed - write to LCD info
-        brd_drv_send_msg(&msg_con_not_powered[0],0,1,
-            BRD_DRV_LCD_LINE_INFO_MSG);
-      }
-    }
     // Anyway process mute button. Maybe user set up volume too high
     brd_drv_process_mute_button();
 
@@ -3274,7 +3258,6 @@ inline void brd_drv_process_rst_i2s_button(void)
   // Error/warning/info messages
   const char msg_rst_i2s_btn_pressed[] =  BRD_DRV_MSG_RST_I2S_BTN_PRESSED;
   const char msg_rst_i2s_btn_released[] = BRD_DRV_MSG_RST_I2S_BTN_RELEASED;
-  const char msg_rst_i2s_err_cleared[] =  BRD_DRV_MSG_ERROR_CLEANED;
 
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
@@ -3314,21 +3297,8 @@ inline void brd_drv_process_rst_i2s_button(void)
 
     if(i_time < BRD_DRV_SHORT_PRESS)
     {
-      // Short press - just clean LCD
-      LCD_5110_clear();
-      brd_drv_draw_logo();
-      brd_drv_show_FSYNC_freq(BRD_DRV_LCD_LINE_FSYNC_FREQ);
-      brd_drv_show_MCLK_freq(BRD_DRV_LCD_LINE_MCLK_FREQ);
-      brd_drv_show_BCLK_ovrsampling(BRD_DRV_LCD_LINE_BCLK_OVRSAMPLING);
-      brd_drv_show_volume();
-
-      // Turn off ERROR_SIG LED
-      BRD_DRV_IO_LOW(BRD_DRV_ERROR_SIG_PIN);
-
-      // Set number of errors back to zero
-      i_error_occurred = 0;
-
-      brd_drv_send_msg(&msg_rst_i2s_err_cleared[0], 1, 0, -1);
+      // Short press - just clean LCD, show logo and so on
+      brd_drv_clean_up_error_msg();
     }// Short button press
     else
     {
@@ -3399,3 +3369,25 @@ inline void brd_drv_process_rst_i2s_signal(void)
   }// Check if pin is set as input
 }
 
+
+
+inline void brd_drv_clean_up_error_msg(void)
+{
+  // Pointer to GPIO memory
+  volatile avr32_gpio_port_t *gpio_port;
+
+  LCD_5110_clear();
+  brd_drv_draw_logo();
+  brd_drv_show_FSYNC_freq(BRD_DRV_LCD_LINE_FSYNC_FREQ);
+  brd_drv_show_MCLK_freq(BRD_DRV_LCD_LINE_MCLK_FREQ);
+  brd_drv_show_BCLK_ovrsampling(BRD_DRV_LCD_LINE_BCLK_OVRSAMPLING);
+  brd_drv_show_volume();
+
+  // Turn off ERROR_SIG LED
+  BRD_DRV_IO_LOW(BRD_DRV_ERROR_SIG_PIN);
+
+  // Set number of errors back to zero
+  i_error_occurred = 0;
+
+  brd_drv_send_msg(BRD_DRV_MSG_INFO_ERROR_CLEANED, 1, 0, -1);
+}

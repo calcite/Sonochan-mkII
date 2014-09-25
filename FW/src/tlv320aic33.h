@@ -48,7 +48,7 @@
  * Options: 0 (disabled) or 1 (enabled). When enabled, then FreeRTOS features\n
  * are enabled.
  */
-#define TLV320AIC33_SUPPORT_RTOS             0
+#define TLV320AIC33_SUPPORT_RTOS             1
 
 /**
  * \brief Allow create mutex mutexI2C when TLV320AIC33_init is called.
