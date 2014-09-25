@@ -629,10 +629,6 @@ typedef struct{
 #define BRD_DRV_LCD_WRITE_FAIL                  \
   {"Can not write to LCD\n"}
 
-/// Voltage on connector side is too low or powered off
-#define BRD_DRV_CON_VOL_LOW                     \
-  {"Con: low voltage\n"}
-
 /// Voltage on connector side in save range
 #define BRD_DRV_CON_VOL_SAVE                    \
   {"Con: save voltage\n"}
@@ -674,8 +670,8 @@ typedef struct{
   {"MUTE: falling edge\n"}
 
 /// Info that connector is not powered so can not react for buttons
-#define BRD_DRV_CON_NOT_POWERED                 \
-  {"Connector side is not powered\n"}
+#define BRD_DRV_MSG_ERR_CON_NOT_POWERED         \
+  "Connector side is not powered\n"
 
 /// Error message was cleaned from LCD
 #define BRD_DRV_MSG_ERR_MSG_CLEARED             \
@@ -718,8 +714,8 @@ typedef struct{
   {"RESET_I2S_BTN released\n"}
 
 /// Error message was removed
-#define BRD_DRV_MSG_ERROR_CLEANED               \
-  {"ERROR message deleted\n\n\n"}
+#define BRD_DRV_MSG_INFO_ERROR_CLEANED          \
+  "ERROR message deleted\n\n\n"
 
 /// When setting MCLK oversampling value and PLL value is too high
 #define BRD_DRV_MSG_ERR_PLL_HIGH_FREQ           \
