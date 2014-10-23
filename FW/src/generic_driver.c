@@ -9,10 +9,10 @@
  * \a http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=93874
  *
  * Created  26.08.2013\n
- * Modified 12.05.2014
+ * Modified 21.10.2014
  *
- * \version 1.3.1
- * \author Martin Stejskal
+ * \version 1.3
+ * \author Martin Stejskal, Tomas Bajus
  */
 
 #include "generic_driver.h"
@@ -72,7 +72,11 @@ GD_DATA_VALUE gd_if_big_endian_convert_little_to_big_endian(
  */
 GD_RES_CODE gd_void_function(void)
 {
-  return GD_SUCCESS;
+  //usart message
+#ifdef usart_debug_msg
+	usart_tx_text("gd_void_function\n");
+#endif
+	return GD_SUCCESS;
 }
 
 
@@ -135,99 +139,42 @@ GD_RES_CODE gd_get_setting(const gd_metadata *p_metadata,
 
   /* Create pointer to read only (usually flash) memory
    */
-  uint8_t *p_address_to_flash;
+  uint8_t *p_add_flash;
 
   // Create pointer to SRAM (point to characters in descriptor)
-  uint8_t *p_address_to_SRAM;
+  uint8_t *p_add_SRAM;
 
 
 
   // Write name
-  // Temporary value
-  uint8_t c_tmp;
 
   // Set flash pointer to begin of string descriptor
-  p_address_to_flash =(uint8_t *)
+  p_add_flash =(uint8_t *)
       &(p_flash->c_name[0]);
   // Set SRAM pointer to begin of string descriptor
-  p_address_to_SRAM = (uint8_t *) &(p_config_table->c_name[0]);
+  p_add_SRAM = (uint8_t *) &(p_config_table->c_name[0]);
 
-  /* Temporary counter for case, that descriptor on flash will be longer
-   * than GD_MAX_STRING_SIZE - in that case just stop reading from
-   * flash and as last character will be written to SRAM as NULL
-   */
-  uint8_t i_tmp_cnt = 1;
-  while(1)
-  {
-    // Copy string data until NULL character found
-
-    // Get character
-    c_tmp = gd_read_byte_ro_mem(p_address_to_flash++);
-    // Copy it
-    *(p_address_to_SRAM++) = c_tmp;
-
-    // And check for NULL character
-    if( c_tmp == 0x00 )
-    {
-      break;
-    }
-
-
-    // Increase value of temporary counter
-    i_tmp_cnt++;
-    // Test, if we are on the end of string array in SRAM
-    if(i_tmp_cnt == GD_MAX_STRING_SIZE)
-    {
-      // If we have only last B free, write NULL character
-      *(p_address_to_SRAM) = 0x00;
-      // And jump out of the cycle
-      break;
-    }
-  }
+  #ifdef __AVR_ARCH__
+  strlcpy_P(p_add_SRAM,p_add_flash,GD_MAX_STRING_SIZE);
+  #else   // Else different architecture
+  strlcpy(p_add_SRAM,p_add_flash,GD_MAX_STRING_SIZE);
+  #endif
 
 
   // Write descriptor
 
   // Set flash pointer to begin of string descriptor
-  p_address_to_flash =(uint8_t *)
+  p_add_flash =(uint8_t *)
       &(p_flash->c_descriptor[0]);
   // Set SRAM pointer to begin of string descriptor
-  p_address_to_SRAM = (uint8_t *) &(p_config_table->c_descriptor[0]);
-
-  /* Temporary counter for case, that descriptor on flash will be longer
-   * than GD_MAX_DESCRIPTOR_SIZE - in that case just stop reading from
-   * flash and as last character will be written to SRAM NULL
-   */
-  i_tmp_cnt = 1;
-  while(1)
-  {
-    // Copy string data until NULL character found
-
-    // Get character
-    c_tmp = gd_read_byte_ro_mem(p_address_to_flash++);
-    // Copy it
-    *(p_address_to_SRAM++) = c_tmp;
-
-    // And check for NULL character
-    if( c_tmp == 0xFF )
-    {
-      break;
-    }
+  p_add_SRAM = (uint8_t *) &(p_config_table->c_descriptor[0]);
 
 
-    // Increase value of temporary counter
-    i_tmp_cnt++;
-    // Test, if we are on the end of string array in SRAM
-    if(i_tmp_cnt == GD_MAX_STRING_SIZE)
-    {
-      // If we have only last B free, write NULL character
-      *(p_address_to_SRAM) = 0x00;
-      // And jump out of the cycle
-      break;
-    }
-  }
-
-
+  #ifdef __AVR_ARCH__
+  strlcpy_P(p_add_SRAM,p_add_flash,GD_MAX_STRING_SIZE);
+  #else   // Else different architecture
+  strlcpy(p_add_SRAM,p_add_flash,GD_MAX_STRING_SIZE);
+  #endif
 
 
   // Now get input data type
@@ -288,6 +235,18 @@ GD_RES_CODE gd_get_setting(const gd_metadata *p_metadata,
       p_config_table->e_out_data_type);
 
 
+#ifdef __AVR_ARCH__								// not implemented in sonochan
+  // Copy 32 bits of default value
+  p_config_table->def_value.data_uint32 =
+      gd_read_dword_ro_mem(&(p_flash->def_value.data_uint32));
+  // Check if system is Big endian (evil)
+  p_config_table->def_value = gd_if_big_endian_convert_big_to_little_endian(
+      i_little_endian,
+      p_config_table->def_value,
+      p_config_table->e_out_data_type);
+#endif
+
+
 
 
   /* Copy pointer to output value and function.
@@ -346,14 +305,16 @@ GD_RES_CODE gd_set_setting(  const gd_metadata  *p_metadata,
                 uint16_t       i_cmd_ID,
                 GD_DATA_VALUE    i_data)
 {
-  // First check i_cmd_ID
+	// First check i_cmd_ID
   // Check if ID is not higher than max ID
   // Note: "(*p_metadata).i_max_cmd_ID" is same
-  if((i_cmd_ID > p_metadata->i_max_cmd_ID) ||
-    (i_cmd_ID > 0xFFFE)
-  )
+  if(  (i_cmd_ID > p_metadata->i_max_cmd_ID) || (i_cmd_ID > 0xFFFE)  )
   {
-    return GD_INCORRECT_CMD_ID;
+    //usart message - CMD ID
+			#ifdef usart_debug_msg
+  		usart_tx_text("set_setting\n");
+			#endif
+  	return GD_INCORRECT_CMD_ID;
   }
 
   // Set pointer to "right" configure table on flash (device configure table)
@@ -502,8 +463,6 @@ GD_RES_CODE gd_set_setting(  const gd_metadata  *p_metadata,
   {
     return GD_INCORRECT_CMD_ID;
   }
-
-
 
   // Else data type is not defined here -> fail
   return GD_FAIL;
