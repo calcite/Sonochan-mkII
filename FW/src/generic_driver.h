@@ -9,16 +9,19 @@
  * \a http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=93874
  *
  * Created  26.08.2013\n
- * Modified 12.05.2014
+ * Modified 21.10.2014
  *
- * \version 1.3.1
- * \author Martin Stejskal
+ * \version 1.3
+ * \author Martin Stejskal, Tomas Bajus
  */
 
 
 #ifndef _GENERIC_DRIVER_H_
 #define _GENERIC_DRIVER_H_
 
+//usart debug messages enable //not implemented in sonochan
+//#define usart_debug_msg
+//#include "usart.h"
 
 //================================| Includes |=================================
 #include <inttypes.h>
@@ -28,14 +31,16 @@
 #ifdef __AVR_ARCH__
 #include <avr/pgmspace.h>
 #endif
+
+
 //===============================| Definitions |===============================
 /**
  * \brief Maximal size of text array for descriptors
  *
- * Due to SRAM limitations it is recommended set this value to 80. However on\n
+ * Due to SRAM limitations it is recommended set this value to 60. However on\n
  * more powerful AVR it could be more.
  */
-#define GD_MAX_STRING_SIZE    100
+#define GD_MAX_STRING_SIZE    80
 
 //===============================| Structures |================================
 #ifndef GD_RES_CODE_DEFINED
@@ -79,6 +84,7 @@ typedef enum{
   float_type = 10, //!< float_type Float
 
   group_type = 11, //!< group_type Dummy command. Just metadata for group
+
 } GD_DATA_TYPE;
 
 
@@ -128,8 +134,12 @@ typedef struct{
   GD_DATA_TYPE  e_out_data_type;  // Select output data type
   GD_DATA_VALUE u_out_min_value;  // Minimal output value
   GD_DATA_VALUE u_out_max_value;  // Maximal output value
-  GD_DATA_VALUE *p_out_value;    // Pointer to actual (output) value
 
+  #ifdef __AVR_ARCH__								// not implemented in sonochan
+  GD_DATA_VALUE def_value;				// Default value
+	#endif
+
+  GD_DATA_VALUE *p_out_value;    // Pointer to actual (output) value
   GD_RES_CODE   (*p_funtion)(void);  // Pointer to function
 }gd_config_struct;
 

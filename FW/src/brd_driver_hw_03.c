@@ -158,7 +158,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 #define BRD_DRV_CMD_FSYNC_DIR   BRD_DRV_CMD_BCLK_DIR+1
       BRD_DRV_CMD_FSYNC_DIR,
       "FSYNC role and direction",
-      "0 - slave, FSYNC (word clock) is input ; 1 - master, FSYNC (word clock) is output ; 2 - hi-z",
+      "0-slave, FSYNC (word clock) is input; 1-master, FSYNC is output; 2-hi-z",
       uint32_type,      // Cause it is enum and 32 bit system
       {.data_uint32 = 0},
       {.data_uint32 = 2},
@@ -298,7 +298,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 #define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_AUTO_TUNE+1
       BRD_DRV_CMD_DIG_AUD_INTERFACE,
       "Digital audio interface mode",
-      "NOT IMPLEMENTED! ; 0 - I2S ; 1 - DSP ; 2 - Left justified ; 3 - Right justified",
+      "NOT IMPLEMENTED! ; 0-I2S ; 1-DSP ; 2-Left justified ; 3-Right justified",
       uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
       {.data_uint32 = 0},
       {.data_uint32 = 3},
