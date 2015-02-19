@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  23.04.2014\n
- * Modified: 19.09.2014
+ * Modified: 08.12.2014
  *
- * \version 0.4.1
+ * \version 0.4.2
  * \author  Martin Stejskal
  */
 

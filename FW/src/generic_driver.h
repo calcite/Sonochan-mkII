@@ -8,10 +8,10 @@
  * memory. If not, please take a look at\n
  * \a http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=93874
  *
- * Created  26.08.2013\n
- * Modified 21.10.2014
+ * Created:  26.08.2013\n
+ * Modified: 08.12.2014
  *
- * \version 1.3
+ * \version 1.4
  * \author Martin Stejskal, Tomas Bajus
  */
 
@@ -19,13 +19,11 @@
 #ifndef _GENERIC_DRIVER_H_
 #define _GENERIC_DRIVER_H_
 
-//usart debug messages enable //not implemented in sonochan
-//#define usart_debug_msg
-//#include "usart.h"
-
 //================================| Includes |=================================
 #include <inttypes.h>
 #include <stdio.h>      // Some architectures have there defined "uint" type
+
+#include <string.h>     // Because of "strlcpy" function
 
 // Include only if architecture is AVR8
 #ifdef __AVR_ARCH__
@@ -135,8 +133,9 @@ typedef struct{
   GD_DATA_VALUE u_out_min_value;  // Minimal output value
   GD_DATA_VALUE u_out_max_value;  // Maximal output value
 
-  #ifdef __AVR_ARCH__								// not implemented in sonochan
-  GD_DATA_VALUE def_value;				// Default value
+  ///\todo Add support for default value
+  #ifdef __AVR_ARCH__  // not implemented in sonochan
+  GD_DATA_VALUE def_value;        // Default value
 	#endif
 
   GD_DATA_VALUE *p_out_value;    // Pointer to actual (output) value

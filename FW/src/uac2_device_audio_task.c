@@ -92,7 +92,7 @@
 //_____ D E C L A R A T I O N S ____________________________________________
 
 
-static U32  index, spk_index;
+static U32  index_i, spk_index;
 static U16  old_gap = SPK_BUFFER_SIZE;
 static U8 audio_buffer_out, spk_buffer_in;  // the ID number of the buffer used for sending out
                       // to the USB and reading from USB
@@ -105,7 +105,7 @@ static U8 ep_audio_in, ep_audio_out, ep_audio_out_fb;
 //!
 void uac2_device_audio_task_init(U8 ep_in, U8 ep_out, U8 ep_out_fb)
 {
-  index     =0;
+  index_i     =0;
   audio_buffer_out = 0;
   spk_index = 0;
   spk_buffer_in = 0;
@@ -183,7 +183,7 @@ void uac2_device_audio_task(void *pvParameters)
         audio_buffer_out = 0;
         spk_buffer_in = 0;
         spk_buffer_out = 0;
-        index = 0;
+        index_i = 0;
 
 
         // Wait for the next frame synchronization event
@@ -227,11 +227,11 @@ void uac2_device_audio_task(void *pvParameters)
             num_remaining = pdca_channel->tcr;
             if (audio_buffer_in != audio_buffer_out) {
               // AK and USB using same buffer
-              if ( index < (AUDIO_BUFFER_SIZE - num_remaining)) gap = AUDIO_BUFFER_SIZE - num_remaining - index;
-              else gap = AUDIO_BUFFER_SIZE - index + AUDIO_BUFFER_SIZE - num_remaining + AUDIO_BUFFER_SIZE;
+              if ( index_i < (AUDIO_BUFFER_SIZE - num_remaining)) gap = AUDIO_BUFFER_SIZE - num_remaining - index_i;
+              else gap = AUDIO_BUFFER_SIZE - index_i + AUDIO_BUFFER_SIZE - num_remaining + AUDIO_BUFFER_SIZE;
             } else {
               // usb and pdca working on different buffers
-              gap = (AUDIO_BUFFER_SIZE - index) + (AUDIO_BUFFER_SIZE - num_remaining);
+              gap = (AUDIO_BUFFER_SIZE - index_i) + (AUDIO_BUFFER_SIZE - num_remaining);
             }
 
             if ( gap < AUDIO_BUFFER_SIZE/2 ) {
@@ -247,13 +247,13 @@ void uac2_device_audio_task(void *pvParameters)
                  // Fill endpoint with samples
               if (!mute) {
                 if (audio_buffer_out == 0) {
-                  sample_LSB = audio_buffer_0[index+IN_LEFT];
-                  sample_SB = audio_buffer_0[index+IN_LEFT] >> 8;
-                  sample_MSB = audio_buffer_0[index+IN_LEFT] >> 16;
+                  sample_LSB = audio_buffer_0[index_i+IN_LEFT];
+                  sample_SB = audio_buffer_0[index_i+IN_LEFT] >> 8;
+                  sample_MSB = audio_buffer_0[index_i+IN_LEFT] >> 16;
                 } else {
-                  sample_LSB = audio_buffer_1[index+IN_LEFT];
-                  sample_SB = audio_buffer_1[index+IN_LEFT] >> 8;
-                  sample_MSB = audio_buffer_1[index+IN_LEFT] >> 16;
+                  sample_LSB = audio_buffer_1[index_i+IN_LEFT];
+                  sample_SB = audio_buffer_1[index_i+IN_LEFT] >> 8;
+                  sample_MSB = audio_buffer_1[index_i+IN_LEFT] >> 16;
                 }
 
                 Usb_write_endpoint_data(EP_AUDIO_IN, 8, sample_LSB);
@@ -261,22 +261,22 @@ void uac2_device_audio_task(void *pvParameters)
                 Usb_write_endpoint_data(EP_AUDIO_IN, 8, sample_MSB);
 
                 if (audio_buffer_out == 0) {
-                  sample_LSB = audio_buffer_0[index+IN_RIGHT];
-                  sample_SB = audio_buffer_0[index+IN_RIGHT] >> 8;
-                  sample_MSB = audio_buffer_0[index+IN_RIGHT] >> 16;
+                  sample_LSB = audio_buffer_0[index_i+IN_RIGHT];
+                  sample_SB = audio_buffer_0[index_i+IN_RIGHT] >> 8;
+                  sample_MSB = audio_buffer_0[index_i+IN_RIGHT] >> 16;
                 } else {
-                  sample_LSB = audio_buffer_1[index+IN_RIGHT];
-                  sample_SB = audio_buffer_1[index+IN_RIGHT] >> 8;
-                  sample_MSB = audio_buffer_1[index+IN_RIGHT] >> 16;
+                  sample_LSB = audio_buffer_1[index_i+IN_RIGHT];
+                  sample_SB = audio_buffer_1[index_i+IN_RIGHT] >> 8;
+                  sample_MSB = audio_buffer_1[index_i+IN_RIGHT] >> 16;
                 }
 
                 Usb_write_endpoint_data(EP_AUDIO_IN, 8, sample_LSB);
                 Usb_write_endpoint_data(EP_AUDIO_IN, 8, sample_SB);
                 Usb_write_endpoint_data(EP_AUDIO_IN, 8, sample_MSB);
 
-                index += 2;
-                if (index >= AUDIO_BUFFER_SIZE) {
-                  index=0;
+                index_i += 2;
+                if (index_i >= AUDIO_BUFFER_SIZE) {
+                  index_i=0;
                   audio_buffer_out = 1 - audio_buffer_out;
                 }
               } else {
