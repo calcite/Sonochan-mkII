@@ -131,7 +131,8 @@ static uint8_t i_swap_LR_RX = 0;
 
 
 
-static U32  index, spk_index;
+static U32  index_i;
+static U32 spk_index;
 //static U16  old_gap = SPK_BUFFER_SIZE;
 static U8 audio_buffer_out, spk_buffer_in;  // the ID number of the buffer used for sending out to the USB
 static volatile U32 *audio_buffer_ptr;
@@ -145,7 +146,7 @@ static U8 ep_audio_in, ep_audio_out, ep_audio_out_fb;
 //!
 void uac1_device_audio_task_init(U8 ep_in, U8 ep_out, U8 ep_out_fb)
 {
-  index     =0;
+  index_i     =0;
   audio_buffer_out = 0;
   audio_buffer_ptr = audio_buffer_0;
   spk_index = 0;
@@ -278,7 +279,7 @@ void uac1_device_audio_task(void *pvParameters)
         audio_buffer_out = 0;
         spk_buffer_in = 0;
         spk_buffer_out = 0;
-        index = 0;
+        index_i = 0;
 
 
         /* [Martin]
@@ -374,17 +375,17 @@ void uac1_device_audio_task(void *pvParameters)
           if (audio_buffer_in != audio_buffer_out) {
 
             // AK and USB using same buffer
-            if ( index < (AUDIO_BUFFER_SIZE - num_remaining))
+            if ( index_i < (AUDIO_BUFFER_SIZE - num_remaining))
             {
-              gap = AUDIO_BUFFER_SIZE - num_remaining - index;
+              gap = AUDIO_BUFFER_SIZE - num_remaining - index_i;
             }
             else
             {
-              gap = AUDIO_BUFFER_SIZE - index + AUDIO_BUFFER_SIZE - num_remaining + AUDIO_BUFFER_SIZE;
+              gap = AUDIO_BUFFER_SIZE - index_i + AUDIO_BUFFER_SIZE - num_remaining + AUDIO_BUFFER_SIZE;
             }
           } else {
             // usb and pdca working on different buffers
-            gap = (AUDIO_BUFFER_SIZE - index) + (AUDIO_BUFFER_SIZE - num_remaining);
+            gap = (AUDIO_BUFFER_SIZE - index_i) + (AUDIO_BUFFER_SIZE - num_remaining);
           }
 
 
@@ -444,18 +445,18 @@ void uac1_device_audio_task(void *pvParameters)
               if(audio_buffer_out == 0)
               {
                 // Audio buffer out 0
-                audio_buffer_0[index+IN_LEFT] =
-                    audio_buffer_0[index+IN_LEFT]<<(24-i_sample_length);
-                audio_buffer_0[index+IN_RIGHT] =
-                    audio_buffer_0[index+IN_RIGHT]<<(24-i_sample_length);
+                audio_buffer_0[index_i+IN_LEFT] =
+                    audio_buffer_0[index_i+IN_LEFT]<<(24-i_sample_length);
+                audio_buffer_0[index_i+IN_RIGHT] =
+                    audio_buffer_0[index_i+IN_RIGHT]<<(24-i_sample_length);
               }
               else
               {
                 // Audio buffer out 1
-                audio_buffer_1[index+IN_LEFT] =
-                    audio_buffer_1[index+IN_LEFT]<<(24-i_sample_length);
-                audio_buffer_1[index+IN_RIGHT] =
-                    audio_buffer_1[index+IN_RIGHT]<<(24-i_sample_length);
+                audio_buffer_1[index_i+IN_LEFT] =
+                    audio_buffer_1[index_i+IN_LEFT]<<(24-i_sample_length);
+                audio_buffer_1[index_i+IN_RIGHT] =
+                    audio_buffer_1[index_i+IN_RIGHT]<<(24-i_sample_length);
               }
 
 
@@ -465,32 +466,32 @@ void uac1_device_audio_task(void *pvParameters)
                 if(i_swap_LR_RX == 0)
                 {
                   // Do not swap
-                  sample_LSB = audio_buffer_0[index+IN_LEFT];
-                  sample_SB = audio_buffer_0[index+IN_LEFT] >> 8;
-                  sample_MSB = audio_buffer_0[index+IN_LEFT] >> 16;
+                  sample_LSB = audio_buffer_0[index_i+IN_LEFT];
+                  sample_SB = audio_buffer_0[index_i+IN_LEFT] >> 8;
+                  sample_MSB = audio_buffer_0[index_i+IN_LEFT] >> 16;
                 }
                 else
                 {
                   // Swap
-                  sample_LSB = audio_buffer_0[index+IN_RIGHT];
-                  sample_SB = audio_buffer_0[index+IN_RIGHT] >> 8;
-                  sample_MSB = audio_buffer_0[index+IN_RIGHT] >> 16;
+                  sample_LSB = audio_buffer_0[index_i+IN_RIGHT];
+                  sample_SB = audio_buffer_0[index_i+IN_RIGHT] >> 8;
+                  sample_MSB = audio_buffer_0[index_i+IN_RIGHT] >> 16;
                 }
               } else {
                 // Swap if needed
                 if(i_swap_LR_RX == 0)
                 {
                   // Do not swap
-                  sample_LSB = audio_buffer_1[index+IN_LEFT];
-                  sample_SB = audio_buffer_1[index+IN_LEFT] >> 8;
-                  sample_MSB = audio_buffer_1[index+IN_LEFT] >> 16;
+                  sample_LSB = audio_buffer_1[index_i+IN_LEFT];
+                  sample_SB = audio_buffer_1[index_i+IN_LEFT] >> 8;
+                  sample_MSB = audio_buffer_1[index_i+IN_LEFT] >> 16;
                 }
                 else
                 {
                   // Swap
-                  sample_LSB = audio_buffer_1[index+IN_RIGHT];
-                  sample_SB = audio_buffer_1[index+IN_RIGHT] >> 8;
-                  sample_MSB = audio_buffer_1[index+IN_RIGHT] >> 16;
+                  sample_LSB = audio_buffer_1[index_i+IN_RIGHT];
+                  sample_SB = audio_buffer_1[index_i+IN_RIGHT] >> 8;
+                  sample_MSB = audio_buffer_1[index_i+IN_RIGHT] >> 16;
                 }
               }
 
@@ -503,16 +504,16 @@ void uac1_device_audio_task(void *pvParameters)
                 if(i_swap_LR_RX == 0)
                 {
                   // Do not swap
-                  sample_LSB = audio_buffer_0[index+IN_RIGHT];
-                  sample_SB = audio_buffer_0[index+IN_RIGHT] >> 8;
-                  sample_MSB = audio_buffer_0[index+IN_RIGHT] >> 16;
+                  sample_LSB = audio_buffer_0[index_i+IN_RIGHT];
+                  sample_SB = audio_buffer_0[index_i+IN_RIGHT] >> 8;
+                  sample_MSB = audio_buffer_0[index_i+IN_RIGHT] >> 16;
                 }
                 else
                 {
                   // Swap
-                  sample_LSB = audio_buffer_0[index+IN_LEFT];
-                  sample_SB = audio_buffer_0[index+IN_LEFT] >> 8;
-                  sample_MSB = audio_buffer_0[index+IN_LEFT] >> 16;
+                  sample_LSB = audio_buffer_0[index_i+IN_LEFT];
+                  sample_SB = audio_buffer_0[index_i+IN_LEFT] >> 8;
+                  sample_MSB = audio_buffer_0[index_i+IN_LEFT] >> 16;
                 }
 
               } else {
@@ -520,16 +521,16 @@ void uac1_device_audio_task(void *pvParameters)
                 if(i_swap_LR_RX == 0)
                 {
                   // Do not swap
-                  sample_LSB = audio_buffer_1[index+IN_RIGHT];
-                  sample_SB = audio_buffer_1[index+IN_RIGHT] >> 8;
-                  sample_MSB = audio_buffer_1[index+IN_RIGHT] >> 16;
+                  sample_LSB = audio_buffer_1[index_i+IN_RIGHT];
+                  sample_SB = audio_buffer_1[index_i+IN_RIGHT] >> 8;
+                  sample_MSB = audio_buffer_1[index_i+IN_RIGHT] >> 16;
                 }
                 else
                 {
                   // Swap
-                  sample_LSB = audio_buffer_1[index+IN_LEFT];
-                  sample_SB = audio_buffer_1[index+IN_LEFT] >> 8;
-                  sample_MSB = audio_buffer_1[index+IN_LEFT] >> 16;
+                  sample_LSB = audio_buffer_1[index_i+IN_LEFT];
+                  sample_SB = audio_buffer_1[index_i+IN_LEFT] >> 8;
+                  sample_MSB = audio_buffer_1[index_i+IN_LEFT] >> 16;
                 }
               }
 
@@ -537,9 +538,9 @@ void uac1_device_audio_task(void *pvParameters)
               Usb_write_endpoint_data(EP_AUDIO_IN, 8, sample_SB);
               Usb_write_endpoint_data(EP_AUDIO_IN, 8, sample_MSB);
 
-              index += 2;
-              if (index >= AUDIO_BUFFER_SIZE) {
-                index=0;
+              index_i += 2;
+              if (index_i >= AUDIO_BUFFER_SIZE) {
+                index_i=0;
                 audio_buffer_out = 1 - audio_buffer_out;
               }
             } else {// Mute is true

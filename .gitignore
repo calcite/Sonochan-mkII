@@ -11,6 +11,8 @@
 .gitignore
 HW/*.?#?
 DOC/__Doxy_DOC/
+DOC/photo/original/
 .~lock.*#
 .project
 Sonochan_mkII
+DOC/manual/

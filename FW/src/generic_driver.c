@@ -8,10 +8,10 @@
  * memory. If not, please take a look at\n
  * \a http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=93874
  *
- * Created  26.08.2013\n
- * Modified 21.10.2014
+ * Created:  26.08.2013\n
+ * Modified: 08.12.2014
  *
- * \version 1.3
+ * \version 1.4
  * \author Martin Stejskal, Tomas Bajus
  */
 
@@ -72,11 +72,7 @@ GD_DATA_VALUE gd_if_big_endian_convert_little_to_big_endian(
  */
 GD_RES_CODE gd_void_function(void)
 {
-  //usart message
-#ifdef usart_debug_msg
-	usart_tx_text("gd_void_function\n");
-#endif
-	return GD_SUCCESS;
+  return GD_SUCCESS;
 }
 
 
@@ -157,7 +153,7 @@ GD_RES_CODE gd_get_setting(const gd_metadata *p_metadata,
   #ifdef __AVR_ARCH__
   strlcpy_P(p_add_SRAM,p_add_flash,GD_MAX_STRING_SIZE);
   #else   // Else different architecture
-  strlcpy(p_add_SRAM,p_add_flash,GD_MAX_STRING_SIZE);
+  strlcpy((char*)p_add_SRAM,(char*)p_add_flash,GD_MAX_STRING_SIZE);
   #endif
 
 
@@ -173,7 +169,7 @@ GD_RES_CODE gd_get_setting(const gd_metadata *p_metadata,
   #ifdef __AVR_ARCH__
   strlcpy_P(p_add_SRAM,p_add_flash,GD_MAX_STRING_SIZE);
   #else   // Else different architecture
-  strlcpy(p_add_SRAM,p_add_flash,GD_MAX_STRING_SIZE);
+  strlcpy((char*)p_add_SRAM,(char*)p_add_flash,GD_MAX_STRING_SIZE);
   #endif
 
 
@@ -235,7 +231,8 @@ GD_RES_CODE gd_get_setting(const gd_metadata *p_metadata,
       p_config_table->e_out_data_type);
 
 
-#ifdef __AVR_ARCH__								// not implemented in sonochan
+  ///\todo Add support for default value
+#ifdef __AVR_ARCH__     // not implemented in Sonochan
   // Copy 32 bits of default value
   p_config_table->def_value.data_uint32 =
       gd_read_dword_ro_mem(&(p_flash->def_value.data_uint32));
@@ -305,16 +302,12 @@ GD_RES_CODE gd_set_setting(  const gd_metadata  *p_metadata,
                 uint16_t       i_cmd_ID,
                 GD_DATA_VALUE    i_data)
 {
-	// First check i_cmd_ID
+  // First check i_cmd_ID
   // Check if ID is not higher than max ID
   // Note: "(*p_metadata).i_max_cmd_ID" is same
   if(  (i_cmd_ID > p_metadata->i_max_cmd_ID) || (i_cmd_ID > 0xFFFE)  )
   {
-    //usart message - CMD ID
-			#ifdef usart_debug_msg
-  		usart_tx_text("set_setting\n");
-			#endif
-  	return GD_INCORRECT_CMD_ID;
+    return GD_INCORRECT_CMD_ID;
   }
 
   // Set pointer to "right" configure table on flash (device configure table)
