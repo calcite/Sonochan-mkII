@@ -266,7 +266,7 @@ int ssc_i2s_init(volatile avr32_ssc_t *ssc,
 	       *  CKO - No clock output, just read from bus
 	       *  CKI - shift data on rising edge,
 	       *  CKG - No clock output,
-	       *  START -  v76 On rising edge of the FRAME_SYNC input which is connected to FSYNC
+	       *  START -  v76 On rising edge of the FSYNC input which is connected to FSYNC
 	       *  START -  v77 On level change of LRCK if SSC_RX_FS is connected to AD_LRCK
 	       *  STTDLY - v77 i2s data starts one SCLK after LRCK change
 	       *  STTDLY - v76 i2s data starts zero SCLK, ie immediately on FSYNC
@@ -338,7 +338,7 @@ int ssc_i2s_init(volatile avr32_ssc_t *ssc,
 	       *  CKO - No clock output,
 	       *  CKI - shift data on rising edge,
 	       *  CKG - No clock output,
-	       *  START -  v76 On rising edge of the FRAME_SYNC input which is connected to FSYNC
+	       *  START -  v76 On rising edge of the FSYNC input which is connected to FSYNC
 	       *  START -  v77 On level change of LRCK if SSC_RX_FS is connected to AD_LRCK
 	       *  STTDLY - v77 i2s data starts one SCLK after LRCK change
 	       *  STTDLY - v76 i2s data starts zero SCLK, ie immediately on FSYNC

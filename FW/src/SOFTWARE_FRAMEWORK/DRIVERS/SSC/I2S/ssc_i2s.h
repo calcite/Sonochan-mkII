@@ -74,7 +74,7 @@
  * \brief This switch allow set SSC to master or slave mode when\n
  * SSC_I2S_MODE_STEREO_OUT_STEREO_IN mode is used.\n
  * When master, then BCLK is token from GCLK1 pin (need to be wired on board),\n
- * FRAME_SYNC is generated.\n
+ * FSYNC is generated.\n
  * In slave mode BCLK and FAME_SYNC must be given.\n
  * Options: 1 (Matser), 0 (slave)
  */
