@@ -465,12 +465,12 @@ typedef struct{
 /**
  * \brief Directions for pure I2S signals
  *
- * Direction for: MCLK, BCLK, FRAME_SYNC, TX_DATA, RX_DATA
+ * Direction for: MCLK, BCLK, FSYNC, TX_DATA, RX_DATA
  */
 typedef struct{
   e_brd_drv_dir_t e_mclk_dir;
   e_brd_drv_dir_t e_bclk_dir;
-  e_brd_drv_dir_t e_frame_sync_dir;
+  e_brd_drv_dir_t e_fsync_dir;
   e_brd_drv_dir_t e_tx_data_dir;
   e_brd_drv_dir_t e_rx_data_dir;
 }s_brd_drv_pure_i2s_dir_t;
@@ -493,7 +493,7 @@ typedef struct{
   /// BCLK direction
   e_brd_drv_dir_t e_bclk_dir;
   /// FRAME SYNC direction
-  e_brd_drv_dir_t e_frame_sync_dir;
+  e_brd_drv_dir_t e_fsync_dir;
   /// TX DATA direction
   e_brd_drv_dir_t e_tx_data_dir;
   /// RX DATA direction
@@ -1064,7 +1064,7 @@ GD_RES_CODE brd_drv_set_mclk_dir(e_brd_drv_dir_t e_mclk_dir);
 
 GD_RES_CODE brd_drv_set_bclk_dir(e_brd_drv_dir_t e_bclk_dir);
 
-GD_RES_CODE brd_drv_set_frame_sync_dir(e_brd_drv_dir_t e_frame_sync_dir);
+GD_RES_CODE brd_drv_set_fsync_dir(e_brd_drv_dir_t e_fsync_dir);
 
 GD_RES_CODE brd_drv_set_tx_data_dir(e_brd_drv_dir_t e_tx_data_dir);
 

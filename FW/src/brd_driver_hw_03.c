@@ -30,7 +30,7 @@ static s_brd_drv_mute_t s_brd_drv_mute;
 static s_brd_drv_rst_i2s_t s_brd_drv_rst_i2s;
 
 /**
- * \brief Store directions for MCLK, BCLK, FRAME_SYNC, TX_DATA, RX_DATA
+ * \brief Store directions for MCLK, BCLK, FSYNC, TX_DATA, RX_DATA
  */
 static s_brd_drv_pure_i2s_dir_t s_brd_drv_pure_i2s_dir;
 
@@ -165,8 +165,8 @@ const gd_config_struct BRD_DRV_config_table[] =
       uint32_type,
       {.data_uint32 = 0},
       {.data_uint32 = 2},
-      (GD_DATA_VALUE*)&s_brd_drv_pure_i2s_dir.e_frame_sync_dir,
-      brd_drv_set_frame_sync_dir
+      (GD_DATA_VALUE*)&s_brd_drv_pure_i2s_dir.e_fsync_dir,
+      brd_drv_set_fsync_dir
     },
     {
 #define BRD_DRV_CMD_MUTE_DIR    BRD_DRV_CMD_FSYNC_DIR+1
@@ -1456,9 +1456,9 @@ GD_RES_CODE brd_drv_save_all_settings(void){
 
   // FRAME SYNC direction
   flashc_memset32(
-      (void *)&s_brd_drv_user_settings.e_frame_sync_dir,
-      s_brd_drv_pure_i2s_dir.e_frame_sync_dir,
-      sizeof(s_brd_drv_pure_i2s_dir.e_frame_sync_dir),
+      (void *)&s_brd_drv_user_settings.e_fsync_dir,
+      s_brd_drv_pure_i2s_dir.e_fsync_dir,
+      sizeof(s_brd_drv_pure_i2s_dir.e_fsync_dir),
       1);
 
   // TX DATA direction
@@ -1612,7 +1612,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   }
 
   // FRAME SYNC direction
-  e_status=brd_drv_set_frame_sync_dir(s_brd_drv_user_settings.e_frame_sync_dir);
+  e_status=brd_drv_set_fsync_dir(s_brd_drv_user_settings.e_fsync_dir);
   if(e_status != GD_SUCCESS)
   {
     print_dbg(" ! FS dir fail ! ");
@@ -2358,7 +2358,7 @@ GD_RES_CODE brd_drv_set_isolators_to_HiZ(void)
   // Set output enables to low -> disable them by default
   brd_drv_set_mclk_dir(brd_drv_dir_hiz);
   brd_drv_set_bclk_dir(brd_drv_dir_hiz);
-  brd_drv_set_frame_sync_dir(brd_drv_dir_hiz);
+  brd_drv_set_fsync_dir(brd_drv_dir_hiz);
   brd_drv_set_tx_data_dir(brd_drv_dir_hiz);
   brd_drv_set_rx_data_dir(brd_drv_dir_hiz);
   //=============================| Reset and mute |============================
@@ -2810,11 +2810,11 @@ GD_RES_CODE brd_drv_set_bclk_dir(e_brd_drv_dir_t e_bclk_dir)
 
 
 /**
- * \brief Set direction of FRAME_SYNC
- * @param e_frame_sync_dir Options: 0 (input) ; 1 (output) ; 2 (Hi-Z)
+ * \brief Set direction of FSYNC
+ * @param e_fsync_dir Options: 0 (input) ; 1 (output) ; 2 (Hi-Z)
  * @return GD_SUCCESS (0) if all right
  */
-GD_RES_CODE brd_drv_set_frame_sync_dir(e_brd_drv_dir_t e_frame_sync_dir)
+GD_RES_CODE brd_drv_set_fsync_dir(e_brd_drv_dir_t e_fsync_dir)
 {
   // Store status
   GD_RES_CODE e_status;
@@ -2822,11 +2822,11 @@ GD_RES_CODE brd_drv_set_frame_sync_dir(e_brd_drv_dir_t e_frame_sync_dir)
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
 
-  switch(e_frame_sync_dir)
+  switch(e_fsync_dir)
   {
   case brd_drv_dir_in:
     BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
-    // SSC as slave. So TX module will not generate FRAME_SYNC
+    // SSC as slave. So TX module will not generate FSYNC
     e_status = ssc_set_FSYNC_role(SSC_ROLE_RX);
     if(e_status != GD_SUCCESS)
     {
@@ -2857,7 +2857,7 @@ GD_RES_CODE brd_drv_set_frame_sync_dir(e_brd_drv_dir_t e_frame_sync_dir)
     return GD_INCORRECT_PARAMETER;
   }
 
-  s_brd_drv_pure_i2s_dir.e_frame_sync_dir = e_frame_sync_dir;
+  s_brd_drv_pure_i2s_dir.e_fsync_dir = e_fsync_dir;
 
   return GD_SUCCESS;
 }

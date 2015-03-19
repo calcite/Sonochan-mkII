@@ -27,10 +27,10 @@ static s_ssc_settings_t s_ssc_settings;
 static const gpio_map_t SSC_GPIO_MAP = {
   {SSC_RX_CLOCK, SSC_RX_CLOCK_FUNCTION},
   {SSC_RX_DATA, SSC_RX_DATA_FUNCTION},
-  {SSC_RX_FRAME_SYNC, SSC_RX_FRAME_SYNC_FUNCTION},
+  {SSC_RX_FSYNC, SSC_RX_FSYNC_FUNCTION},
   {SSC_TX_CLOCK, SSC_TX_CLOCK_FUNCTION},
   {SSC_TX_DATA, SSC_TX_DATA_FUNCTION},
-  {SSC_TX_FRAME_SYNC, SSC_TX_FRAME_SYNC_FUNCTION}
+  {SSC_TX_FSYNC, SSC_TX_FSYNC_FUNCTION}
 };
 //================================| Functions |================================
 //==========================| High level functions |===========================
@@ -57,10 +57,10 @@ SSC_RES_CODE ssc_init(void)
 
   gpio_enable_pin_glitch_filter(SSC_RX_CLOCK);
   gpio_enable_pin_glitch_filter(SSC_RX_DATA);
-  gpio_enable_pin_glitch_filter(SSC_RX_FRAME_SYNC);
+  gpio_enable_pin_glitch_filter(SSC_RX_FSYNC);
   gpio_enable_pin_glitch_filter(SSC_TX_CLOCK);
   gpio_enable_pin_glitch_filter(SSC_TX_DATA);
-  gpio_enable_pin_glitch_filter(SSC_TX_FRAME_SYNC);
+  gpio_enable_pin_glitch_filter(SSC_TX_FSYNC);
 
   //===============================| Reset codec |=============================
   // First, we must reset codec
