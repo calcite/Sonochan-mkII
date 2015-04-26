@@ -1,0 +1,9 @@
+As root create (or modify) file
+ /etc/udev/rules.d/99-hidraw-permissions.rules
+
+And add following line:
+ KERNEL=="hidraw*", SUBSYSTEM=="hidraw", MODE="0664", GROUP="usb"
+ 
+Restart udev (or reboot). After that all uses in group "usb" should have r/w
+ access to HID devices.
+
