@@ -1,7 +1,8 @@
 @echo off
 REM This file should help compile project on Windows
-REM This allow find "make" and "avr32-gcc" program in case, that is not in your
-REM path.
+REM Path is little bit modifed.
+REM This allow find "make", "avr32-gcc" and "objcopy" program in case,
+REM that is not in your path.
 REM Because every user can have different path to binaries, this is the
 REM easy way to solve problem with missing command.
 REM Just change it to your needs.  
@@ -16,7 +17,11 @@ SET PATH_TO_GCC=c:\Program Files\Atmel\Atmel Toolchain\AVR32 GCC\Native\3.4.2.10
 REM Again, but just for case for 64 bit
 SET PATH_TO_GCC=%PATH_TO_GCC%;c:\Program Files (x86)\Atmel\Atmel Toolchain\AVR32 GCC\Native\3.4.2.1002\avr32-gnu-toolchain\bin\
 
+REM Define directory where is "objcopy" command
+SET PATH_TO_OBJCOPY=c:\Program Files\Atmel\Atmel Toolchain\AVR32 GCC\Native\3.4.2.1002\avr32-gnu-toolchain\avr32\bin\
+REM And once more for 64 bit systems
+SET PATH_TO_OBJCOPY=%PATH_TO_OBJCOPY%;c:\Program Files (x86)\Atmel\Atmel Toolchain\AVR32 GCC\Native\3.4.2.1002\avr32-gnu-toolchain\avr32\bin\
 
 REM DO NOT TOUCH!
-SET PATH=%PATH_TO_MAKE%;%PATH_TO_GCC%;%PATH%;
+SET PATH=%PATH_TO_MAKE%;%PATH_TO_GCC%;%PATH_TO_OBJCOPY%;%PATH%;
 cd Release && make all

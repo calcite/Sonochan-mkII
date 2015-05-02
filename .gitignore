@@ -13,6 +13,10 @@ HW/*.?#?
 DOC/__Doxy_DOC/
 DOC/photo/original/
 .~lock.*#
+*.kate-swp
 .project
+# Because of Eclipse plugin
 Sonochan_mkII
+# Created every time and not actually needed (because everything works :) )
+FW/fw_update.log
 DOC/manual/

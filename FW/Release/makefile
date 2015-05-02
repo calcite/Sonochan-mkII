@@ -55,15 +55,46 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: Sonochan_mkII.elf
+all: build_elf create_hex
 
-# Tool invocations
-Sonochan_mkII.elf: $(OBJS) $(USER_OBJS)
+# Build elf file
+build_elf: $(OBJS) $(USER_OBJS)
 	@echo Link $@
 	@avr32-gcc -nostartfiles -Wl,--gc-sections -Wl,-e,_trampoline -mpart=uc3a3256 -Wl,--gc-sections --rodata-writable -Wl,--direct-data -o"Sonochan_mkII.elf" $(OBJS) $(USER_OBJS) $(LIBS)
-# Other Targets
+
+# Create hex file, which is important for DFU tools
+# Grab elf file and create hex
+# basically we have to skip
+# .userpage
+# Everything else is OK
+create_hex:
+	@echo Creating HEX file
+	@objcopy -O ihex --only-section=.reset \
+                --only-section=.rela.got \
+                --only-section=.text \
+                --only-section=.exception \
+                --only-section=.rodata \
+                --only-section=.dalign \
+                --only-section=.data \
+                --only-section=.balign \
+                --only-section=.bss \
+                --only-section=.comment \
+                --only-section=.debug_aranges \
+                --only-section=.debug_info \
+                --only-section=.debug_abbrev \
+                --only-section=.debug_line \
+                --only-section=.debug_frame \
+                --only-section=.stack \
+                --only-section=.debug_ranges \
+                --only-section=.shstrtab \
+                --only-section=.symtab \
+                --only-section=.strtab \
+                Sonochan_mkII.elf \
+                Sonochan_mkII.hex
+
+# Just clean project. No more binary files :)
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) Sonochan_mkII.elf
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) Sonochan_mkII.elf Sonochan_mkII.hex
 
 .PHONY: all clean dependents
 .SECONDARY:

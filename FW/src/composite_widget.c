@@ -204,6 +204,12 @@ int main(void)
   // Make sure Watchdog timer is disabled initially (otherwise it interferes upon restart)
   wdt_disable();
 
+  // Because we want to keep bootloader alive, it is good idea to keep correct
+  // values in user page. So we fill pointer correct value
+  ///\todo Instead of magic number parse argument, or at least more explain
+  uint32_t *p_bootloader_seting=(uint32_t*)0x808001FC;
+  *p_bootloader_seting=0x929E2A9E;
+
 
   // Initialize Real Time Counter
   rtc_init(&AVR32_RTC, RTC_OSC_RC, 0);  // RC clock at 115kHz
