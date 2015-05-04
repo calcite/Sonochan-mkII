@@ -174,6 +174,8 @@
 
 //[Martin] For board pre init function
 #include "brd_driver_hw_03.h"
+//[Martin] Library for setting bootloader
+#include "bootloader_cfg.h"
 
 /*
  *  A few global variables.
@@ -204,12 +206,6 @@ int main(void)
   // Make sure Watchdog timer is disabled initially (otherwise it interferes upon restart)
   wdt_disable();
 
-  // Because we want to keep bootloader alive, it is good idea to keep correct
-  // values in user page. So we fill pointer correct value
-  ///\todo Instead of magic number parse argument, or at least more explain
-  uint32_t *p_bootloader_seting=(uint32_t*)0x808001FC;
-  *p_bootloader_seting=0x929E2A9E;
-
 
   // Initialize Real Time Counter
   rtc_init(&AVR32_RTC, RTC_OSC_RC, 0);  // RC clock at 115kHz
@@ -234,6 +230,10 @@ int main(void)
   // [Martin] Just let know, that UART works
   print_dbg("\n\n--------\n\n\n..::Sonochan mkII ::..\n\n"
             "> Initializing board...");
+
+  // Set appropiate boot pin (for case, this is first run)
+  // 42 - PB10 (default) ; 28 - PA28 (Reset I2S button)
+  set_bootloader_pin(28, 1);
 
   // Initialize critical parts on board (PLL, I/O pins and so on)
   if(brd_drv_pre_init() != GD_SUCCESS)
