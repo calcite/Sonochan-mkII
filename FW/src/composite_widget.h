@@ -80,15 +80,14 @@
 
 //_____ D E F I N I T I O N S ______________________________________________
 
-#define COUNTER_TIME_OUT	1000000L		// how long to do AK5394A CAL before time out
-
-
 // [Martin] Defined in:  Mobo_config.h
 #define RTC_COUNTER_MAX             1150000                 // Max count for the 115kHz Real Time Counter (10 seconds)
+
 //_____ M A C R O S ________________________________________________________
 
 
 //_____ D E C L A R A T I O N S ____________________________________________
+
 
 extern xSemaphoreHandle mutexEP_IN;
 

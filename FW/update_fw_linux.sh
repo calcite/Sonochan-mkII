@@ -2,22 +2,26 @@
 #
 # This script take ELF, convert it to intel HEX and upload it to device.
 
-output_dir="Release"
-elf_file="Sonochan_mkII"
-
 line="\n\
 ===============================================================================
 \n"
 
+echo "Starting..."
+
 dfu-programmer at32uc3a3256 erase --debug 6 2> fw_update.log &&
-echo -e ""$line"Chip erased (it is necessary, sorry)"$line"" &&
+echo -e ""$line"Chip erased"$line"" &&
 
 dfu-programmer at32uc3a3256 flash --suppress-bootloader-mem \
-               ""$output_dir"/"$elf_file".hex" --debug 6 2>> fw_update.log &&
+               Release/Sonochan_mkII_prog.hex --debug 6 2>> fw_update.log &&
 echo -e ""$line"Firmware sucessfuly updated! ^_^"$line"" &&
 
-dfu-programmer at32uc3a3256 reset --debug 4 2>> fw_update.log &&
-echo -e ""$line"Chip restarted. Have fun."$line"" 
+dfu-programmer at32uc3a3256 flash --force --user \
+               Release/Sonochan_mkII_user.hex --debug 6 2>> fw_update.log &&
+echo -e ""$line"User page updated. Ready to launch application." &&
+
+dfu-programmer at32uc3a3256 launch --debug 4 2>> fw_update.log &&
+echo -e ""$line"Running application. Have fun."$line"" 
+
 
 if [ $? -eq 0 ] ; then
   echo -e ""$line"All OK :)"$line""

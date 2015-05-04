@@ -55,20 +55,22 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: build_elf create_hex
+all: elf hex
 
 # Build elf file
-build_elf: $(OBJS) $(USER_OBJS)
+elf: $(OBJS) $(USER_OBJS)
 	@echo Link $@
 	@avr32-gcc -nostartfiles -Wl,--gc-sections -Wl,-e,_trampoline -mpart=uc3a3256 -Wl,--gc-sections --rodata-writable -Wl,--direct-data -o"Sonochan_mkII.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 
+hex: hex_program hex_user
+
+hex_program:
 # Create hex file, which is important for DFU tools
 # Grab elf file and create hex
 # basically we have to skip
 # .userpage
 # Everything else is OK
-create_hex:
-	@echo Creating HEX file
+	@echo Creating program HEX file
 	@objcopy -O ihex --only-section=.reset \
                 --only-section=.rela.got \
                 --only-section=.text \
@@ -90,8 +92,13 @@ create_hex:
                 --only-section=.symtab \
                 --only-section=.strtab \
                 Sonochan_mkII.elf \
-                Sonochan_mkII.hex
-
+                Sonochan_mkII_prog.hex
+hex_user:
+	@echo Creating user flash HEX file
+	@objcopy -O ihex --only-section=.userpage \
+                Sonochan_mkII.elf \
+                Sonochan_mkII_user.hex
+                
 # Just clean project. No more binary files :)
 clean:
 	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) Sonochan_mkII.elf Sonochan_mkII.hex

@@ -12,7 +12,7 @@ SET PATH=%PATH%;c:\Program Files (x86)\Atmel\Atmel Studio 6.1\atbackend\
 
 echo ---------------------
 REM Erase flash
-atprogram -v -t avrone -i JTAG -d at32uc3a3256 erase
+atprogram -v -t avrone -i JTAG -d at32uc3a3256 chiperase
 echo " 
 echo --- Memory erased ---
 echo "

@@ -12,4 +12,4 @@ SET PATH_TO_BATCHISP=%PATH_TO_BATCHISP%;c:\Program Files (x86)\Atmel\Flip 3.4.7\
 
 REM DO NOT TOUCH!
 SET PATH=%PATH_TO_BATCHISP%;%PATH%
-batchisp.exe -hardware usb -device at32uc3a3256 -operation erase f memory flash blankcheck loadbuffer Release\Sonochan_mkII.hex program verify start reset 0
+batchisp.exe -hardware usb -device at32uc3a3256 -operation erase f memory flash blankcheck loadbuffer Release\Sonochan_mkII.elf program verify start reset 0
