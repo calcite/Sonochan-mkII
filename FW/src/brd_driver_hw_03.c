@@ -6,10 +6,10 @@
  * Allow set basic settings on board. Also support "generic driver".
  * Written only for AVR32 UC3A3.
  *
- * Created:  23.04.2014\n
- * Modified: 08.12.2014
+ * Created:  2014/04/23\n
+ * Modified: 2015/07/06
  *
- * \version 0.4.2
+ * \version 0.4.3
  * \author  Martin Stejskal
  */
 
@@ -1736,7 +1736,11 @@ inline GD_RES_CODE brd_drv_load_default_settings(void)
   uac1_device_audio_get_auto_tune(&i_auto_tune_pll);
 
   // Set as default I2S mode
+#if BRD_DRV_DEBUG == 1
+  e_status = ssc_set_digital_interface_mode(SSC_DSP);
+#else
   e_status = ssc_set_digital_interface_mode(SSC_I2S);
+#endif
   if(e_status != GD_SUCCESS) return e_status;
 
   // Load SSC default values
@@ -1890,6 +1894,11 @@ GD_RES_CODE brd_drv_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
       uac1_device_audio_set_swap_LR_RX(0);
     }
     break; // I2S
+  case SSC_DSP:
+    /* In DSP we can not just swap channels by changing FSYNC edge. So nothing
+     * to do here
+     */
+    break;
   // Mode not known/not supported
   default:
     return GD_FAIL;
@@ -1948,6 +1957,11 @@ GD_RES_CODE brd_drv_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
       uac1_device_audio_set_swap_LR_TX(0);
     }
     break; // I2S
+  case SSC_DSP:
+    /* In DSP we can not just swap channels by changing FSYNC edge. So nothing
+     * to do here
+     */
+    break;
   // Mode not known/not supported
   default:
     return GD_FAIL;
@@ -2355,12 +2369,21 @@ GD_RES_CODE brd_drv_set_isolators_to_HiZ(void)
   volatile avr32_gpio_port_t *gpio_port;
 
   //================================| Pure I2S |===============================
+#if BRD_DRV_DEBUG != 1
   // Set output enables to low -> disable them by default
   brd_drv_set_mclk_dir(brd_drv_dir_hiz);
   brd_drv_set_bclk_dir(brd_drv_dir_hiz);
   brd_drv_set_fsync_dir(brd_drv_dir_hiz);
   brd_drv_set_tx_data_dir(brd_drv_dir_hiz);
   brd_drv_set_rx_data_dir(brd_drv_dir_hiz);
+#else
+  // This is only for debug purpose. Can be changed any time!!!
+  brd_drv_set_mclk_dir(brd_drv_dir_out);
+  brd_drv_set_bclk_dir(brd_drv_dir_out);
+  brd_drv_set_fsync_dir(brd_drv_dir_out);
+  brd_drv_set_tx_data_dir(brd_drv_dir_out);
+  brd_drv_set_rx_data_dir(brd_drv_dir_out);
+#endif
   //=============================| Reset and mute |============================
   brd_drv_set_mute_dir(brd_drv_dir_hiz);
   brd_drv_set_rst_i2s_dir(brd_drv_dir_hiz);
@@ -2990,15 +3013,30 @@ inline GD_RES_CODE brd_drv_TLV_default(void)
     return e_status;
   }
 
-  // Set data interface to I2S
+  // Set data interface
   e_status = tlv320aic33_set_data_interface(
+#if BRD_DRV_DEFAULT_DIG_AUD_ITF == 0
       serial_data_bus_uses_I2S_mode);
+      print_dbg("TLV: setting I2S\n");
+#elif BRD_DRV_DEFAULT_DIG_AUD_ITF == 1
+      serial_data_bus_uses_DSP_mode);
+      print_dbg("TLV: setting DSP\n");
+#elif BRD_DRV_DEFAULT_DIG_AUD_ITF == 2
+      serial_data_bus_uses_right_justified_mode);
+      print_dbg("TLV: setting L JUS\n");
+#elif BRD_DRV_DEFAULT_DIG_AUD_ITF == 3
+      serial_data_bus_uses_left_justified_mode);
+      print_dbg("TLV: setting R JUS\n");
+#else
+      0);
+#error "Unknown default value for BRD_DRV_DEFAULT_DIG_AUD_ITF"
+#endif
   if(e_status != GD_SUCCESS)
   {
     return e_status;
   }
 
-  // Set word length to 32 bit
+  // Set word length to 24 bit
   e_status = tlv320aic33_set_word_length(24);
   if(e_status != GD_SUCCESS)
   {
