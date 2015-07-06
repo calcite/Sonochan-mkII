@@ -19,7 +19,6 @@
 
 #ifndef _SSC_UC3A3256_H_
 #define _SSC_UC3A3256_H_
-
 //===========================| Included libraries |============================
 // Data types
 #include <inttypes.h>
@@ -266,6 +265,8 @@ typedef struct{
   "SSC: Initialization\n"
 #define SSC_MSG_INFO_MODE_I2S                   \
   "SSC: Setting I2S mode\n"
+#define SSC_MSG_INFO_MODE_DSP                   \
+  "SSC: Setting DSP mode\n"
 ///@}
 //=================================| Macros |==================================
 
@@ -285,6 +286,8 @@ SSC_RES_CODE ssc_wait_for_FSYNC_RX(void);
 
 
 SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void);
+
+SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void);
 
 //===========================| Low level functions |===========================
 SSC_RES_CODE ssc_set_data_length(uint8_t i_data_length);

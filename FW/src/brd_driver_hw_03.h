@@ -6,10 +6,10 @@
  * Allow set basic settings on board. Also support "generic driver".
  * Written only for AVR32 UC3A3.
  *
- * Created:  23.04.2014\n
- * Modified: 08.12.2014
+ * Created:  2014/04/23\n
+ * Modified: 2015/07/06
  *
- * \version 0.4.2
+ * \version 0.4.3
  * \author  Martin Stejskal
  */
 
@@ -18,6 +18,13 @@
 
 //=================================| Options |=================================
 
+/**
+ * @brief Enable debug mode.
+ *
+ * In this mode non-standard settings can be used. This may decrease develop\n
+ * time, but may confuse user. Beware!
+ */
+#define BRD_DRV_DEBUG                                   1
 /**
  * \brief Set default headphones volume in dB
  *
@@ -42,7 +49,39 @@
 #define BRD_DRV_SUPPORT_RTOS                    1
 
 
+/**
+ * \name Digital audio interface default parameters
+ *
+ * @{
+ */
+/**
+ * \brief Select one of the digital audio interface.
+ *
+ * List of interfaces: 0 - I2S , 1 - DSP , 2 - LEFT JUSTIFY, 3 - RIGHT JUSTIFY
+ * \todo More symbolic in future
+ */
+#define BRD_DRV_DEFAULT_DIG_AUD_ITF             1
 
+/**
+ * \brief MCLK oversampling relative to FSYNC singal
+ */
+#define BRD_DRV_DEFAULT_MCLK_OVERSAMPLING       256
+
+/**
+ * \brief BCLK oversampling relative to FSYNC singal
+ */
+#define BRD_DRV_DEFAULT_BCLK_OVERSAMPLING       64
+
+#define BRD_DRV_DEFAULT_DATA_WORD_LENGTH        24
+
+/**
+ * \brief This is only for reference.
+ *
+ * After connection audio driver change frequency anyway.
+ */
+#define BRD_DRV_DEFAULT_FSYNC_FREQ              48000UL
+
+/// @}
 
 /**
  * \brief Option allow create ADCmutex when brd_drv_init() is called
@@ -329,15 +368,6 @@
  */
 #define BRD_DRV_ADC_START_UP_TIME                       10
 
-
-
-#define BRD_DRV_DEFAULT_MCLK_OVERSAMPLING       256
-
-#define BRD_DRV_DEFAULT_BCLK_OVERSAMPLING       64
-
-#define BRD_DRV_DEFAULT_DATA_WORD_LENGTH        24
-
-#define BRD_DRV_DEFAULT_FSYNC_FREQ              48000UL
 //================================| Includes |=================================
 // IO pins
 #include <avr32/io.h>
@@ -416,6 +446,7 @@ typedef enum{
 #endif
 
 #endif
+
 //===============================| Structures |================================
 
 /**

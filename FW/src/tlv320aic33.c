@@ -1760,6 +1760,12 @@ GD_RES_CODE tlv320aic33_set_data_interface(
   // Set register
   e_status = tlv320aic33_write_data(9, p0_r9.i_reg);
 
+  ///\todo REMOVE: Small HACK - DELETE
+  if(e_mode == 1){
+  p0_r10_Audio_Serial_Interface_Control_C_t p0_r10;
+  p0_r10.s.AudioSerialDataWordOffsetControl = 1;
+  tlv320aic33_write_data(10, p0_r10.i_reg);}
+
   // Only if gneric driver support enabled
 #if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
   if(e_status != GD_SUCCESS)
