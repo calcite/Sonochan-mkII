@@ -8,10 +8,10 @@
  * (BCLK)  SSC-RX_CLOCK      <-----> SSC-TX_CLOCK\n
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
- * Created:  20.08.2014\n
- * Modified: 09.09.2014
+ * Created:  2014/08/20\n
+ * Modified: 2015/07/07
  *
- * \version 0.2
+ * \version 0.3
  * \author Martin Stejskal
  */
 //[Martin] Because this is cross dependent
@@ -296,6 +296,8 @@ SSC_RES_CODE ssc_get_data_length(uint8_t *p_i_data_length);
 SSC_RES_CODE ssc_set_frame_length(uint8_t i_frame_length);
 SSC_RES_CODE ssc_get_frame_length(uint8_t *p_i_frame_length);
 
+SSC_RES_CODE ssc_set_word_offset(uint8_t i_word_offset);
+SSC_RES_CODE ssc_get_word_offset(uint8_t *p_i_word_offset);
 
 SSC_RES_CODE ssc_set_FSYNC_RX_edge(e_ssc_edge_t e_edge);
 SSC_RES_CODE ssc_get_FSYNC_RX_edge(e_ssc_edge_t *p_e_edge);

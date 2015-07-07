@@ -8,10 +8,10 @@
  * (BCLK)  SSC-RX_CLOCK      <-----> SSC-TX_CLOCK\n
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
- * Created:  20.08.2014\n
- * Modified: 09.09.2014
+ * Created:  2014/08/20\n
+ * Modified: 2015/07/07
  *
- * \version 0.2
+ * \version 0.3
  * \author Martin Stejskal
  */
 #include "ssc.h"
@@ -183,7 +183,7 @@ SSC_RES_CODE ssc_set_digital_interface_mode(
   case SSC_DSP:
     SSC_INFO_FUNC(SSC_MSG_INFO_MODE_DSP);
     e_status = ssc_set_digital_interface_mode_DSP();
-    break;
+    break; // SSC_DSP
   case SSC_LEFT_JUSTIFIED:
     SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
     break;
@@ -298,17 +298,17 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
 
 
   // Start TX on any FSYNC change
-  p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_LEVEL_CHANGE_TF;
-  // Transmit transmit delay
-  p_ssc->TCMR.sttdly = 0;
+  p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
+  // Transmit transmit delay - 1 pulse after edge
+  p_ssc->TCMR.sttdly = 1;
   // Set frame length
   p_ssc->TCMR.period = s_ssc_settings.i_frame_length -1;
   // Set data length (one sample per one channel)
   p_ssc->TFMR.datlen = s_ssc_settings.i_data_length -1;
   // MSB first - true
   p_ssc->TFMR.msbf = 1;
-  // Transfer two words (left+right). Calculation is: DATNB+1, so there is 0
-  p_ssc->TFMR.datnb = 0;
+  // Transfer one word (left then right). Calculation is: DATNB+1, so there is 0
+  p_ssc->TFMR.datnb = (1 - 1);
   // Set frame size (Frame sync is entire left channel)
   p_ssc->TFMR.fslen = (s_ssc_settings.i_frame_length -1)
       & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
@@ -320,9 +320,9 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
   p_ssc->TFMR.fsedge = 1;
 
   // Receive start selection - start on any edge
-  p_ssc->RCMR.start = AVR32_SSC_RCMR_START_DETECT_LEVEL_CHANGE_RF;
-  // Receive start delay - I2S data start 0 SCKL (immediately on FSYNC)
-  p_ssc->RCMR.sttdly = 0;
+  p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
+  // Receive start delay - 1 pulse after edge
+  p_ssc->RCMR.sttdly = 1;
   // Period offset
   p_ssc->RCMR.period = s_ssc_settings.i_frame_length -1;
 
@@ -330,7 +330,7 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
   p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
   // MSB first - true
   p_ssc->RFMR.msbf = 1;
-  // Transfer two words (left+right). Calculation is: DATNB+1, so there is 0
+  // Transfer one word (left then right). Calculation is: DATNB+1, so there is 0
   p_ssc->RFMR.datnb = (1 - 1);
   // Set frame size (Frame sync is entire left channel)
   p_ssc->RFMR.fslen = (s_ssc_settings.i_frame_length -1) &
@@ -403,12 +403,12 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
   volatile avr32_ssc_t *p_ssc;
   p_ssc = SSC_DEVICE;
 
-
-  print_dbg("SSC: setting DPS mode func\n");
-
   // Start TX on any FSYNC change
   p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_RISING_TF;
-  // Transmit transmit delay
+  /* Transmit transmit delay
+   * In Typical DSP is this delay 1, so data came after falling edge of
+   * FSYNC pulse. However, this module can send data during rising edge.
+   */
   p_ssc->TCMR.sttdly = 1;
   // Set frame length
   p_ssc->TCMR.period = (s_ssc_settings.i_frame_length) -1;
@@ -416,7 +416,7 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
   p_ssc->TFMR.datlen = s_ssc_settings.i_data_length -1;
   // MSB first - true
   p_ssc->TFMR.msbf = 1;
-  // Transfer two words (left+right). Calculation is: DATNB+1, so there is 0
+  // Transfer two words (left+right). Calculation is: DATNB+1, so there is 1
   p_ssc->TFMR.datnb = 1;
   // Set frame size (Frame sync is one pulse)
   p_ssc->TFMR.fslen = 0
@@ -430,7 +430,7 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
 
   // Receive start selection - start on any edge
   p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_RISING_TF;
-  // Receive start delay - I2S data start 0 SCKL (immediately on FSYNC)
+  // Receive start delay - DSP data after FYNC pulse
   p_ssc->RCMR.sttdly = 1;
   // Period offset
   p_ssc->RCMR.period = (s_ssc_settings.i_frame_length) -1;
@@ -487,7 +487,6 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
     return e_status;
   }
 
-  print_dbg("SSC: setting DSP OK\n");
   return SSC_SUCCESS;
 }
 //===========================| Low level functions |===========================
@@ -607,6 +606,49 @@ SSC_RES_CODE ssc_set_frame_length(uint8_t i_frame_length)
 SSC_RES_CODE ssc_get_frame_length(uint8_t *p_i_frame_length)
 {
   *p_i_frame_length = s_ssc_settings.i_frame_length;
+  return SSC_SUCCESS;
+}
+
+
+/**
+ * \brief Set word offset
+ *
+ * Word offset is delay between frame start and data.
+ *
+ * @param i_word_offset Word offset between FSYNC and RX/TX_DATA
+ * @return SSC_SUCCESS (0) if all right
+ */
+SSC_RES_CODE ssc_set_word_offset(uint8_t i_word_offset)
+{
+  // Pointer to SSC (memory and structure)
+  volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
+
+  // Set word offset in TX and RX module
+  p_ssc->TCMR.sttdly = i_word_offset;
+  p_ssc->RCMR.sttdly = i_word_offset;
+
+  return SSC_SUCCESS;
+}
+
+/**
+ * \brief Get word offset
+ *
+ * Word offset is delay between frame start and data.
+ *
+ * @param p_i_word_offset Address where result will be written.
+ * @return SSC_SUCCESS (0) if all right
+ */
+SSC_RES_CODE ssc_get_word_offset(uint8_t *p_i_word_offset)
+{
+  // Pointer to SSC (memory and structure)
+  volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
+
+  /* Because RX and TX modules have same settings, just read from one. Just
+   * for case we read from TX module (because TX module produce signal)
+   */
+  *p_i_word_offset = p_ssc->TCMR.sttdly;
   return SSC_SUCCESS;
 }
 

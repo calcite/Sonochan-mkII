@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/07/06
+ * Modified: 2015/07/07
  *
- * \version 0.4.3
+ * \version 0.4.4
  * \author  Martin Stejskal
  */
 
@@ -60,7 +60,7 @@
  * List of interfaces: 0 - I2S , 1 - DSP , 2 - LEFT JUSTIFY, 3 - RIGHT JUSTIFY
  * \todo More symbolic in future
  */
-#define BRD_DRV_DEFAULT_DIG_AUD_ITF             1
+#define BRD_DRV_DEFAULT_DIG_AUD_ITF             0
 
 /**
  * \brief MCLK oversampling relative to FSYNC singal
@@ -764,6 +764,9 @@ typedef struct{
 #define BRD_DRV_MSG_ERR_MCLK_OVRSAM_CAN_NOT_SET_BCLK_OVRSAM     \
   "MCLK ovrsam. Can not set BLCK ovrsam.\n"
 
+/// Can not set selected mode, because it is unknown
+#define BRD_DRV_MSG_ERR_UNKNOWN_DIG_ITF_MODE            \
+  "Can not set digital audio mode, because is unknown!\n Code incomplete?\n"
 /// @}
 
 
@@ -786,6 +789,10 @@ typedef struct{
 
 #define BRD_DRV_MSG_WRN_CAN_NOT_SET_PLL_TRYING_AGAIN    \
   "Can not set external PLL. Trying again...\n"
+
+#define BRD_DRV_MSG_WRN_I2S_WORD_OFFSET_CDC_NOT_SUPP    \
+  "Codec NOT support I2S word offset 0!\n"\
+  "However Sonochan mkII can deal with it.\n"
 /// @}
 
 
@@ -803,12 +810,36 @@ typedef struct{
 #define BRD_DRV_MSG_INFO_FLASH_VALID_SETTINGS           \
   "Valid user settings in user flash. Loading...\n"
 
+#define BRD_DRV_MSG_INFO_CDC_ITF_I2S                    \
+  "Interface at codec: I2S\n"
+
+#define BRD_DRV_MSG_INFO_CDC_ITF_DSP                    \
+  "Interface at codec: DPS\n"
+
+#define BRD_DRV_MSG_INFO_CDC_ITF_R_JUS                  \
+  "Interface at codec: right justified\n"
+
+#define BRD_DRV_MSG_INFO_CDC_ITF_L_JUS                  \
+  "Interface at codec: left justified\n"
+
+#define BRD_DRV_MSG_INFO_FMT_I2S                        \
+  "Using I2S format\n"
+
+#define BRD_DRV_MSG_INFO_FMT_DSP                        \
+  "Using DSP format\n"
+
+#define BRD_DRV_MSG_INFO_FMT_R_JUS                      \
+  "Using right justified format\n"
+
+#define BRD_DRV_MSG_INFO_FMT_L_JUS                      \
+  "Using left justified format\n"
 /// @}
 
 /**
  * \brief Check code which allow detect correct settings in user flash
  *
  * It should be in range 2 - 254 (0, 1 and 255 are excluded for safety reasons)
+ * Also constant is more easy than CRC
  */
 #define BRD_DRV_FLASH_CHECK_CODE                38
 //=================================| Macros |==================================
@@ -1056,6 +1087,9 @@ GD_RES_CODE brd_drv_set_FSYNC_TX_edge(e_ssc_edge_t e_edge);
 
 GD_RES_CODE brd_drv_set_BCLK_RX_edge(e_ssc_edge_t e_edge);
 GD_RES_CODE brd_drv_set_BCLK_TX_edge(e_ssc_edge_t e_edge);
+
+GD_RES_CODE brd_drv_set_word_offset(uint8_t i_word_offset);
+GD_RES_CODE brd_drv_get_word_offset(uint8_t *p_i_word_offset);
 
 GD_RES_CODE brd_drv_show_FSYNC_freq(uint8_t i_line);
 

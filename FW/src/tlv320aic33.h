@@ -3,10 +3,10 @@
  *
  * \brief Driver for codec TLV320AIC33
  *
- * Created:  02.04.2014\n
- * Modified: 19.09.2014
+ * Created:  2014/04/02\n
+ * Modified: 2015/07/07
  *
- * \version 0.2
+ * \version 0.3
  * \author Martin Stejskal, Tomas Bajus
  */
 
@@ -1497,16 +1497,16 @@ typedef union{
 ///@}
 
 typedef enum{
-	loss_0_0db = 0,
-	loss_1_5db = 1,
-	loss_3_0db = 2,
+  loss_0_0db = 0,
+  loss_1_5db = 1,
+  loss_3_0db = 2,
   loss_4_5db = 3,
   loss_6_0db = 4,
   loss_7_5db = 5,
   loss_9_0db = 6,
   loss_10_5db = 7,
   loss_12_0db = 8,
-	disconnected = 15
+  disconnected = 15
 }e_ADCInputGain;
 
 
@@ -1722,8 +1722,11 @@ GD_RES_CODE tlv320aic33_set_PLL_clock_divider_N_value(uint8_t i_pll_divider);
 
 GD_RES_CODE tlv320aic33_set_digital_interface_mode(uint8_t i_master);
 GD_RES_CODE tlv320aic33_set_data_interface(e_AudioSerialDataInterface e_mode);
+GD_RES_CODE tlv320aic33_get_data_interface(
+                                         e_AudioSerialDataInterface *p_e_mode);
 GD_RES_CODE tlv320aic33_set_word_length(uint8_t i_word_length);
 GD_RES_CODE tlv320aic33_set_BCLK_rate(e_BitClockRateControl e_bclk_rate);
+GD_RES_CODE tlv320aic33_get_BCLK_rate(e_BitClockRateControl *p_e_bclk_rate);
 GD_RES_CODE tlv320aic33_set_data_offset(uint8_t i_offset);
 
 //  ADC and DAC settings

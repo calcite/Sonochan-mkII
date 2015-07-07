@@ -3,10 +3,10 @@
  *
  * \brief Driver for codec TLV320AIC33
  *
- * Created:  02.04.2014\n
- * Modified: 19.09.2014
+ * Created:  2014/04/02\n
+ * Modified: 2015/07/07
  *
- * \version 0.2
+ * \version 0.3
  * \author Martin Stejskal, Tomas Bajus
  */
 
@@ -69,8 +69,8 @@ const gd_config_struct TLV320AIC33_config_table[] =
 #endif
   {
       {
-				#define ID_tlv_init 0
-      	ID_tlv_init,                      // Command ID
+        #define ID_tlv_init 0
+        ID_tlv_init,                      // Command ID
         "Initialize TLV320AIC33 hardware",  // Name
         "Initialize I/O and TWI module (if used)",      // Descriptor
         void_type,              // Input data type
@@ -84,7 +84,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_dim ID_tlv_init+1
-      	ID_tlv_dim,
+        ID_tlv_dim,
         "Digital interface master/slave",
         "Options: 0 - slave (BCLK,WCLK in); 1 - master (BLCK,WCLK out)",
         uint8_type,
@@ -94,12 +94,12 @@ const gd_config_struct TLV320AIC33_config_table[] =
         {.data_uint8 = 0},
         {.data_uint8 = 1},
         (GD_DATA_VALUE*)
-        					&s_tlv320_virtual_reg_img.i_digital_interface_master_slave,
+                  &s_tlv320_virtual_reg_img.i_digital_interface_master_slave,
         tlv320aic33_set_digital_interface_mode
       },
       {
         #define ID_tlv_asdi ID_tlv_dim+1
-      	ID_tlv_asdi,
+        ID_tlv_asdi,
         "Audio serial data interface mode",
         "0  - I2S ; 1 - DSP ; 2 - right justified ; 3 - left justified",
         uint8_type,
@@ -113,7 +113,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_wl ID_tlv_asdi+1
-      	ID_tlv_wl,
+        ID_tlv_wl,
         "Word length",
         "Options: 16, 20, 24, 32",
         uint8_type,
@@ -127,7 +127,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_bclkrate ID_tlv_wl+1
-      	ID_tlv_bclkrate,
+        ID_tlv_bclkrate,
         "BCLK rate",
         "Options: 0-continuous transfer; 1-256-clock transfer mode",
         uint8_type,
@@ -141,7 +141,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_sado ID_tlv_bclkrate+1
-      	ID_tlv_sado,
+        ID_tlv_sado,
         "Serial audio data offset",
         "continuous transfer - max 17(16 for DSP); 256-clk - max 242(241 DSP)",
         uint8_type,
@@ -155,7 +155,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_pllen ID_tlv_sado+1
-      	ID_tlv_pllen,
+        ID_tlv_pllen,
         "PLL enable",
         "Options: 0-disabled; 1-enabled",
         uint8_type,
@@ -169,7 +169,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_pllq ID_tlv_pllen+1
-      	ID_tlv_pllq,
+        ID_tlv_pllq,
         "PLL Q value",
         "CLKDIV_OUT = 2 * CLKDIV_IN / Q>",
         uint8_type,
@@ -183,7 +183,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_pllp ID_tlv_pllq+1
-      	ID_tlv_pllp,
+        ID_tlv_pllp,
         "PLL P value",
         "PLL_OUT = PLL_IN * K * R / P",
         uint8_type,
@@ -197,7 +197,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_pllj ID_tlv_pllp+1
-      	ID_tlv_pllj,
+        ID_tlv_pllj,
         "PLL J value",
         "K = J.D (J is integer part of K)",
         uint8_type,
@@ -211,7 +211,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_plld ID_tlv_pllj+1
-      	ID_tlv_plld,
+        ID_tlv_plld,
         "PLL D value",
         "K = J.D (D is fractional part of K)",
         uint8_type,
@@ -225,7 +225,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_pllr ID_tlv_plld+1
-      	ID_tlv_pllr,
+        ID_tlv_pllr,
         "PLL R value",
         "PLL_OUT = PLL_IN * K * R / P",
         uint8_type,
@@ -239,7 +239,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_codecclkin ID_tlv_pllr+1
-      	ID_tlv_codecclkin,
+        ID_tlv_codecclkin,
         "Codec CLKIN source select",
         "Options: 0 - PLL; 1 - CLKDIV>",
         uint8_type,
@@ -253,7 +253,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_clkdivin ID_tlv_codecclkin+1
-      	ID_tlv_clkdivin,
+        ID_tlv_clkdivin,
         "CLKDIV_IN source select",
         "Options: 0 - MCLK; 1 - GPIO2; 2 - BCLK>",
         uint8_type,
@@ -267,7 +267,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_pllclkin ID_tlv_clkdivin+1
-      	ID_tlv_pllclkin,
+        ID_tlv_pllclkin,
         "PLLCLK_IN source select",
         "Options: 0 - MCLK; 1 - GPIO2; 2 - BCLK>",
         uint8_type,
@@ -281,7 +281,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_clkdivn ID_tlv_pllclkin+1
-      	ID_tlv_clkdivn,
+        ID_tlv_clkdivn,
         "Clock divider N value",
         "Options: range <2;17>",
         uint8_type,
@@ -295,7 +295,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_adcpow ID_tlv_clkdivn+1
-      	ID_tlv_adcpow,
+        ID_tlv_adcpow,
         "ADC power",
         "Options: 0 - disable power ; 1 -enable power",
         uint8_type,
@@ -309,7 +309,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_dacpow ID_tlv_adcpow+1
-      	ID_tlv_dacpow,
+        ID_tlv_dacpow,
         "DAC power",
         "Options: 0 - disable power ; 1 -enable power",
         uint8_type,
@@ -323,7 +323,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_adcmute ID_tlv_dacpow+1
-      	ID_tlv_adcmute,
+        ID_tlv_adcmute,
         "ADC mute",
         "Options: 0 - disable mute ; 1 - enable mute",
         uint8_type,
@@ -337,7 +337,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_dacmute ID_tlv_adcmute+1
-      	ID_tlv_dacmute,
+        ID_tlv_dacmute,
         "DAC mute",
         "Options: 0 - disable mute ; 1 - enable mute",
         uint8_type,
@@ -351,7 +351,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_adcsample ID_tlv_dacmute+1
-      	ID_tlv_adcsample,
+        ID_tlv_adcsample,
         "ADC sample rate",
         "0-Fsref/1; 1-Fsref/1.5; 2-Fsref/2; 3-Fsref/2.5 ... 10-Fsref/6",
         uint8_type,
@@ -365,7 +365,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_dacsample ID_tlv_adcsample+1
-      	ID_tlv_dacsample,
+        ID_tlv_dacsample,
         "DAC sample rate",
         "0-Fsref/1; 1-Fsref/1.5; 2-Fsref/2; 3-Fsref/2.5 ... 10-Fsref/6",
         uint8_type,
@@ -379,7 +379,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_dualrate ID_tlv_dacsample+1
-      	ID_tlv_dualrate,
+        ID_tlv_dualrate,
         "ADC and DAC dual rate",
         "Options: 0 - disable; 1 - enable",
         uint8_type,
@@ -393,7 +393,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_leftdacswitchout ID_tlv_dualrate+1
-      	ID_tlv_leftdacswitchout,
+        ID_tlv_leftdacswitchout,
         "left DAC output switching",
         "Options: 0 - DACL1; 1 - DACL3; 2 - DACL2  !!not in logic order!!",
         uint8_type,
@@ -407,7 +407,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_rigthdacswitchout ID_tlv_leftdacswitchout+1
-      	ID_tlv_rigthdacswitchout,
+        ID_tlv_rigthdacswitchout,
         "right DAC output switching",
         "Options: 0 - DACR1; 1 - DACR3; 2 - DACR2  !!not in logic order!!",
         uint8_type,
@@ -421,7 +421,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_adclfromline2l ID_tlv_rigthdacswitchout+1
-      	ID_tlv_adclfromline2l,
+        ID_tlv_adclfromline2l,
         "ADCL from LINE2L",
         "gain: 0=0dB, 1=-1.5dB, 2=-3dB, 3=-4.5dB .. 8=-12dB, 9=not routed",
         uint8_type,
@@ -435,7 +435,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_adcrfromline2r ID_tlv_adclfromline2l+1
-      	ID_tlv_adcrfromline2r,
+        ID_tlv_adcrfromline2r,
         "ADCR from LINE2R",
         "gain: 0=0dB, 1=-1.5dB, 2=-3dB, 3=-4.5dB .. 8=-12dB, 9=not routed",
         uint8_type,
@@ -449,7 +449,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_line2lbypass ID_tlv_adcrfromline2r+1
-      	ID_tlv_line2lbypass,
+        ID_tlv_line2lbypass,
         "LINE2L bypass",
         "Options : 0-disabled; 1-enabled",
         uint8_type,
@@ -463,7 +463,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_line2rbypass ID_tlv_line2lbypass+1
-      	ID_tlv_line2rbypass,
+        ID_tlv_line2rbypass,
         "LINE2R bypass",
         "Options : 0-disabled; 1-enabled",
         uint8_type,
@@ -477,7 +477,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_hpoutpower ID_tlv_line2rbypass+1
-      	ID_tlv_hpoutpower,
+        ID_tlv_hpoutpower,
         "HPLOUT and HPROUT power",
         "Options: 0 - disable power ; 1 -enable power",
         uint8_type,
@@ -491,7 +491,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_hpoutmute ID_tlv_hpoutpower+1
-      	ID_tlv_hpoutmute,
+        ID_tlv_hpoutmute,
         "HPLOUT and HPROUT mute",
         "Options: 0 - disable mute ; 1 -enable mute",
         uint8_type,
@@ -505,7 +505,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_line2ltohpl ID_tlv_hpoutmute+1
-      	ID_tlv_line2ltohpl,
+        ID_tlv_line2ltohpl,
         "LINE2L HPLOUT volume setting",
         "Range: 0 to -78.3 dB (when -79 dB -> mute)",
         float_type,
@@ -519,7 +519,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_line2rtohpr ID_tlv_line2ltohpl+1
-      	ID_tlv_line2rtohpr,
+        ID_tlv_line2rtohpr,
         "LINE2R HPROUT volume setting",
         "Range: 0 to -78.3 dB (when -79 dB -> mute)",
         float_type,
@@ -533,7 +533,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_sethpvol ID_tlv_line2rtohpr+1
-      	ID_tlv_sethpvol,
+        ID_tlv_sethpvol,
         "DAC to Headphones volume setting",
         "Range: 0 to -78.3 dB (when -79 dB -> mute)",
         float_type,
@@ -547,7 +547,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_setdacvol ID_tlv_sethpvol+1
-      	ID_tlv_setdacvol,
+        ID_tlv_setdacvol,
         "DAC volume",
         "Range: 0 to -63.5 dB (when -64 dB -> mute)",
         float_type,
@@ -561,7 +561,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_setadcgain ID_tlv_setdacvol+1
-      	ID_tlv_setadcgain,
+        ID_tlv_setadcgain,
         "ADC gain",
         "Range <0:59.5> dB, step 0.5dB",
         float_type,
@@ -575,7 +575,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_getadcflag ID_tlv_setadcgain+1
-      	ID_tlv_getadcflag,
+        ID_tlv_getadcflag,
         "check ADC flag register",
         "returns register 36",
         void_type,
@@ -589,7 +589,7 @@ const gd_config_struct TLV320AIC33_config_table[] =
       },
       {
         #define ID_tlv_getpwrstatus ID_tlv_getadcflag+1
-      	ID_tlv_getpwrstatus,
+        ID_tlv_getpwrstatus,
         "check module power status",
         "returns register 94",
         void_type,
@@ -670,7 +670,7 @@ GD_RES_CODE tlv320aic33_init(void)
   // Only if gneric driver support enabled
   #if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
   if(e_status != GD_SUCCESS)
-  	return e_status;
+    return e_status;
 
    //some values are changed in brd_drv_default_settings
 
@@ -744,7 +744,7 @@ GD_RES_CODE tlv320aic33_init(void)
   //AGC gain default value is 127
   //HPLOUT,HPLCOM,HPROUT,HPRCOM power down drive control def = 1
 
-	#endif
+  #endif
 
   return e_status;
 
@@ -878,13 +878,13 @@ GD_RES_CODE tlv320aic33_set_DAC_play_input_data(uint8_t i_play_stereo)
  */
 GD_RES_CODE tlv320aic33_set_DAC_left_output_routing(uint8_t i_dac_output)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //Page 0, register 41 structure
   p0_r41_DAC_Output_Switching_Control_t p0_r41;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(41, &p0_r41.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -914,13 +914,13 @@ GD_RES_CODE tlv320aic33_set_DAC_left_output_routing(uint8_t i_dac_output)
  */
 GD_RES_CODE tlv320aic33_set_DAC_right_output_routing(uint8_t i_dac_output)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //Page 0, register 41 structure
   p0_r41_DAC_Output_Switching_Control_t p0_r41;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(41, &p0_r41.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -950,17 +950,17 @@ GD_RES_CODE tlv320aic33_set_DAC_right_output_routing(uint8_t i_dac_output)
  */
 GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE1_L(e_ADCInputGain e_gain)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //limit
   if(e_gain > loss_12_0db)
-  	e_gain = disconnected;
+    e_gain = disconnected;
 
   //Page 0, register 19 structure
   p0_r19_LINE1L_To_Left_ADC_Control_t p0_r19;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(19, &p0_r19.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -992,17 +992,17 @@ GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE1_L(e_ADCInputGain e_gain)
 //tomas
 GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE1_R(e_ADCInputGain e_gain)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //limit
   if(e_gain > loss_12_0db)
-  	e_gain = disconnected;
+    e_gain = disconnected;
 
   //Page 0, register 21 structure
   p0_r21_LINE1R_To_Left_ADC_Control_t p0_r21;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(21, &p0_r21.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1034,17 +1034,17 @@ GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE1_R(e_ADCInputGain e_gain)
 //tomas
 GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE2_L(e_ADCInputGain e_gain)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //limit
   if(e_gain > loss_12_0db)
-  	e_gain = disconnected;
+    e_gain = disconnected;
 
   //Page 0, register 20 structure
   p0_r20_LINE2L_To_Left_ADC_Control_t p0_r20;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(20, &p0_r20.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1076,17 +1076,17 @@ GD_RES_CODE tlv320aic33_set_ADC_L_from_LINE2_L(e_ADCInputGain e_gain)
 //tomas
 GD_RES_CODE tlv320aic33_set_ADC_L_from_MIC3_L(e_ADCInputGain e_gain)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //limit
   if(e_gain > loss_12_0db)
-  	e_gain = disconnected;
+    e_gain = disconnected;
 
   //Page 0, register 17 structure
   p0_r17_MIC3L_R_To_Left_ADC_Control_t p0_r17;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(17, &p0_r17.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1118,17 +1118,17 @@ GD_RES_CODE tlv320aic33_set_ADC_L_from_MIC3_L(e_ADCInputGain e_gain)
 //tomas
 GD_RES_CODE tlv320aic33_set_ADC_L_from_MIC3_R(e_ADCInputGain e_gain)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //limit
   if(e_gain > loss_12_0db)
-  	e_gain = disconnected;
+    e_gain = disconnected;
 
   //Page 0, register 17 structure
   p0_r17_MIC3L_R_To_Left_ADC_Control_t p0_r17;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(17, &p0_r17.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1160,17 +1160,17 @@ GD_RES_CODE tlv320aic33_set_ADC_L_from_MIC3_R(e_ADCInputGain e_gain)
 //tomas
 GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE1_L(e_ADCInputGain e_gain)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //limit
   if(e_gain > loss_12_0db)
-  	e_gain = disconnected;
+    e_gain = disconnected;
 
   //Page 0, register 24 structure
   p0_r24_LINE1L_To_Right_ADC_Control_t p0_r24;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(24, &p0_r24.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1202,17 +1202,17 @@ GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE1_L(e_ADCInputGain e_gain)
 //tomas
 GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE1_R(e_ADCInputGain e_gain)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //limit
   if(e_gain > loss_12_0db)
-  	e_gain = disconnected;
+    e_gain = disconnected;
 
   //Page 0, register 22 structure
   p0_r22_LINE1R_To_Right_ADC_Control_t p0_r22;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(22, &p0_r22.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1244,17 +1244,17 @@ GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE1_R(e_ADCInputGain e_gain)
 //tomas
 GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE2_R(e_ADCInputGain e_gain)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //limit
   if(e_gain > loss_12_0db)
-  	e_gain = disconnected;
+    e_gain = disconnected;
 
   //Page 0, register 23 structure
   p0_r23_LINE2R_To_Right_ADC_Control_t p0_r23;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(23, &p0_r23.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1286,17 +1286,17 @@ GD_RES_CODE tlv320aic33_set_ADC_R_from_LINE2_R(e_ADCInputGain e_gain)
 //tomas
 GD_RES_CODE tlv320aic33_set_ADC_R_from_MIC3_L(e_ADCInputGain e_gain)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //limit
   if(e_gain > loss_12_0db)
-  	e_gain = disconnected;
+    e_gain = disconnected;
 
   //Page 0, register 18 structure
   p0_r18_MIC3L_R_To_Right_ADC_Control_t p0_r18;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(18, &p0_r18.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1328,17 +1328,17 @@ GD_RES_CODE tlv320aic33_set_ADC_R_from_MIC3_L(e_ADCInputGain e_gain)
 //tomas
 GD_RES_CODE tlv320aic33_set_ADC_R_from_MIC3_R(e_ADCInputGain e_gain)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //limit
   if(e_gain > loss_12_0db)
-  	e_gain = disconnected;
+    e_gain = disconnected;
 
   //Page 0, register 18 structure
   p0_r18_MIC3L_R_To_Right_ADC_Control_t p0_r18;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(18, &p0_r18.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1368,13 +1368,13 @@ GD_RES_CODE tlv320aic33_set_ADC_R_from_MIC3_R(e_ADCInputGain e_gain)
  */
 GD_RES_CODE tlv320aic33_set_LINE2L_bypass(uint8_t i_enable)
 {
-		//For result codes
+    //For result codes
   GD_RES_CODE e_status;
 
   //Page 0, register 40 structure
   p0_r40_High_Power_Output_Stage_Control_t p0_r40;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(40, &p0_r40.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1403,13 +1403,13 @@ GD_RES_CODE tlv320aic33_set_LINE2L_bypass(uint8_t i_enable)
  */
 GD_RES_CODE tlv320aic33_set_LINE2R_bypass(uint8_t i_enable)
 {
-		//For result codes
+    //For result codes
   GD_RES_CODE e_status;
 
   //Page 0, register 40 structure
   p0_r40_High_Power_Output_Stage_Control_t p0_r40;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(40, &p0_r40.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1438,14 +1438,14 @@ GD_RES_CODE tlv320aic33_set_LINE2R_bypass(uint8_t i_enable)
  */
 GD_RES_CODE tlv320aic33_set_ADC_power(uint8_t i_enable_ADCs)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //Page 0, register 19, 22 structure
   p0_r19_LINE1L_To_Left_ADC_Control_t p0_r19; //tomas - toto som premenoval cez refactor, nazov struktury bol bez _
   p0_r22_LINE1R_To_Right_ADC_Control_t p0_r22;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(19, &p0_r19.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1582,7 +1582,7 @@ GD_RES_CODE tlv320aic33_set_ADC_gain_dB(float f_gain)
   //Write settings to codec
   e_status = tlv320aic33_write_data(15, p0_r15.i_reg);
   if(e_status != GD_SUCCESS)
-  			return e_status;
+        return e_status;
   e_status = tlv320aic33_write_data(16, p0_r16.i_reg);
 
   // Only if gneric driver support enabled
@@ -1591,7 +1591,7 @@ GD_RES_CODE tlv320aic33_set_ADC_gain_dB(float f_gain)
     return e_status;
   s_tlv320_virtual_reg_img.f_adc_gain_db = f_gain;
 #endif
-	  return e_status;
+    return e_status;
 }
 
 
@@ -1601,13 +1601,13 @@ GD_RES_CODE tlv320aic33_set_ADC_gain_dB(float f_gain)
  */
 GD_RES_CODE tlv320aic33_get_module_power_status(void)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //Page 0, register 94 structure
   uint8_t p0_r94;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(94, &p0_r94);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1629,13 +1629,13 @@ GD_RES_CODE tlv320aic33_get_module_power_status(void)
  */
 GD_RES_CODE tlv320aic33_get_ADC_flag_register(void)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //Page 0, register 36 structure
   uint8_t p0_r36;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(36, &p0_r36);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1651,20 +1651,20 @@ GD_RES_CODE tlv320aic33_get_ADC_flag_register(void)
 }
 
 /**
- * \brief Bit clock rate control
+ * \brief Set bit clock rate control value
  * \note This has effect only if BCLK is set as master
- * @param e_bclk_control : 0-continuous transfer; 1-256-clock transfer mode
+ * @param e_bclk_control 0-continuous transfer; 1-256-clock transfer mode
  * @return GD_SUCCESS (0) if all OKs
  */
 GD_RES_CODE tlv320aic33_set_BCLK_rate(e_BitClockRateControl e_bclk_rate)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //Page 0, register 9 structure
   p0_r9_Audio_Serial_Interface_Control_B_t p0_r9;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(9, &p0_r9.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1677,13 +1677,38 @@ GD_RES_CODE tlv320aic33_set_BCLK_rate(e_BitClockRateControl e_bclk_rate)
 
   // Only if gneric driver support enabled
 #if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
-    if(e_status != GD_SUCCESS)
-      return e_status;
+    if(e_status != GD_SUCCESS) return e_status;
 
     s_tlv320_virtual_reg_img.i_bclk_rate_control = e_bclk_rate;
 #endif
     return e_status;
 }
+
+
+/**
+ * @brief Get bit clock rate control value
+ * \note This has effect only if BCLK is set as master
+ *
+ * @param p_e_bclk_rate Address where result will be written.
+ * @return
+ */
+GD_RES_CODE tlv320aic33_get_BCLK_rate(e_BitClockRateControl *p_e_bclk_rate)
+{
+  //For result codes
+  GD_RES_CODE e_status;
+
+  //Page 0, register 9 structure
+  p0_r9_Audio_Serial_Interface_Control_B_t p0_r9;
+
+  //Get settings from codec
+  e_status = tlv320aic33_read_data(9, &p0_r9.i_reg);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  *p_e_bclk_rate = p0_r9.s.BitClockRateControl;
+
+  return e_status;
+}
+
 
 /**
  * \brief Set BCLK and WCLK direction as master or slave
@@ -1749,24 +1774,42 @@ GD_RES_CODE tlv320aic33_set_data_interface(
   // Page 0, register 9 structure
   p0_r9_Audio_Serial_Interface_Control_B_t p0_r9;
 
+  // Page 0, register 10 structure (for DSP settings)
+  p0_r10_Audio_Serial_Interface_Control_C_t p0_r10;
+
   // Get setting from codec
   e_status = tlv320aic33_read_data(9, &p0_r9.i_reg);
-  if(e_status != GD_SUCCESS)
-    return e_status;
+  if(e_status != GD_SUCCESS) return e_status;
 
   // Set configuration
   p0_r9.s.AudioSerialDataInterfaceTransferMode = e_mode;
 
   // Set register
   e_status = tlv320aic33_write_data(9, p0_r9.i_reg);
+  if(e_status != GD_SUCCESS) return e_status;
 
-  ///\todo REMOVE: Small HACK - DELETE
-  if(e_mode == 1){
-  p0_r10_Audio_Serial_Interface_Control_C_t p0_r10;
-  p0_r10.s.AudioSerialDataWordOffsetControl = 1;
-  tlv320aic33_write_data(10, p0_r10.i_reg);}
+  // If in DSP mode we need also change reg. 10 to set correct/standard offset
+  if(e_mode == serial_data_bus_uses_DSP_mode)
+  {
+    // This register is just 8 bit value. It have no meaning to read from it
+    p0_r10.s.AudioSerialDataWordOffsetControl = 1;
+    e_status = tlv320aic33_write_data(10, p0_r10.i_reg);
+  }
+  // If I2S, Right or left justify, we need to set at reg 10 offset 0
+  else if((e_mode == serial_data_bus_uses_I2S_mode) ||
+          (e_mode == serial_data_bus_uses_right_justified_mode) ||
+          (e_mode == serial_data_bus_uses_left_justified_mode))
+  {
+    // This register is just 8 bit value. It have no meaning to read from it
+    p0_r10.s.AudioSerialDataWordOffsetControl = 0;
+    e_status = tlv320aic33_write_data(10, p0_r10.i_reg);
+  }
+  else  // Unknown state -> error
+  {
+    return GD_FAIL;
+  }
 
-  // Only if gneric driver support enabled
+  // Only if generic driver support enabled
 #if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -1775,66 +1818,123 @@ GD_RES_CODE tlv320aic33_set_data_interface(
   return e_status;
 }
 
+
 /**
- * \brief Set serial audio data offset
- * @param i_offset : options 0-255 bit clocks
+ * @brief Get audio serial data interface mode
+ * @param p_e_mode Address where result will be written.\n
+ *                 Options are defined in e_AudioSerialDataInterfaceTransferMode
  * @return GD_SUCCESS (0) if all OK
  */
-GD_RES_CODE tlv320aic33_set_data_offset(uint8_t i_offset)
+inline GD_RES_CODE tlv320aic33_get_data_interface(
+                                         e_AudioSerialDataInterface *p_e_mode)
 {
-	// For result codes
   GD_RES_CODE e_status;
 
-  // Page 0, register 10
+  // Page 0, register 9 structure
+  p0_r9_Audio_Serial_Interface_Control_B_t p0_r9;
+
+  // Get setting from codec
+  e_status = tlv320aic33_read_data(9, &p0_r9.i_reg);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  // Get configuration
+  *p_e_mode = p0_r9.s.AudioSerialDataInterfaceTransferMode;
+
+  return e_status;
+}
+/**
+ * \brief Set serial audio word offset
+ * @param i_offset 0-255 bit clocks
+ * @return GD_SUCCESS (0) if all OK
+ */
+GD_RES_CODE tlv320aic33_set_data_offset(uint8_t i_data_offset)
+{
+  // For result codes
+  GD_RES_CODE e_status;
+
+  // Digital audio interface mode
+  e_AudioSerialDataInterface e_dig_aud_itf;
+
+  // BCLK rate
+  e_BitClockRateControl e_bclk_rate;
+
+  // Image of page 0, register 10
   p0_r10_Audio_Serial_Interface_Control_C_t p0_r10;
 
-  //limits - works only with generic driver support
-#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
-  if(s_tlv320_virtual_reg_img.i_bclk_rate_control == continuous_transfer_mode)
-  {
-  	// continuous transfer DSP mode
-  	if(s_tlv320_virtual_reg_img.i_digital_inteface_data_mode == 1)//1=DSP
-  	{
-  		if(i_offset > 16)
-  			i_offset = 16;
-  	}
-  	// continuous transfer I2S, left or right justified mode
-  	else
-  	{
-  		if(i_offset > 17)
-  			i_offset = 17;
-  	}
-  }
+  // Get actual mode mode and BCLK rate
+  e_status = tlv320aic33_get_data_interface(&e_dig_aud_itf);
+  if(e_status != GD_SUCCESS) return e_status;
 
-  if(s_tlv320_virtual_reg_img.i_bclk_rate_control == clock_256_transfer_mode)
+  e_status = tlv320aic33_get_BCLK_rate(&e_bclk_rate);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  // Now check real limits (and maybe in future inform user about this)
+  if(e_bclk_rate == continuous_transfer_mode){
+    if(e_dig_aud_itf == serial_data_bus_uses_DSP_mode)
+    {
+      if(i_data_offset > 16)
+      {
+        // In continous & DSP -> max is 16 (datasheet p48)
+        i_data_offset = 16;
+      }
+    }
+    else if((e_dig_aud_itf == serial_data_bus_uses_I2S_mode) ||
+            (e_dig_aud_itf == serial_data_bus_uses_left_justified_mode) ||
+            (e_dig_aud_itf == serial_data_bus_uses_right_justified_mode))
+    {
+      if(i_data_offset > 17)
+      {
+        // In continuous & I2S, LJF, RJF -> max is 17 (datasheet p48)
+        i_data_offset = 17;
+      }
+    }
+    else
+    {
+      // Unknown digital audio interface -> error
+      return GD_FAIL;
+    }
+  }// not continous mode
+  else if(e_bclk_rate == clock_256_transfer_mode)
   {
-  	// 256-clock DSP mode
-  	if(s_tlv320_virtual_reg_img.i_digital_inteface_data_mode == 1)//1=DSP
-  	{
-  		if(i_offset > 241)
-  			i_offset = 241;
-  	}
-  	// 256-clock I2S, left or right justified mode
-  	else
-  	{
-  		if(i_offset > 242)
-  			i_offset = 242;
-  	}
+    if(e_dig_aud_itf == serial_data_bus_uses_DSP_mode)
+    {
+      if(i_data_offset > 241)
+      {
+        // In continous & DSP -> max is 241 (datasheet p48)
+        i_data_offset = 241;
+      }
+    }
+    else if((e_dig_aud_itf == serial_data_bus_uses_I2S_mode) ||
+            (e_dig_aud_itf == serial_data_bus_uses_left_justified_mode) ||
+            (e_dig_aud_itf == serial_data_bus_uses_right_justified_mode))
+    {
+      if(i_data_offset > 242)
+      {
+        // In continuous & I2S, LJF, RJF -> max is 242 (datasheet p48)
+        i_data_offset = 242;
+      }
+    }
+    else
+    {
+      // Unknown digital audio interface -> error
+      return GD_FAIL;
+    }
   }
-#endif
+  else{
+    // Unknown e_bclk_rate value -> error
+    return GD_FAIL;
+  }
 
   // Set register
-  p0_r10.i_reg = i_offset;
+  p0_r10.i_reg = i_data_offset;
   e_status = tlv320aic33_write_data(10, p0_r10.i_reg);
 
   // Only if gneric driver support enabled
 #if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
-  if(e_status != GD_SUCCESS)
-    return e_status;
-  s_tlv320_virtual_reg_img.i_audio_serial_data_offset = i_offset;
+  if(e_status != GD_SUCCESS) return e_status;
+  s_tlv320_virtual_reg_img.i_audio_serial_data_offset = i_data_offset;
 #endif
   return e_status;
-
 }
 
 /**
@@ -2146,7 +2246,7 @@ GD_RES_CODE tlv320aic33_set_DAC_volume_dB(float f_volume)
 GD_RES_CODE tlv320aic33_set_CODEC_CLKIN_source(
     e_CODEC_CLKINSourceSel e_source)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
 
   // Page 0, register 101
@@ -2246,21 +2346,21 @@ GD_RES_CODE tlv320aic33_set_PLLCLK_IN_source(
  */
 GD_RES_CODE tlv320aic33_set_PLL_clock_divider_N_value(uint8_t i_pll_divider)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
   // for value in register
   uint8_t i_val;
 
   if(i_pll_divider < 2 && i_pll_divider > 17)
-  	return GD_INCORRECT_PARAMETER;
+    return GD_INCORRECT_PARAMETER;
 
   i_val = i_pll_divider;
 
   if(i_val == 16)
-  	i_val = 0; //because 0000 in reg 102 means divide by 16
+    i_val = 0; //because 0000 in reg 102 means divide by 16
 
   if(i_val == 17)
-  	i_val = 1; //because 0001 in reg 102 means divide by 17
+    i_val = 1; //because 0001 in reg 102 means divide by 17
 
   //another values of divider are ok (0010 means div by 2)
 
@@ -2296,7 +2396,7 @@ GD_RES_CODE tlv320aic33_set_PLL_clock_divider_N_value(uint8_t i_pll_divider)
  */
 GD_RES_CODE tlv320aic33_set_PLL_enable(uint8_t i_enable)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
 
   // Page 0, register 3
@@ -2330,21 +2430,21 @@ GD_RES_CODE tlv320aic33_set_PLL_enable(uint8_t i_enable)
  */
 GD_RES_CODE tlv320aic33_set_PLL_Q_value(uint8_t i_q_val)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
   // for value in register
   uint8_t i_val;
 
   if(i_q_val < 2 && i_q_val > 17)
-  	return GD_INCORRECT_PARAMETER;
+    return GD_INCORRECT_PARAMETER;
 
   i_val = i_q_val;
 
   if(i_val == 16)
-  	i_val = 0; //because 0000 in reg means 16
+    i_val = 0; //because 0000 in reg means 16
 
   if(i_val == 17)
-  	i_val = 1; //because 0001 in reg means 17
+    i_val = 1; //because 0001 in reg means 17
 
   //another values of divider are ok (0010 means 2)
 
@@ -2379,18 +2479,18 @@ GD_RES_CODE tlv320aic33_set_PLL_Q_value(uint8_t i_q_val)
  */
 GD_RES_CODE tlv320aic33_set_PLL_P_value(uint8_t i_p_val)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
   // for value in register
   uint8_t i_val;
 
   if(i_p_val < 1 && i_p_val > 8)
-  	return GD_INCORRECT_PARAMETER;
+    return GD_INCORRECT_PARAMETER;
 
   i_val = i_p_val;
 
   if(i_val == 8)
-  	i_val = 0; //because 000 in reg means 8
+    i_val = 0; //because 000 in reg means 8
 
   //another values of divider are ok (001 means 1)
 
@@ -2425,11 +2525,11 @@ GD_RES_CODE tlv320aic33_set_PLL_P_value(uint8_t i_p_val)
  */
 GD_RES_CODE tlv320aic33_set_PLL_J_value(uint8_t i_j_val)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
 
   if(i_j_val < 1 && i_j_val > 63)
-  	return GD_INCORRECT_PARAMETER;
+    return GD_INCORRECT_PARAMETER;
 
   // Page 0, register 4
   p0_r4_PLL_Programming_B_t p0_r4;
@@ -2458,15 +2558,15 @@ GD_RES_CODE tlv320aic33_set_PLL_J_value(uint8_t i_j_val)
  */
 GD_RES_CODE tlv320aic33_set_PLL_D_value(uint16_t i_d_val)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
 
-  if(i_d_val > 9999)								//14 bits
-  	return GD_INCORRECT_PARAMETER;
+  if(i_d_val > 9999)                //14 bits
+    return GD_INCORRECT_PARAMETER;
 
   // Page 0, register 5, 6
-  p0_r5_PLL_Programming_C_t p0_r5;	//8 msb bits here
-  p0_r6_PLL_Programming_D_t p0_r6;	//6 lsb bits here
+  p0_r5_PLL_Programming_C_t p0_r5;  //8 msb bits here
+  p0_r6_PLL_Programming_D_t p0_r6;  //6 lsb bits here
 
   uint8_t i_msb = 0, i_lsb = 0;
   i_lsb = (uint8_t)(0x3f && i_d_val);
@@ -2501,18 +2601,18 @@ GD_RES_CODE tlv320aic33_set_PLL_D_value(uint16_t i_d_val)
  */
 GD_RES_CODE tlv320aic33_set_PLL_R_value(uint8_t i_r_val)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
   // for value in register
   uint8_t i_val;
 
   if(i_r_val < 1 && i_r_val > 16)
-  	return GD_INCORRECT_PARAMETER;
+    return GD_INCORRECT_PARAMETER;
 
   i_val = i_r_val;
 
   if(i_val == 16)
-  	i_val = 0; //because 0000 in reg means 16
+    i_val = 0; //because 0000 in reg means 16
 
   //another values of divider are ok (0010 means 2)
 
@@ -2546,7 +2646,7 @@ GD_RES_CODE tlv320aic33_set_PLL_R_value(uint8_t i_r_val)
  */
 GD_RES_CODE tlv320aic33_set_Fsref(e_FsrefSetting e_setting)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
 
   // Page 0, register 7
@@ -2581,7 +2681,7 @@ GD_RES_CODE tlv320aic33_set_Fsref(e_FsrefSetting e_setting)
  */
 GD_RES_CODE tlv320aic33_set_ADC_sample_rate(e_ADCandDACSampleRate e_samplerate)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
 
   // Page 0, register 2
@@ -2615,7 +2715,7 @@ GD_RES_CODE tlv320aic33_set_ADC_sample_rate(e_ADCandDACSampleRate e_samplerate)
  */
 GD_RES_CODE tlv320aic33_set_DAC_sample_rate(e_ADCandDACSampleRate e_samplerate)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
 
   // Page 0, register 2
@@ -2649,9 +2749,9 @@ GD_RES_CODE tlv320aic33_set_DAC_sample_rate(e_ADCandDACSampleRate e_samplerate)
  */
 GD_RES_CODE tlv320aic33_set_ADC_and_DAC_dual_rate(uint8_t i_enable)
 {
-	//Note: ADC Dual Rate Mode must match DAC Dual Rate Mode
+  //Note: ADC Dual Rate Mode must match DAC Dual Rate Mode
 
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
 
   // Page 0, register 7
@@ -2687,7 +2787,7 @@ GD_RES_CODE tlv320aic33_set_ADC_and_DAC_dual_rate(uint8_t i_enable)
  */
 GD_RES_CODE tlv320aic33_set_LINE2L_to_HPLOUT(float f_volume_dB)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
 
   // Volume raw value (for codec register)
@@ -2704,7 +2804,7 @@ GD_RES_CODE tlv320aic33_set_LINE2L_to_HPLOUT(float f_volume_dB)
   if(i_vol_raw >= 128)
     return GD_INCORRECT_PARAMETER;
   if(i_vol_raw >=118)
-  	i_routed = 0;
+    i_routed = 0;
   
   // Page 0, register 45
   p0_r45_LINE2L_To_HPLOUT_Volume_Control_t p0_r45;
@@ -2742,7 +2842,7 @@ GD_RES_CODE tlv320aic33_set_LINE2L_to_HPLOUT(float f_volume_dB)
  */
 GD_RES_CODE tlv320aic33_set_LINE2R_to_HPROUT(float f_volume_dB)
 {
-	// For result codes
+  // For result codes
   GD_RES_CODE e_status;
 
   // Volume raw value (for codec register)
@@ -2759,7 +2859,7 @@ GD_RES_CODE tlv320aic33_set_LINE2R_to_HPROUT(float f_volume_dB)
   if(i_vol_raw >= 128)
     return GD_INCORRECT_PARAMETER;
   if(i_vol_raw >=118)
-  	i_routed = 0;
+    i_routed = 0;
 
   // Page 0, register 62
   p0_r62_LINE2R_To_HPROUT_Volume_Control_t p0_r62;
@@ -2797,14 +2897,14 @@ GD_RES_CODE tlv320aic33_set_LINE2R_to_HPROUT(float f_volume_dB)
  */
 GD_RES_CODE tlv320aic33_set_HP_out_power(uint8_t i_power)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //Page 0, register 51, 65 structure
   p0_r51_HPLOUT_Output_Level_Control_t p0_r51;
   p0_r65_HPROUT_Output_Level_Control_t p0_r65;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(51, &p0_r51.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -2853,14 +2953,14 @@ GD_RES_CODE tlv320aic33_set_HP_out_power(uint8_t i_power)
  */
 GD_RES_CODE tlv320aic33_set_HP_out_mute(uint8_t i_mute)
 {
-	//For result codes
+  //For result codes
   GD_RES_CODE e_status;
 
   //Page 0, register 51, 65 structure
   p0_r51_HPLOUT_Output_Level_Control_t p0_r51;
   p0_r65_HPROUT_Output_Level_Control_t p0_r65;
 
-	//Get settings from codec
+  //Get settings from codec
   e_status = tlv320aic33_read_data(51, &p0_r51.i_reg);
   if(e_status != GD_SUCCESS)
     return e_status;
@@ -2936,17 +3036,17 @@ GD_RES_CODE tlv320aic33_set_headphones_volume_dB(float f_volume)
  */
 GD_RES_CODE tlv320aic33_get_headphones_volume_db(float *p_f_volume)
 {
-	#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
+#if TLV320AIC33_SUPPORT_GENERIC_DRIVER != 0
   *p_f_volume = s_tlv320_virtual_reg_img.f_headphones_volume_db;
   #else
-  ///\todo
+  ///\todo Complete code for non generic driver
   /*
    * Load value from TLV
    * Convert to float
    * save to pointer
    */
 #warning "!!!!!!!!    This part is NOT COMPLETED !!!! Please do not use\
-	this function until you develop this library"
+  this function until you develop this library"
   #endif
   return GD_SUCCESS;
 }
