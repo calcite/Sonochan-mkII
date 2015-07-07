@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/07/06
+ * Modified: 2015/07/07
  *
- * \version 0.4.3
+ * \version 0.4.4
  * \author  Martin Stejskal
  */
 
@@ -281,21 +281,7 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_BCLK_oversampling
     },
     {
-#define BRD_DRV_CMD_AUTO_TUNE           BRD_DRV_CMD_BCLK_OVERSAM+1
-      BRD_DRV_CMD_AUTO_TUNE,
-      "Auto tune PLL when audio feedback not work",
-      "Enable (1) or disable (0)",
-      uint8_type,
-      {.data_uint8 = 0},
-      {.data_uint8 = 1},
-      uint8_type,
-      {.data_uint8 = 0},
-      {.data_uint8 = 1},
-      (GD_DATA_VALUE*)&i_auto_tune_pll,
-      brd_drv_auto_tune
-    },
-    {
-#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_AUTO_TUNE+1
+#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_BCLK_OVERSAM+1
       BRD_DRV_CMD_DIG_AUD_INTERFACE,
       "Digital audio interface mode",
       "NOT IMPLEMENTED! ; 0-I2S ; 1-DSP ; 2-Left justified ; 3-Right justified",
@@ -309,7 +295,21 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_digital_audio_interface_mode
     },
     {
-#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_DIG_AUD_INTERFACE+1
+#define BRD_DRV_CMD_WORD_OFFSET     BRD_DRV_CMD_DIG_AUD_INTERFACE+1
+        BRD_DRV_CMD_WORD_OFFSET,
+        "Word offset (delay between FSYNC and TX/RX_DATA)",
+        "0 ~ 255. However because of codec limits it is save up to 16",
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 255},
+        uint8_type,
+        {.data_uint8 = 0},
+        {.data_uint8 = 255},
+        (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_word_bit_offset,
+        brd_drv_set_word_offset
+    },
+    {
+#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_WORD_OFFSET+1
       BRD_DRV_CMD_RX_FSYNC_EDGE,
       "RX FSYNC edge",
       "RX FSYNC sync edge ; 0 - falling ; 1 - rising ; 2 - default",
@@ -379,7 +379,21 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_data_length
     },
     {
-#define BRD_DRV_CMD_TEST_FUNC   BRD_DRV_CMD_WORD_SIZE+1
+#define BRD_DRV_CMD_AUTO_TUNE           BRD_DRV_CMD_WORD_SIZE+1
+      BRD_DRV_CMD_AUTO_TUNE,
+      "Auto tune PLL when audio feedback not work",
+      "Enable (1) or disable (0)",
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      uint8_type,
+      {.data_uint8 = 0},
+      {.data_uint8 = 1},
+      (GD_DATA_VALUE*)&i_auto_tune_pll,
+      brd_drv_auto_tune
+    },
+    {
+#define BRD_DRV_CMD_TEST_FUNC   BRD_DRV_CMD_AUTO_TUNE+1
       BRD_DRV_CMD_TEST_FUNC,
       "Test function",
       "For testing",
@@ -457,7 +471,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 const gd_metadata BRD_DRV_metadata =
 {
         BRD_DRV_MAX_CMD_ID,              // Max CMD ID
-        "Board driver for Sonochan mkII v0.4.1",     // Description
+        "Board driver for Sonochan mkII v0.4.4",     // Description
         (gd_config_struct*)&BRD_DRV_config_table[0],
         0x0F    // Serial number (0~255)
 };
@@ -468,10 +482,6 @@ const gd_metadata BRD_DRV_metadata =
 
 GD_RES_CODE brd_drv_test_f(uint32_t i32)
 {
-  volatile avr32_ssc_t *p_ssc;
-  p_ssc = SSC_DEVICE;
-  //char c[150];
-
   print_dbg("TEST FUNCTION ...\n\n");
 
   return GD_SUCCESS;
@@ -1106,11 +1116,46 @@ inline GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
   GD_RES_CODE e_status;
 
   e_status = ssc_set_digital_interface_mode(e_mode);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  // Also set codec interface (same enum values, no problem)
+  e_status = tlv320aic33_set_data_interface(e_mode);
   if(e_status == GD_SUCCESS)
   {
     // If all OK -> save actual mode value
     s_brd_drv_ssc_fine_settings.e_dig_aud_mode = e_mode;
   }
+  else // If e_status == GD_SUCCESS
+  {
+    return e_status;
+  }
+
+  ///\todo Update values
+
+  // Inform about set interface to debug
+  switch(e_mode)
+  {
+  case SSC_I2S:
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_FMT_I2S, 1, 0, -1);
+    break;
+  case SSC_DSP:
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_FMT_DSP, 1, 0, -1);
+    break;
+  case SSC_RIGHT_JUSTIFIED:
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_FMT_R_JUS, 1, 0, -1);
+    break;
+  case SSC_LEFT_JUSTIFIED:
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_FMT_L_JUS, 1, 0, -1);
+    break;
+  default:
+    /* This should never happend. Only in case, that code is not complete
+     * or badly written
+     */
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_UNKNOWN_DIG_ITF_MODE, 1, 1);
+    e_status = GD_FAIL;
+  }
+
+
   // Anyway, return status code
   return e_status;
 }
@@ -1706,8 +1751,14 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
     print_dbg(" ! FSYNC TX edge fail ! ");
     return e_status;
   }
-  ///\todo Set through FSYNC pulse function
-  ///\todo Set through word offset function
+  e_status = brd_drv_set_word_offset(
+      s_brd_drv_user_settings.i_word_bit_offset);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! WORD bit OFFSET fail ! ");
+    return e_status;
+  }
+
 
   // Just return status of last function
   return e_status;
@@ -1735,13 +1786,19 @@ inline GD_RES_CODE brd_drv_load_default_settings(void)
   // Load value i_auto_tune_pll
   uac1_device_audio_get_auto_tune(&i_auto_tune_pll);
 
-  // Set as default I2S mode
-#if BRD_DRV_DEBUG == 1
-  e_status = ssc_set_digital_interface_mode(SSC_DSP);
-#else
-  e_status = ssc_set_digital_interface_mode(SSC_I2S);
-#endif
+  // Set as default mode (usually I2S)
+  e_status = ssc_set_digital_interface_mode(BRD_DRV_DEFAULT_DIG_AUD_ITF);
   if(e_status != GD_SUCCESS) return e_status;
+  s_brd_drv_ssc_fine_settings.e_dig_aud_mode = BRD_DRV_DEFAULT_DIG_AUD_ITF;
+
+  /* Because word offset is mode dependent, we just get this information from
+   * SSC driver (because we already set digital audio interface)
+   */
+  uint8_t i_word_offset_tmp;
+  e_status = ssc_get_word_offset(&i_word_offset_tmp);
+  if(e_status != GD_SUCCESS) return e_status;
+  // Else success -> write value to virtual register
+  s_brd_drv_ssc_fine_settings.i_word_bit_offset = i_word_offset_tmp;
 
   // Load SSC default values
   // FSYNC RX
@@ -2026,6 +2083,87 @@ GD_RES_CODE brd_drv_set_BCLK_TX_edge(e_ssc_edge_t e_edge)
   return e_status;
 }
 
+
+/**
+ * @brief Set word offset
+ *
+ * Word offset is delay between FSYNC pulse/signal and TX/RX_DATA signal.\n
+ * This delay is in BCLK cycles.\n
+ * For example I2S have this delay set to 1, DSP also, but right and left\n
+ * justify have this delay 0.\n
+ * Anyway it is very useful for debugging.
+ *
+ * @param i_word_offset Word offset between FSYNC and TX/RX_DATA in BCLK\n
+ *                      cycles. Because of codec restriction safe values are\n
+ *                      from 0 to 240.
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_set_word_offset(uint8_t i_word_offset)
+{
+  GD_RES_CODE e_status;
+
+  // Set this offset in SSC driver
+  e_status = ssc_set_word_offset(i_word_offset);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  /* In I2S mode codec counts word offset little bit different way.
+   * So we have to count with it. Basically when offset is 0, then it is left
+   * justified format and not I2S, so codec will not work.
+   */
+  if(s_brd_drv_ssc_fine_settings.e_dig_aud_mode == SSC_I2S)
+  {
+    if(i_word_offset == 0)
+    {
+      // Not possible to set. Just show warning and set lowest value
+      brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_I2S_WORD_OFFSET_CDC_NOT_SUPP,
+                               1, 1);
+      // Also set same parameter in codec
+      e_status = tlv320aic33_set_data_offset(0);
+      if(e_status != GD_SUCCESS) return e_status;
+    }
+    else // i_word_offset == 0
+    {
+      // As mentioned above, counting offset there is little bit different
+      i_word_offset--;
+      // Set parameter in codec
+      e_status = tlv320aic33_set_data_offset(i_word_offset);
+      if(e_status != GD_SUCCESS) return e_status;
+    }
+  }// If mode == I2S
+  else
+  {
+    // Other modes are easy. No hard work
+    e_status = tlv320aic33_set_data_offset(i_word_offset);
+    if(e_status != GD_SUCCESS) return e_status;
+  }
+
+
+  // If success, write it to our virtual register
+  if(e_status == GD_SUCCESS)
+  {
+    s_brd_drv_ssc_fine_settings.i_word_bit_offset = i_word_offset;
+  }
+
+  return e_status;
+}
+
+
+/**
+ * \brief Give word offset
+ *
+ * This delay is in BCLK cycles.\n
+ * For example I2S have this delay set to 1, DSP also, but right and left\n
+ * justify have this delay 0.\n
+ * Anyway it is very useful for debugging.
+ *
+ * @param p_i_word_offset Address, where result will be written.
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_get_word_offset(uint8_t *p_i_word_offset)
+{
+  *p_i_word_offset = s_brd_drv_ssc_fine_settings.i_word_bit_offset;
+  return GD_SUCCESS;
+}
 
 
 /**
@@ -3017,16 +3155,16 @@ inline GD_RES_CODE brd_drv_TLV_default(void)
   e_status = tlv320aic33_set_data_interface(
 #if BRD_DRV_DEFAULT_DIG_AUD_ITF == 0
       serial_data_bus_uses_I2S_mode);
-      print_dbg("TLV: setting I2S\n");
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_CDC_ITF_I2S, 1, 0, -1);
 #elif BRD_DRV_DEFAULT_DIG_AUD_ITF == 1
       serial_data_bus_uses_DSP_mode);
-      print_dbg("TLV: setting DSP\n");
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_CDC_ITF_DSP, 1, 0, -1);
 #elif BRD_DRV_DEFAULT_DIG_AUD_ITF == 2
       serial_data_bus_uses_right_justified_mode);
-      print_dbg("TLV: setting L JUS\n");
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_CDC_ITF_R_JUS, 1, 0, -1);
 #elif BRD_DRV_DEFAULT_DIG_AUD_ITF == 3
       serial_data_bus_uses_left_justified_mode);
-      print_dbg("TLV: setting R JUS\n");
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_CDC_ITF_L_JUS, 1, 0, -1);
 #else
       0);
 #error "Unknown default value for BRD_DRV_DEFAULT_DIG_AUD_ITF"
