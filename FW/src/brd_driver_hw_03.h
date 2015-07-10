@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/07/07
+ * Modified: 2015/07/10
  *
- * \version 0.4.4
+ * \version 0.4.5
  * \author  Martin Stejskal
  */
 
@@ -24,7 +24,7 @@
  * In this mode non-standard settings can be used. This may decrease develop\n
  * time, but may confuse user. Beware!
  */
-#define BRD_DRV_DEBUG                                   1
+#define BRD_DRV_DEBUG                                   0
 /**
  * \brief Set default headphones volume in dB
  *
@@ -54,13 +54,6 @@
  *
  * @{
  */
-/**
- * \brief Select one of the digital audio interface.
- *
- * List of interfaces: 0 - I2S , 1 - DSP , 2 - LEFT JUSTIFY, 3 - RIGHT JUSTIFY
- * \todo More symbolic in future
- */
-#define BRD_DRV_DEFAULT_DIG_AUD_ITF             0
 
 /**
  * \brief MCLK oversampling relative to FSYNC singal
@@ -478,23 +471,27 @@ typedef enum{
 
 /**
  * \brief Mute structure
+ *
+ * Mute for Digital Audio Interface
  */
 typedef struct{
   e_brd_drv_dir_t e_mute_dir;
   uint8_t         i_mute_val;
-}s_brd_drv_mute_t;
+}s_brd_drv_mute_dai_t;
 
 /**
- * \brief Reset I2S structure
+ * \brief Reset Digital Audio Interface (DAI) structure
+ *
+ * Mute for Digital Audio Interface
  */
 typedef struct{
-  e_brd_drv_dir_t e_rst_i2s_dir;
-  uint8_t         i_rst_i2s_val;
-}s_brd_drv_rst_i2s_t;
+  e_brd_drv_dir_t e_rst_dai_dir;
+  uint8_t         i_rst_dai_val;
+}s_brd_drv_rst_dai_t;
 
 
 /**
- * \brief Directions for pure I2S signals
+ * \brief Directions for pure Digital Audio Interface (DAI) signals
  *
  * Direction for: MCLK, BCLK, FSYNC, TX_DATA, RX_DATA
  */
@@ -504,7 +501,7 @@ typedef struct{
   e_brd_drv_dir_t e_fsync_dir;
   e_brd_drv_dir_t e_tx_data_dir;
   e_brd_drv_dir_t e_rx_data_dir;
-}s_brd_drv_pure_i2s_dir_t;
+}s_brd_drv_pure_dai_dir_t;
 
 
 /**
@@ -518,7 +515,7 @@ typedef struct{
   /// MUTE direction
   e_brd_drv_dir_t e_mute_dir;
   /// RESET I2S direction
-  e_brd_drv_dir_t e_rst_i2s_dir;
+  e_brd_drv_dir_t e_rst_dai_dir;
   /// MCLK direction
   e_brd_drv_dir_t e_mclk_dir;
   /// BCLK direction
@@ -587,7 +584,7 @@ typedef struct{
   /** Word bit offset
    * Number of bits (BCLK intervals) before start of actual audio data.
    */
-  uint8_t i_word_bit_offset;
+  uint16_t i_word_bit_offset;
   /// Data length in bits
   uint8_t i_data_length;
   /// BCLK oversampling
@@ -610,7 +607,7 @@ typedef struct{
 ///\todo Sort messages to ERROR, WARNING and INFO
 /// Can not initialize LCD display
 #define BRD_DRV_MSG_LCD_INIT_FAIL       \
-  {"LCD initialization failed!\n"}
+  "LCD initialization failed!\n"
 
 /// Sonochan mk II
 #define BRD_DRV_MSG_INFO_SONOCHAN_MK_II         \
@@ -618,7 +615,7 @@ typedef struct{
 
 /// Can not draw logo
 #define BRD_DRV_MSG_DRAW_LOGO_FAIL      \
-  {"Write logo failed\n"}
+  "Write logo failed\n"
 
 /// To apply changes, please restart device
 #define BRD_DRV_MSG_ERR_DEVICE_RESTART_REQUIRED                         \
@@ -642,63 +639,63 @@ typedef struct{
 
 /// Can not initialize ADC
 #define BRD_DRV_MSG_ADC_INIT_FAIL       \
-  {"Can not initialize internal ADC\n"}
+  "Can not initialize internal ADC\n"
 
 /// Can not initialize codec
 #define BRD_DRV_MSG_CODEC_INIT_FAIL     \
-  {"Can not initialize codec\n"}
+  "Can not initialize codec\n"
 
 /// Can not set save flag
 #define BRD_DRV_MSG_PLL_SET_SAVE_FLAG_FAIL      \
-  {"Can not set save flag at PLL\n"}
+  "Can not set save flag at PLL\n"
 
 /// Can not set headphone volume in dB
 #define BRD_DRV_TLV_FAILED_SET_HEADPHONE_VOL_DB \
-  {"Can not set headphone volume in DB\n"}
+  "Can not set headphone volume in DB\n"
 
 /// Can not write to LCD
 #define BRD_DRV_LCD_WRITE_FAIL                  \
-  {"Can not write to LCD\n"}
+  "Can not write to LCD\n"
 
 /// Voltage on connector side in save range
 #define BRD_DRV_CON_VOL_SAVE                    \
-  {"Con: save voltage\n"}
+  "Con: save voltage\n"
 
 /// Voltage on connector side is too high
 #define BRD_DRV_CON_VOL_HIGH                    \
-  {"Con: high voltage!\n"}
+  "Con: high voltage!\n"
 
 /// Mute direction IN ; Mute off
 #define BRD_DRV_MUTE_IN_MUTE_OFF                \
-  {"MUTE (IN): OFF\n"}
+  "MUTE (IN): OFF\n"
 
 /// Mute direction IN ; Mute on
 #define BRD_DRV_MUTE_IN_MUTE_ON                 \
-  {"MUTE (IN): ON\n"}
+  "MUTE (IN): ON\n"
 
 /// Mute direction OUT ; Mute off
 #define BRD_DRV_MUTE_OUT_MUTE_OFF               \
-  {"MUTE (OUT): OFF\n"}
+  "MUTE (OUT): OFF\n"
 
 /// Mute direction OUT ; Mute on
 #define BRD_DRV_MUTE_OUT_MUTE_ON                \
-  {"MUTE (OUT): ON\n"}
+  "MUTE (OUT): ON\n"
 
 /// Mute direction IN ; Button pressed ; Mute on
 #define BRD_DRV_MSG_MUTE_BTN_PRESSED            \
-  {"MUTE_BTN pressed\n"}
+  "MUTE_BTN pressed\n"
 
 /// Mute direction IN ; Button released ; Mute off
 #define BRD_DRV_MSG_MUTE_BTN_RELEASED           \
-  {"MUTE_BTN released\n"}
+  "MUTE_BTN released\n"
 
 /// Signal MUTE - rising edge
 #define BRD_DRV_MSG_MUTE_RISING_EDGE            \
-  {"MUTE: rising edge\n"}
+  "MUTE: rising edge\n"
 
 /// Signal MUTE - falling edge
 #define BRD_DRV_MSG_MUTE_FALLING_EDGE           \
-  {"MUTE: falling edge\n"}
+  "MUTE: falling edge\n"
 
 /// Info that connector is not powered so can not react for buttons
 #define BRD_DRV_MSG_ERR_CON_NOT_POWERED         \
@@ -706,43 +703,43 @@ typedef struct{
 
 /// Error message was cleaned from LCD
 #define BRD_DRV_MSG_ERR_MSG_CLEARED             \
-  {"Error message cleared\n"}
+  "Error message cleared\n"
 
 /// Info that restart I2S was occurred
 #define BRD_DRV_MSG_RESET_I2S_DONE              \
-  {"Reset I2S done\n"}
+  "Reset I2S done\n"
 
 /// Info that RESET_I2S_PIN was set to HIGH
 #define BRD_DRV_MSG_RESET_I2S_SET_TO_HIGH       \
-  {"Reset I2S (OUT) set to HIGH\n"}
+  "Reset I2S (OUT) set to HIGH\n"
 
 /// Info that RESET_I2S_PIN was set to LOW
 #define BRD_DRV_MSG_RESET_I2S_SET_TO_LOW        \
-  {"Reset I2S (OUT) set to LOW\n"}
+  "Reset I2S (OUT) set to LOW\n"
 
 /// RESET_I2S_PIN is input and there is require to turn off reset I2S
 #define BRD_DRV_MSG_RESET_I2S_INPUT_OFF         \
-  {"Reset I2S (IN) off\n"}
+  "Reset I2S (IN) off\n"
 
 /// RESET_I2S_PIN is input and there is require to turn on reset I2S
 #define BRD_DRV_MSG_RESET_I2S_INPUT_ON          \
-  {"Reset I2S (IN) on\n"}
+  "Reset I2S (IN) on\n"
 
 /// Info that rising edge was detected on RESET_I2S_PIN
 #define BRD_DRV_MSG_RST_I2S_RISING_EDGE         \
-  {"RESET_I2S: rising edge\n"}
+  "RESET_I2S: rising edge\n"
 
 /// Info that falling edge was detected on RESET_I2S_PIN
 #define BRD_DRV_MSG_RST_I2S_FALLING_EDGE        \
-  {"RESET_I2S: falling edge\n"}
+  "RESET_I2S: falling edge\n"
 
 /// RESET_I2S_BTN was pressed
 #define BRD_DRV_MSG_RST_I2S_BTN_PRESSED         \
-  {"RESET_I2S_BTN pressed\n"}
+  "RESET_I2S_BTN pressed\n"
 
 /// RESET_I2S_BTN was released
 #define BRD_DRV_MSG_RST_I2S_BTN_RELEASED        \
-  {"RESET_I2S_BTN released\n"}
+  "RESET_I2S_BTN released\n"
 
 /// Error message was removed
 #define BRD_DRV_MSG_INFO_ERROR_CLEANED          \
@@ -756,9 +753,13 @@ typedef struct{
 #define BRD_DRV_MSG_ERR_MCLK_DIV_FAIL           \
   "MCLK ovrsam. Can't set divider\n"
 
-/// Can not set PLL frequency
-#define BRD_DRV_MSG_ERR_CAN_NOT_SET_PLL_FREQ    \
+/// Can not set PLL frequency at set MCLK oversampling function
+#define BRD_DRV_MSG_ERR_CAN_NOT_SET_PLL_FREQ_MCLK    \
   "MCLK ovrsam. Can not set PLL\n"
+
+/// Can not set PLL frequency at set BCLK oversampling function
+#define BRD_DRV_MSG_ERR_CAN_NOT_SET_PLL_FREQ_BCLK       \
+  "BCLK ovrsam. Can not set PLL\n"
 
 /// Can not set BCLK oversampling value
 #define BRD_DRV_MSG_ERR_MCLK_OVRSAM_CAN_NOT_SET_BCLK_OVRSAM     \
@@ -767,6 +768,26 @@ typedef struct{
 /// Can not set selected mode, because it is unknown
 #define BRD_DRV_MSG_ERR_UNKNOWN_DIG_ITF_MODE            \
   "Can not set digital audio mode, because is unknown!\n Code incomplete?\n"
+
+/// MCLK too low. Can not be lower than BCLK.
+#define BRD_DRV_MSG_ERR_MCLK_LOWER_THAN_BCLK            \
+  "Can not set BCLK oversampling higher than MCLK oversampling!\n"
+
+/// Can not set BCLK because it would cut data word.
+#define BRD_DRV_MSG_ERR_BCLK_LOWER_THAN_DATA_WORD       \
+  "Can not set BCLK this low, because of data word size.\n"
+
+/// BCLK is not exact multiplier of MCLK
+#define BRD_DRV_MSG_ERR_BCLK_IS_NOT_MUL_OF_MCLK         \
+  "BCLK is not exact multiplier of MCLK.\n"
+
+/// Request for setting data length, but BCLK is too low
+#define BRD_DRV_MSG_ERR_DATA_LEN_LONG_BCLK_LOW          \
+  "Can not set data length because of low BCLK\n"
+
+/// Request to set word offset in RJF, but BCLK is too high
+#define BRD_DRV_MSG_ERR_CANT_SET_WORD_OFF_BCLK_HIGH     \
+  "Word offset can not be set because BCLK is too high!\n"
 /// @}
 
 
@@ -774,25 +795,18 @@ typedef struct{
  * \name Warning messages
  * @{
  */
-#define BRD_DRV_MSG_WRN_MCLK_RAISED_UP_BCLK     \
-  "MCLK low. Setting up to BCLK frequency\n"
-
-#define BRD_DRV_MSG_WRN_DATA_LEN_DECREASED      \
-  "Data length was decreased\n"
-
-#define BRD_DRV_MSG_WRN_BCLK_OVRSMPLING_INCREASED       \
-  "BCLK oversampling value increased\n"
-
 #define BRD_DRV_MSG_WRN_FLASH_NOT_VALID_SETTINGS        \
-  "Non valid settings in user flash.\n"
+  "Non valid settings in user flash!\n"
 
 
 #define BRD_DRV_MSG_WRN_CAN_NOT_SET_PLL_TRYING_AGAIN    \
   "Can not set external PLL. Trying again...\n"
 
-#define BRD_DRV_MSG_WRN_I2S_WORD_OFFSET_CDC_NOT_SUPP    \
-  "Codec NOT support I2S word offset 0!\n"\
-  "However Sonochan mkII can deal with it.\n"
+#define BRD_DRV_MSG_WRN_MCLK_OVRSM_HIGH                 \
+  "MCLK oversampling is set to too high value\n"
+
+#define BRD_DRV_MSG_WRN_OFF_PLUS_DATA_HIGHR_THAN_HALF_BCLK      \
+  "Word offset plus data size can not fit to frame! LSB can be cut!\n"
 /// @}
 
 
@@ -802,7 +816,7 @@ typedef struct{
  */
 
 #define BRD_DRV_MSG_INFO_LOAD_FACTRY_STTNGS         \
-  "Loading factory settings\n"
+  "Loading factory settings...\n"
 
 #define BRD_DRV_MSG_INFO_FACTRY_STTNGS_LOADED       \
   "Factory settings was loaded\n"
@@ -1088,8 +1102,8 @@ GD_RES_CODE brd_drv_set_FSYNC_TX_edge(e_ssc_edge_t e_edge);
 GD_RES_CODE brd_drv_set_BCLK_RX_edge(e_ssc_edge_t e_edge);
 GD_RES_CODE brd_drv_set_BCLK_TX_edge(e_ssc_edge_t e_edge);
 
-GD_RES_CODE brd_drv_set_word_offset(uint8_t i_word_offset);
-GD_RES_CODE brd_drv_get_word_offset(uint8_t *p_i_word_offset);
+GD_RES_CODE brd_drv_set_word_offset(uint16_t i_word_offset);
+GD_RES_CODE brd_drv_get_word_offset(uint16_t *p_i_word_offset);
 
 GD_RES_CODE brd_drv_show_FSYNC_freq(uint8_t i_line);
 
@@ -1125,6 +1139,8 @@ GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable);
 
 GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);
 
+GD_RES_CODE brd_drv_set_isolators(s_brd_drv_pure_dai_dir_t s_pure_dai_dir);
+
 GD_RES_CODE brd_drv_set_mclk_dir(e_brd_drv_dir_t e_mclk_dir);
 
 GD_RES_CODE brd_drv_set_bclk_dir(e_brd_drv_dir_t e_bclk_dir);
@@ -1151,9 +1167,4 @@ GD_RES_CODE brd_drv_set_MCLK_div(uint16_t i_div);
 
 GD_RES_CODE brd_drv_get_MCLK_div(uint16_t *p_i_div);
 
-
-//[DEBUG]
-///\todo REMOVE
-GD_RES_CODE brd_drv_test_f(uint32_t i32);
-//[/DEBUG]
 #endif
