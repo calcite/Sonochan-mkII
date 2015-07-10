@@ -131,7 +131,7 @@ static uint8_t i_swap_LR_RX = 0;
 
 
 
-static U32  index_i;
+static U32 index_i;
 static U32 spk_index;
 //static U16  old_gap = SPK_BUFFER_SIZE;
 static U8 audio_buffer_out, spk_buffer_in;  // the ID number of the buffer used for sending out to the USB

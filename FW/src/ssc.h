@@ -9,9 +9,9 @@
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  2014/08/20\n
- * Modified: 2015/07/07
+ * Modified: 2015/07/10
  *
- * \version 0.3
+ * \version 0.4
  * \author Martin Stejskal
  */
 //[Martin] Because this is cross dependent
@@ -267,6 +267,10 @@ typedef struct{
   "SSC: Setting I2S mode\n"
 #define SSC_MSG_INFO_MODE_DSP                   \
   "SSC: Setting DSP mode\n"
+#define SSC_MSG_INFO_MODE_L_JUS                 \
+  "SSC: Setting Left justified mode\n"
+#define SSC_MSG_INFO_MODE_R_JUS                 \
+  "SSC: Setting Right justified mode\n"
 ///@}
 //=================================| Macros |==================================
 
@@ -283,11 +287,13 @@ SSC_RES_CODE ssc_get_digital_interface_mode(
 //===========================| Mid level functions |===========================
 SSC_RES_CODE ssc_wait_for_FSYNC_RX(void);
 
-
-
 SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void);
 
 SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void);
+
+SSC_RES_CODE ssc_set_digital_interface_mode_L_jus(void);
+
+SSC_RES_CODE ssc_set_digital_interface_mode_R_jus(void);
 
 //===========================| Low level functions |===========================
 SSC_RES_CODE ssc_set_data_length(uint8_t i_data_length);

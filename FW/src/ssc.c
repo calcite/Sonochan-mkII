@@ -9,9 +9,9 @@
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  2014/08/20\n
- * Modified: 2015/07/07
+ * Modified: 2015/07/10
  *
- * \version 0.3
+ * \version 0.4
  * \author Martin Stejskal
  */
 #include "ssc.h"
@@ -166,14 +166,7 @@ SSC_RES_CODE ssc_set_digital_interface_mode(
   // Store status
   SSC_RES_CODE e_status = SSC_FAIL;
 
-  ///\todo REMOVE - NOW only for debug
-  // Pointer to SSC (memory and structure)
-  //volatile avr32_ssc_t *p_ssc;
-  //p_ssc = SSC_DEVICE;
-
-
   // Mode specific settings
-  ///\ todo complete this function
   switch(e_mode)
   {
   case SSC_I2S:
@@ -185,10 +178,12 @@ SSC_RES_CODE ssc_set_digital_interface_mode(
     e_status = ssc_set_digital_interface_mode_DSP();
     break; // SSC_DSP
   case SSC_LEFT_JUSTIFIED:
-    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
+    SSC_INFO_FUNC(SSC_MSG_INFO_MODE_L_JUS);
+    e_status = ssc_set_digital_interface_mode_L_jus();
     break;
   case SSC_RIGHT_JUSTIFIED:
-    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
+    SSC_INFO_FUNC(SSC_MSG_INFO_MODE_R_JUS);
+    e_status = ssc_set_digital_interface_mode_R_jus();
     break;
   // Else mode is unknown
   default:
@@ -258,12 +253,30 @@ inline SSC_RES_CODE ssc_wait_for_FSYNC_RX(void)
     }
     break;
   case SSC_LEFT_JUSTIFIED:
-    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
-    ///\todo Complete
+    if(s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_FALLING)
+    {// Falling edge
+      while (!gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+      while (gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+    }
+    else if((s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_RISING)||
+           (s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_DEFAULT))
+    {// Rising edge
+      while (gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+      while (!gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+    }
     break;
   case SSC_RIGHT_JUSTIFIED:
-    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
-    ///\todo Complete
+    if(s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_FALLING)
+    {// Falling edge
+      while (!gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+      while (gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+    }
+    else if((s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_RISING)||
+           (s_ssc_settings.e_FSYNC_RX_edge == SSC_EDGE_DEFAULT))
+    {// Rising edge
+      while (gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+      while (!gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN));
+    }
     break;
   // Else mode is unknown
   default:
@@ -299,7 +312,7 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
 
   // Start TX on any FSYNC change
   p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
-  // Transmit transmit delay - 1 pulse after edge
+  // Transmit transmit delay - 1 pulse after edge (word offset)
   p_ssc->TCMR.sttdly = 1;
   // Set frame length
   p_ssc->TCMR.period = s_ssc_settings.i_frame_length -1;
@@ -321,7 +334,7 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
 
   // Receive start selection - start on any edge
   p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
-  // Receive start delay - 1 pulse after edge
+  // Receive start delay - 1 pulse after edge (word offset)
   p_ssc->RCMR.sttdly = 1;
   // Period offset
   p_ssc->RCMR.period = s_ssc_settings.i_frame_length -1;
@@ -419,9 +432,9 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
   // Transfer two words (left+right). Calculation is: DATNB+1, so there is 1
   p_ssc->TFMR.datnb = 1;
   // Set frame size (Frame sync is one pulse)
-  p_ssc->TFMR.fslen = 0
+  p_ssc->TFMR.fslen = (1 -1)
       & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
-  p_ssc->TFMR.fslenhi = 0
+  p_ssc->TFMR.fslenhi = (1 -1)
       >>AVR32_SSC_TFMR_FSLEN_SIZE;
   // Frame sync data enable (Do not use transmit frame sync data)
   p_ssc->TFMR.fsden = 1;
@@ -441,17 +454,17 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
   p_ssc->RFMR.msbf = 1;
   // Transfer two words (left+right). Calculation is: DATNB+1, so there is 0
   p_ssc->RFMR.datnb = (2 - 1);
-  // Set frame size (Frame sync is entire left channel)
-  p_ssc->RFMR.fslen = 0
+  // Set frame size (Frame sync is one pulse)
+  p_ssc->RFMR.fslen = (1 -1)
       & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
-  p_ssc->RFMR.fslenhi = 0
+  p_ssc->RFMR.fslenhi = (1 -1)
       >>AVR32_SSC_TFMR_FSLEN_SIZE;
   // Negative edge detection
   p_ssc->RFMR.fsedge = 1;
 
 
   /* Following functions need to know which mode is active. So we set as
-   * active I2S_SSC and if some problem occurs, then we load back backup.
+   * active I2S_DSP and if some problem occurs, then we load back backup.
    */
   s_ssc_settings.e_dig_aud_mode = SSC_DSP;
   // Set BCLK TX edge
@@ -489,6 +502,225 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
 
   return SSC_SUCCESS;
 }
+
+
+/**
+ * @brief Set SSC module for Left justified digital interface
+ *
+ * Also preset all necessary variables to default values, except e_FSYNC_role\n
+ * which should be set by higher layer.
+ *
+ * @return SSC_SUCCESS (0) if all OK
+ */
+SSC_RES_CODE ssc_set_digital_interface_mode_L_jus(void)
+{
+  // Store status codes
+  SSC_RES_CODE e_status;
+
+  // Backup actual mode value
+  e_ssc_digital_audio_interface_t e_mode_backup =
+      s_ssc_settings.e_dig_aud_mode;
+
+  // Pointer to SSC (memory and structure)
+  volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
+
+
+  // Start TX on any FSYNC change
+  p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
+  // Transmit transmit delay - 0 pulse after edge
+  p_ssc->TCMR.sttdly = 0;
+  // Set frame length
+  p_ssc->TCMR.period = s_ssc_settings.i_frame_length -1;
+  // Set data length (one sample per one channel)
+  p_ssc->TFMR.datlen = s_ssc_settings.i_data_length -1;
+  // MSB first - true
+  p_ssc->TFMR.msbf = 1;
+  // Transfer one word (left then right). Calculation is: DATNB+1, so there is 0
+  p_ssc->TFMR.datnb = (1 - 1);
+  // Set frame size (Frame sync is entire left channel)
+  p_ssc->TFMR.fslen = (s_ssc_settings.i_frame_length -1)
+      & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
+  p_ssc->TFMR.fslenhi = (s_ssc_settings.i_frame_length -1)
+      >>AVR32_SSC_TFMR_FSLEN_SIZE;
+  // Frame sync data enable (Do not use transmit frame sync data)
+  p_ssc->TFMR.fsden = 1;
+  // Looks like FSYNC edge, but it is not
+  p_ssc->TFMR.fsedge = 1;
+
+  // Receive start selection - start on any edge
+  p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
+  // Receive start delay - 0 pulse after edge
+  p_ssc->RCMR.sttdly = 0;
+  // Period offset
+  p_ssc->RCMR.period = s_ssc_settings.i_frame_length -1;
+
+  // Data length
+  p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
+  // MSB first - true
+  p_ssc->RFMR.msbf = 1;
+  // Transfer one word (left then right). Calculation is: DATNB+1, so there is 0
+  p_ssc->RFMR.datnb = (1 - 1);
+  // Set frame size (Frame sync is entire left channel)
+  p_ssc->RFMR.fslen = (s_ssc_settings.i_frame_length -1) &
+      ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
+  p_ssc->RFMR.fslenhi = (s_ssc_settings.i_frame_length -1)
+      >>AVR32_SSC_TFMR_FSLEN_SIZE;
+  // Negative edge detection
+  p_ssc->RFMR.fsedge = 1;
+
+
+  /* Following functions need to know which mode is active. So we set as
+   * active I2S_JSF and if some problem occurs, then we load back backup.
+   */
+  s_ssc_settings.e_dig_aud_mode = SSC_LEFT_JUSTIFIED;
+  // Set BCLK TX edge
+  e_status = ssc_set_BCLK_TX_edge(SSC_EDGE_DEFAULT);
+  if(e_status != SSC_SUCCESS)
+  {
+    s_ssc_settings.e_dig_aud_mode = e_mode_backup;
+    return e_status;
+  }
+
+  // Set last set role (this is the "best way")
+  // FSYNC TX edge only if FSYNC role is output - in FSYNC_role() function
+  e_status = ssc_set_FSYNC_role(s_ssc_settings.e_FSYNC_role);
+  if(e_status != SSC_SUCCESS)
+  {
+    s_ssc_settings.e_dig_aud_mode = e_mode_backup;
+    return e_status;
+  }
+
+  // RX FSYNC edge
+  e_status = ssc_set_FSYNC_RX_edge(SSC_EDGE_DEFAULT);
+  if(e_status != SSC_SUCCESS)
+  {
+    s_ssc_settings.e_dig_aud_mode = e_mode_backup;
+    return e_status;
+  }
+  // RX BCLK edge
+  e_status = ssc_set_BCLK_RX_edge(SSC_EDGE_DEFAULT);
+  if(e_status != SSC_SUCCESS)
+  {
+    s_ssc_settings.e_dig_aud_mode = e_mode_backup;
+    return e_status;
+  }
+
+  return SSC_SUCCESS;
+}
+
+
+
+/**
+ * @brief Set SSC module for Right justified digital interface
+ *
+ * Also preset all necessary variables to default values, except e_FSYNC_role\n
+ * which should be set by higher layer.
+ *
+ * @return SSC_SUCCESS (0) if all OK
+ */
+SSC_RES_CODE ssc_set_digital_interface_mode_R_jus(void)
+{
+  // Store status codes
+  SSC_RES_CODE e_status;
+
+  // Backup actual mode value
+  e_ssc_digital_audio_interface_t e_mode_backup =
+      s_ssc_settings.e_dig_aud_mode;
+
+  // Pointer to SSC (memory and structure)
+  volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
+
+
+  // Start TX on any FSYNC change
+  p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
+  // Transmit transmit delay - X pulse after edge
+  p_ssc->TCMR.sttdly = (s_ssc_settings.i_frame_length -
+                        s_ssc_settings.i_data_length);
+  // Set frame length
+  p_ssc->TCMR.period = s_ssc_settings.i_frame_length -1;
+  // Set data length (one sample per one channel)
+  p_ssc->TFMR.datlen = s_ssc_settings.i_data_length -1;
+  // MSB first - true
+  p_ssc->TFMR.msbf = 1;
+  // Transfer one word (left then right). Calculation is: DATNB+1, so there is 0
+  p_ssc->TFMR.datnb = (1 - 1);
+  // Set frame size (Frame sync is entire left channel)
+  p_ssc->TFMR.fslen = (s_ssc_settings.i_frame_length -1)
+      & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
+  p_ssc->TFMR.fslenhi = (s_ssc_settings.i_frame_length -1)
+      >>AVR32_SSC_TFMR_FSLEN_SIZE;
+  // Frame sync data enable (Do not use transmit frame sync data)
+  p_ssc->TFMR.fsden = 1;
+  // Looks like FSYNC edge, but it is not
+  p_ssc->TFMR.fsedge = 1;
+
+  // Receive start selection - start on any edge
+  p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
+  // Receive start delay - X pulse after edge
+  p_ssc->RCMR.sttdly = (s_ssc_settings.i_frame_length -
+                        s_ssc_settings.i_data_length);
+  // Period offset
+  p_ssc->RCMR.period = s_ssc_settings.i_frame_length -1;
+
+  // Data length
+  p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
+  // MSB first - true
+  p_ssc->RFMR.msbf = 1;
+  // Transfer one word (left then right). Calculation is: DATNB+1, so there is 0
+  p_ssc->RFMR.datnb = (1 - 1);
+  // Set frame size (Frame sync is entire left channel)
+  p_ssc->RFMR.fslen = (s_ssc_settings.i_frame_length -1) &
+      ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
+  p_ssc->RFMR.fslenhi = (s_ssc_settings.i_frame_length -1)
+      >>AVR32_SSC_TFMR_FSLEN_SIZE;
+  // Negative edge detection
+  p_ssc->RFMR.fsedge = 1;
+
+
+  /* Following functions need to know which mode is active. So we set as
+   * active I2S_RJF and if some problem occurs, then we load back backup.
+   */
+  s_ssc_settings.e_dig_aud_mode = SSC_RIGHT_JUSTIFIED;
+  // Set BCLK TX edge
+  e_status = ssc_set_BCLK_TX_edge(SSC_EDGE_DEFAULT);
+  if(e_status != SSC_SUCCESS)
+  {
+    s_ssc_settings.e_dig_aud_mode = e_mode_backup;
+    return e_status;
+  }
+
+  // Set last set role (this is the "best way")
+  // FSYNC TX edge only if FSYNC role is output - in FSYNC_role() function
+  e_status = ssc_set_FSYNC_role(s_ssc_settings.e_FSYNC_role);
+  if(e_status != SSC_SUCCESS)
+  {
+    s_ssc_settings.e_dig_aud_mode = e_mode_backup;
+    return e_status;
+  }
+
+  // RX FSYNC edge
+  e_status = ssc_set_FSYNC_RX_edge(SSC_EDGE_DEFAULT);
+  if(e_status != SSC_SUCCESS)
+  {
+    s_ssc_settings.e_dig_aud_mode = e_mode_backup;
+    return e_status;
+  }
+  // RX BCLK edge
+  e_status = ssc_set_BCLK_RX_edge(SSC_EDGE_DEFAULT);
+  if(e_status != SSC_SUCCESS)
+  {
+    s_ssc_settings.e_dig_aud_mode = e_mode_backup;
+    return e_status;
+  }
+
+  return SSC_SUCCESS;
+}
+
+
+
+
 //===========================| Low level functions |===========================
 
 
@@ -497,7 +729,7 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
  * @param i_data_length Data length in bits
  * @return SSC_SUCCESS (0) if all OK
  */
-SSC_RES_CODE ssc_set_data_length(uint8_t i_data_length)
+inline SSC_RES_CODE ssc_set_data_length(uint8_t i_data_length)
 {
   // Pointer to SSC (memory and structure)
   volatile avr32_ssc_t *p_ssc;
@@ -510,29 +742,9 @@ SSC_RES_CODE ssc_set_data_length(uint8_t i_data_length)
     return SSC_INCORRECT_PARAMETER;
   }
 
-  // Switch according actual interface
-  //[Martin] Not sure if different at all modes, but just for case....
-  switch(s_ssc_settings.e_dig_aud_mode)
-  {
-  case SSC_I2S:
-    p_ssc->TFMR.datlen = i_data_length -1;
-    p_ssc->RFMR.datlen = i_data_length -1;
-    break;
-  case SSC_DSP:
-    p_ssc->TFMR.datlen = i_data_length -1;
-    p_ssc->RFMR.datlen = i_data_length -1;    break;
-  case SSC_LEFT_JUSTIFIED:
-    ///\todo Complete
-    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
-    break;
-  case SSC_RIGHT_JUSTIFIED:
-    ///\todo Complete
-    SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
-    break;
-  // Undefined/not supported mode
-  default:
-    return SSC_FAIL;
-  }
+  // Same for all modes
+  p_ssc->TFMR.datlen = i_data_length -1;
+  p_ssc->RFMR.datlen = i_data_length -1;
 
   // And save value
   s_ssc_settings.i_data_length = i_data_length;
@@ -546,7 +758,7 @@ SSC_RES_CODE ssc_set_data_length(uint8_t i_data_length)
  * @param p_i_data_length Memory address, where result will be written
  * @return SSC_SUCCESS (0) if all right
  */
-SSC_RES_CODE ssc_get_data_length(uint8_t *p_i_data_length)
+inline SSC_RES_CODE ssc_get_data_length(uint8_t *p_i_data_length)
 {
   *p_i_data_length = s_ssc_settings.i_data_length;
   return SSC_SUCCESS;
@@ -565,31 +777,51 @@ SSC_RES_CODE ssc_set_frame_length(uint8_t i_frame_length)
   volatile avr32_ssc_t *p_ssc;
   p_ssc = SSC_DEVICE;
 
-  // Switch according to actual interface
-  switch(s_ssc_settings.e_dig_aud_mode)
+  // Keep information about Digital audio interface mode
+  e_ssc_digital_audio_interface_t e_dai_mode;
+
+  // Keep status code from functions
+  SSC_RES_CODE e_status;
+
+  // Period is same for all cases
+  p_ssc->TCMR.period = i_frame_length -1;
+  p_ssc->RCMR.period = i_frame_length -1;
+
+  // Set frame size. This is mode dependent
+  e_status = ssc_get_digital_interface_mode(&e_dai_mode);
+  if(e_status != GD_SUCCESS) return e_status;
+
+  if((e_dai_mode == SSC_I2S) ||
+     (e_dai_mode == SSC_LEFT_JUSTIFIED) ||
+     (e_dai_mode == SSC_RIGHT_JUSTIFIED))
   {
-  case SSC_I2S:
-    // TX module
-    p_ssc->TCMR.period = i_frame_length -1;
     p_ssc->TFMR.fslen = (i_frame_length -1)
         & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
-    p_ssc->TFMR.fslenhi = (i_frame_length -1) >>AVR32_SSC_TFMR_FSLEN_SIZE;
-    // RX module
-    p_ssc->RCMR.period = i_frame_length -1;
-    p_ssc->RFMR.fslen = (i_frame_length -1)
+    p_ssc->TFMR.fslenhi = (i_frame_length -1)
+        >>AVR32_SSC_TFMR_FSLEN_SIZE;
+
+    p_ssc->RFMR.fslen = (i_frame_length -1) &
+        ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
+    p_ssc->RFMR.fslenhi = (i_frame_length -1)
+        >>AVR32_SSC_TFMR_FSLEN_SIZE;
+  }// If e_mode is I2S, LJF, RJF
+  else if(e_dai_mode == SSC_DSP)
+  {
+    p_ssc->TFMR.fslen = (1 -1)
         & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
-    p_ssc->RFMR.fslenhi = (i_frame_length -1) >>AVR32_SSC_TFMR_FSLEN_SIZE;
-    break;
-  case SSC_DSP:
-    break;
-  case SSC_LEFT_JUSTIFIED:
-    break;
-  case SSC_RIGHT_JUSTIFIED:
-    break;
-  // Undefined/not supported mode
-  default:
-    return SSC_FAIL;
+    p_ssc->TFMR.fslenhi = (1 -1)
+        >>AVR32_SSC_TFMR_FSLEN_SIZE;
+
+    p_ssc->RFMR.fslen = (1 -1) &
+        ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
+    p_ssc->RFMR.fslenhi = (1 -1)
+        >>AVR32_SSC_TFMR_FSLEN_SIZE;
   }
+  else // Not I2S, DSP, LJF, RJF
+  { // Unknown mode
+    return GD_FAIL;
+  }
+
 
   // Everything look fine, so save setting
   s_ssc_settings.i_frame_length = i_frame_length;
@@ -603,7 +835,7 @@ SSC_RES_CODE ssc_set_frame_length(uint8_t i_frame_length)
  * @param p_i_frame_length Memory address, where result will be written
  * @return SSC_SUCCESS (0) if all right
  */
-SSC_RES_CODE ssc_get_frame_length(uint8_t *p_i_frame_length)
+inline SSC_RES_CODE ssc_get_frame_length(uint8_t *p_i_frame_length)
 {
   *p_i_frame_length = s_ssc_settings.i_frame_length;
   return SSC_SUCCESS;
@@ -639,7 +871,7 @@ SSC_RES_CODE ssc_set_word_offset(uint8_t i_word_offset)
  * @param p_i_word_offset Address where result will be written.
  * @return SSC_SUCCESS (0) if all right
  */
-SSC_RES_CODE ssc_get_word_offset(uint8_t *p_i_word_offset)
+inline SSC_RES_CODE ssc_get_word_offset(uint8_t *p_i_word_offset)
 {
   // Pointer to SSC (memory and structure)
   volatile avr32_ssc_t *p_ssc;
@@ -739,12 +971,10 @@ inline SSC_RES_CODE ssc_set_FSYNC_TX_edge(e_ssc_edge_t e_edge)
       p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_POS_PULSE;
       break;
     case SSC_LEFT_JUSTIFIED:
-      SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
-      ///\todo Complete
+      p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_POS_PULSE;
       break;
     case SSC_RIGHT_JUSTIFIED:
-      SSC_ERR_FUNC(SSC_MSG_ERR_FEATURE_NOT_IMPLEMENTED);
-      ///\todo Complete
+      p_ssc->TFMR.fsos = AVR32_SSC_TFMR_FSOS_POS_PULSE;
       break;
     // Default case should never happen
     default:
