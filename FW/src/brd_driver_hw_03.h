@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/07/10
+ * Modified: 2015/07/16
  *
- * \version 0.4.5
+ * \version 0.4.6
  * \author  Martin Stejskal
  */
 
@@ -24,7 +24,7 @@
  * In this mode non-standard settings can be used. This may decrease develop\n
  * time, but may confuse user. Beware!
  */
-#define BRD_DRV_DEBUG                                   0
+#define BRD_DRV_DEBUG                                   1
 /**
  * \brief Set default headphones volume in dB
  *
@@ -555,6 +555,9 @@ typedef struct{
   /// FSYNC frequency
   uint32_t i_FSYNC_freq;
 
+  /// PPM offset of MCLK
+  int32_t  i_MCLK_ppm_offset;
+
   //===== Other settings
   /// Auto tune external PLL option
   uint8_t i_auto_tune_pll;
@@ -594,6 +597,9 @@ typedef struct{
 
   /// FSYNC frequency
   uint32_t i_FSYNC_freq;
+
+  /// PPM offset of MCLK
+  int32_t  i_MCLK_ppm_offset;
 }s_brd_drv_ssc_fine_setting_t;
 
 
@@ -761,6 +767,10 @@ typedef struct{
 #define BRD_DRV_MSG_ERR_CAN_NOT_SET_PLL_FREQ_BCLK       \
   "BCLK ovrsam. Can not set PLL\n"
 
+/// Can not set MCLK PPM offset
+#define BRD_DRV_MSG_ERR_CAN_NOT_SET_MCLK_PPM_OFFSET     \
+  "Can not set MCLK PPM offset!\n"
+
 /// Can not set BCLK oversampling value
 #define BRD_DRV_MSG_ERR_MCLK_OVRSAM_CAN_NOT_SET_BCLK_OVRSAM     \
   "MCLK ovrsam. Can not set BLCK ovrsam.\n"
@@ -788,6 +798,14 @@ typedef struct{
 /// Request to set word offset in RJF, but BCLK is too high
 #define BRD_DRV_MSG_ERR_CANT_SET_WORD_OFF_BCLK_HIGH     \
   "Word offset can not be set because BCLK is too high!\n"
+
+/// Can not set PLL frequency - too high value
+#define BRD_DRV_MSG_ERR_CANT_SET_PLL_FREQ_TOO_HIGH      \
+  "Can not set PLL frequency (too high frequency)\n"
+
+/// MCLK PPM offset should not be set when auto tune is enabled
+#define BRD_DRV_MSG_ERR_AUTO_TUNE_ENABLED_MCLK_PPM_OFF_NOT_ALLOW        \
+  "Can not set MCLK PPM offset because auto tune PLL is enabled\n"
 /// @}
 
 
@@ -807,6 +825,9 @@ typedef struct{
 
 #define BRD_DRV_MSG_WRN_OFF_PLUS_DATA_HIGHR_THAN_HALF_BCLK      \
   "Word offset plus data size can not fit to frame! LSB can be cut!\n"
+
+#define BRD_DRV_MSG_WRN_CODEC_NOT_SUPPORT_HIGH_WORD_OFFSET      \
+  "Codec does not support this word offset!\n"
 /// @}
 
 
@@ -847,6 +868,10 @@ typedef struct{
 
 #define BRD_DRV_MSG_INFO_FMT_L_JUS                      \
   "Using left justified format\n"
+
+///\brief Double PLL frequency, so we can set odd multiplier BCLK of MCLK
+#define BRD_DRV_MSG_INFO_DOUBLING_PLL_FREQ_SET_BCLK_ODD_MUL     \
+  "Doubling PLL frequency so BCLK can be odd multilier of MCLK\n"
 /// @}
 
 /**
@@ -1076,13 +1101,12 @@ GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
     e_ssc_digital_audio_interface_t e_mode);
 
 GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq);
+GD_RES_CODE brd_drv_get_FSYNC_freq(uint32_t *p_i_FSYNC_freq);
 
 GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling);
-
 GD_RES_CODE brd_drv_get_MCLK_oversampling(uint16_t *p_i_MCLK_oversampling);
 
 GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling);
-
 GD_RES_CODE brd_drv_get_BCLK_oversampling(uint16_t *p_i_BCLK_oversampling);
 
 GD_RES_CODE brd_drv_set_number_to_product_name(uint8_t i_number);
@@ -1104,6 +1128,9 @@ GD_RES_CODE brd_drv_set_BCLK_TX_edge(e_ssc_edge_t e_edge);
 
 GD_RES_CODE brd_drv_set_word_offset(uint16_t i_word_offset);
 GD_RES_CODE brd_drv_get_word_offset(uint16_t *p_i_word_offset);
+
+GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset);
+GD_RES_CODE brd_drv_get_MCLK_ppm(int32_t *p_i_MCLK_ppm_offset);
 
 GD_RES_CODE brd_drv_show_FSYNC_freq(uint8_t i_line);
 

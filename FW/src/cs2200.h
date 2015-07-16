@@ -3,10 +3,10 @@
  *
  * \brief Driver for fractional PLL CS2200
  *
- * Created:  12.03.2014\n
- * Modified: 10.09.2014
+ * Created:  2014.03.12\n
+ * Modified: 2015.07.15
  *
- * \version 0.7.3
+ * \version 0.7.4
  * \author Martin Stejskal
  */
 
@@ -381,6 +381,23 @@ extern xSemaphoreHandle mutexI2C;
 /// \brief Function configuration 2
 #define CS2200_REG_FUNC_CFG_2           0x17
 /// @}
+
+
+/**
+ * @brief Minimum frequency that PLL can generate
+ *
+ * Please DO NOT CHANGE!!! This value is depend on HW and it is defined in\n
+ * datasheet. Also higher layers can use this value.
+ */
+#define CS2200_MIN_FREQ                 6000000UL
+/**
+ * @brief Maximum frequency that PLL can generate
+ *
+ * Please DO NOT CHANGE!!! This value is depend on HW and it is defined in\n
+ * datasheet. Also higher layers can use this value.
+ */
+
+#define CS2200_MAX_FREQ                 75000000UL
 
 
 ///\brief Auto increment bit position in address byte

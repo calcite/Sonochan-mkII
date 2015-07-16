@@ -3,10 +3,10 @@
  *
  * \brief Driver for fractional PLL CS2200
  *
- * Created:  12.03.2014\n
- * Modified: 10.09.2014
+ * Created:  2014.03.12\n
+ * Modified: 2015.07.15
  *
- * \version 0.7.3
+ * \version 0.7.4
  * \author Martin Stejskal
  */
 
@@ -312,7 +312,7 @@ GD_RES_CODE cs2200_set_PLL_freq(uint32_t i_freq)
    */
 #if CS2200_REF_CLK_FREQ != 0
   // If we know input frequency, we should check input parameter range (6-75MHz)
-  if((i_freq < 6000000UL) || (i_freq > 75000000UL))
+  if((i_freq < CS2200_MIN_FREQ) || (i_freq > CS2200_MAX_FREQ))
   {
     return GD_INCORRECT_PARAMETER;
   }
