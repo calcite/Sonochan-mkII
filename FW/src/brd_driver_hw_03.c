@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/07/10
+ * Modified: 2015/07/16
  *
- * \version 0.4.5
+ * \version 0.4.6
  * \author  Martin Stejskal
  */
 
@@ -323,7 +323,22 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_digital_audio_interface_mode
     },
     {
-#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_DIG_AUD_INTERFACE+1
+#define BRD_DRV_CMD_MCLK_PPM_OFFSET     BRD_DRV_CMD_DIG_AUD_INTERFACE+1
+      BRD_DRV_CMD_MCLK_PPM_OFFSET,
+      "Offset of MCLK in PPM",
+      "Allow slightly change MCLK frequency."
+        " Auto tune PLL have to be disabled!",
+      int32_type,
+      {.data_int32 = -1000000},
+      {.data_int32 =  1000000},
+      int32_type,
+      {.data_int32 = -1000000},
+      {.data_int32 =  1000000},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset,
+      brd_drv_set_MCLK_ppm
+    },
+    {
+#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_MCLK_PPM_OFFSET+1
       BRD_DRV_CMD_RX_FSYNC_EDGE,
       "RX FSYNC edge",
       "RX FSYNC sync edge ; 0 - falling ; 1 - rising ; 2 - default",
@@ -456,7 +471,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 const gd_metadata BRD_DRV_metadata =
 {
         BRD_DRV_MAX_CMD_ID,              // Max CMD ID
-        "Board driver for Sonochan mkII v0.4.5",     // Description
+        "Board driver for Sonochan mkII v0.4.6",     // Description
         (gd_config_struct*)&BRD_DRV_config_table[0],
         0x0F    // Serial number (0~255)
 };
@@ -1254,6 +1269,7 @@ GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq)
 }
 
 
+
 /**
  * @brief Give last FSYNC value, which was set
  *
@@ -1263,7 +1279,7 @@ GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq)
  *  Frequency is in Hz.
  * @return GD_SUCCESS (0) if all OK
  */
-GD_RES_CODE brd_drv_get_FSYNC_freq(uint32_t *p_i_FSYNC_freq)
+inline GD_RES_CODE brd_drv_get_FSYNC_freq(uint32_t *p_i_FSYNC_freq)
 {
   *p_i_FSYNC_freq = s_brd_drv_ssc_fine_settings.i_FSYNC_freq;
   return GD_SUCCESS;
@@ -1281,6 +1297,9 @@ GD_RES_CODE brd_drv_get_FSYNC_freq(uint32_t *p_i_FSYNC_freq)
  */
 GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling)
 {
+  uint16_t i_MCLK_ovrsmplng_backup =
+              s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling;
+
   /* Check if BCLK is exact multiplier of MCLK. If not we have to change MCLK
    * according to BCLK to be synchronized
    */
@@ -1303,9 +1322,9 @@ GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling)
   {
     brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_MCLK_OVRSM_HIGH, 1, 1);
   }
+  //=======================| End of checking parameters |========================
 
-  /* [Martin]
-   * This function must be very flexible and work with PLL CS2200 (set freq.),
+  /* This function must be very flexible and work with PLL CS2200 (set freq.),
    * set correct divide ratio for GCLK0 and if all OK -> save
    * actual value (MCLK oversampling)
    */
@@ -1329,13 +1348,13 @@ GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling)
     /* Because PLL CS2200 have own limitations, we must check if frequency is
      * not too high or low.
      */
-    if(i_PLL_freq > 75000000UL)
+    if(i_PLL_freq > CS2200_MAX_FREQ)
     {
       // PLL can not produce higher frequency :( Return fail
       brd_drv_send_error_msg(BRD_DRV_MSG_ERR_PLL_HIGH_FREQ,1,1);
       return GD_FAIL;
     }
-    if(i_PLL_freq < 6000000UL)
+    if(i_PLL_freq < CS2200_MIN_FREQ)
     {
       /* Can not produce such a low frequency, but can set divider. So just
        * double PLL frequency and double MCLK divider.
@@ -1359,16 +1378,37 @@ GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling)
     return e_status;
   }
 
-  // Set PLL frequency
-  e_status = cs2200_set_PLL_freq(i_PLL_freq);
-  if(e_status != GD_SUCCESS)
-  {
-    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CAN_NOT_SET_PLL_FREQ_MCLK,1,1);
-    return e_status;
-  }
-
-  // So far so good. So let's set MCLK oversampling value
+  /* So far so good. So let's set MCLK oversampling value, because following
+   * functions will need it. Anyway, if some problem occur, value will be
+   * restored
+   */
   s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling = i_MCLK_oversampling;
+
+  /* Check if auto tune option enabled. If yes, just set PLL value directly.
+   * If not, then we set PLL with MCLK PPM offset
+   */
+  if(i_auto_tune_pll)
+  {
+    // Auto tune enabled -> only PLL freq
+    e_status = cs2200_set_PLL_freq(i_PLL_freq);
+    if(e_status != GD_SUCCESS)
+    {
+      brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CAN_NOT_SET_PLL_FREQ_MCLK,1,1);
+      return e_status;
+    }
+  }// Auto tune enabled
+  else // Auto tun disabled
+  {
+    // Set MCLK PPM offset + PLL frequency (brd_drv_set_MCLK_ppm will set PLL f)
+    e_status = brd_drv_set_MCLK_ppm(
+                 s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset);
+    if(e_status != GD_SUCCESS)
+    {
+      s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling = i_MCLK_ovrsmplng_backup;
+      brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CAN_NOT_SET_MCLK_PPM_OFFSET, 1,1);
+      return e_status;
+    }
+  }
 
   /* Set again BCLK divider (resp. oversampling value)
    * This function SHOULD NOT fail, but just for case there is if condition.
@@ -1378,6 +1418,7 @@ GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling)
       s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling);
   if(e_status != GD_SUCCESS)
   {
+    s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling = i_MCLK_ovrsmplng_backup;
     brd_drv_send_error_msg(BRD_DRV_MSG_ERR_MCLK_OVRSAM_CAN_NOT_SET_BCLK_OVRSAM,
                            1,1);
     return e_status;
@@ -1449,7 +1490,8 @@ GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling)
     return GD_INCORRECT_PARAMETER;
   }
 
-  // Calculate relative ratio
+  //=======================| End of checking parameters |======================
+  // Calculate relative ratio (MCLK/BCLK)
   i_MCLK_rel_div = s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling /
                             i_BCLK_ovrsmpling;
 
@@ -1473,6 +1515,9 @@ GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling)
   if(i_MCLK_rel_div & 0x0001)
   {
     // Odd number -> double divider
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_DOUBLING_PLL_FREQ_SET_BCLK_ODD_MUL,
+                     1,0,-1);
+
     i_MCLK_rel_div = i_MCLK_rel_div<<1;
 
     i_MCLK_div = i_MCLK_div<<1;
@@ -1482,24 +1527,41 @@ GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling)
       return e_status;
     }
 
-    // Double frequency at PLL
-    uint32_t i_pll_freq;
-    e_status = cs2200_get_PLL_freq(&i_pll_freq);
-    if(e_status != GD_SUCCESS)
-    {
-      return e_status;
-    }
-    i_pll_freq = i_pll_freq<<1;
-    /* Frequency value is checked by PLL function. If fails, we should at least
-     * show error
+    /* Because we changed MCLK we need to change also MCLK itself. And because
+     * there is also MCLK PPM offset, which is enabled only if auto tune PLL
+     * function is off, we need to check it first. Then we can decide if we
+     * change frequency directly of through MCLK_ppm function.
      */
-    e_status = cs2200_set_PLL_freq(i_pll_freq);
-    if(e_status != GD_SUCCESS)
+    if(i_auto_tune_pll)
     {
-      brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CAN_NOT_SET_PLL_FREQ_BCLK, 1,1);
-      return e_status;
+      uint32_t i_pll_freq;
+      e_status = cs2200_get_PLL_freq(&i_pll_freq);
+      if(e_status != GD_SUCCESS) return e_status;
+      // Need to double frequency, because we already double MCLK divider
+      i_pll_freq = i_pll_freq<<1;
+
+      e_status = cs2200_set_PLL_freq(i_pll_freq);
+      if(e_status != GD_SUCCESS)
+      {
+        brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CAN_NOT_SET_PLL_FREQ_BCLK,1,1);
+        return e_status;
+      }
+    }// Auto tune enabled
+    else // Auto tune disabled
+    {
+      // We can set MCLK with offset
+      e_status = brd_drv_set_MCLK_ppm(
+                    s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset);
+      if(e_status != GD_SUCCESS)
+      {
+        brd_drv_send_error_msg(
+            BRD_DRV_MSG_ERR_CAN_NOT_SET_MCLK_PPM_OFFSET, 1,1);
+        return e_status;
+      }
     }
   }
+
+
 
   // Set correct BCLK
   e_status = brd_drv_set_BCLK_div(i_MCLK_rel_div);
@@ -1689,6 +1751,12 @@ GD_RES_CODE brd_drv_save_all_settings(void){
       (void *)&s_brd_drv_user_settings.i_word_bit_offset,
       s_brd_drv_ssc_fine_settings.i_word_bit_offset,
       sizeof(s_brd_drv_ssc_fine_settings.i_word_bit_offset),
+      1);
+
+  flashc_memset32(
+      (void *)&s_brd_drv_user_settings.i_MCLK_ppm_offset,
+      s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset,
+      sizeof(s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset),
       1);
 
 
@@ -1900,6 +1968,9 @@ inline GD_RES_CODE brd_drv_load_default_settings(void)
 
   /* By default we want default offset :) */
   s_brd_drv_ssc_fine_settings.i_word_bit_offset = 256;
+
+  // No MCLK offset
+  s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset = 0;
 
   // Load SSC default values
   // FSYNC RX
@@ -2280,6 +2351,13 @@ GD_RES_CODE brd_drv_set_word_offset(uint16_t i_word_offset)
         BRD_DRV_MSG_WRN_OFF_PLUS_DATA_HIGHR_THAN_HALF_BCLK, 1, 1);
   }
 
+  // Also codec have some limits
+  if(i_word_offset > 16)
+  {
+    brd_drv_send_warning_msg(
+        BRD_DRV_MSG_WRN_CODEC_NOT_SUPPORT_HIGH_WORD_OFFSET, 1,1);
+  }
+
   // Just set offset
   // Set this offset in SSC driver
   e_status = ssc_set_word_offset((uint8_t)i_word_offset);
@@ -2319,6 +2397,152 @@ GD_RES_CODE brd_drv_set_word_offset(uint16_t i_word_offset)
 inline GD_RES_CODE brd_drv_get_word_offset(uint16_t *p_i_word_offset)
 {
   *p_i_word_offset = s_brd_drv_ssc_fine_settings.i_word_bit_offset;
+  return GD_SUCCESS;
+}
+
+
+/**
+ * @brief Set MCLK PPM offset
+ *
+ * MCLK PPM offset is value which says how much is MCLK frequency different\n
+ * than original value.
+ * @param i_MCLK_ppm_offset MCLK offset in PPM.\n
+ *                          Frequency offset in PPM (1/1e6 th of frequency)
+ * @return GD_SUCCESS (0) if all right
+ */
+GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset)
+{
+  GD_RES_CODE e_status;
+
+  // Original frequency (FSYNC * MCLK_oversampling)
+  uint32_t i_orig_freq;
+
+  /* New frequency (with offset). Need to use float, because comparative to
+   * frequency, PPM is very small unit and we need to be very precise.
+   * But at the end it is better operate with integer -> so we have 2 variables
+   */
+  float f_new_freq;
+  uint32_t i_new_freq;
+
+  // For calculating real offset (need high precision)
+  float f_real_off;
+
+  /* Memory space for message. I do not know why, but when used more than 80
+   * Bytes some crazy owerflow occurs and everything freeze. That is reason
+   * why messages are split into pieces.
+   * Also moved to static (begin of memory) and problems disappear... strange
+   */
+  static char msg[60];
+
+  // Keep information about MCLK divider value
+  uint16_t i_MCLK_div;
+
+  /* Although does not matter if auto tune option is enabled or not, for user
+   * is better to said "Turn off auto tune" and when call this function user
+   * can be sure, that this offset will not change (even if feedback EP does
+   * not work)
+   */
+  if(i_auto_tune_pll)
+  {
+    brd_drv_send_error_msg(
+        BRD_DRV_MSG_ERR_AUTO_TUNE_ENABLED_MCLK_PPM_OFF_NOT_ALLOW, 1,1);
+    return GD_FAIL;
+  }
+  //============================| Parameters checked |=========================
+
+  // Calculate original frequency
+  i_orig_freq = s_brd_drv_ssc_fine_settings.i_FSYNC_freq *
+                (uint32_t)s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling;
+
+  // Calculate new frequency
+  f_new_freq = (float)i_orig_freq +
+
+               ((float)i_orig_freq * (float)i_MCLK_ppm_offset)/
+               (float)(1000000UL);
+  i_new_freq = (uint32_t)f_new_freq;
+
+  // Get divider for MCLK
+  e_status = brd_drv_get_MCLK_div(&i_MCLK_div);
+  if(e_status != GD_SUCCESS)
+  {
+    return e_status;
+  }
+
+  // We need to show user MCLK value, not real value at PLL
+  sprintf(&msg[0],"MCLK orig: %lu Hz required: %lu Hz\n",
+          i_orig_freq, i_new_freq);
+  brd_drv_send_msg(&msg[0],1,0,-1);
+
+
+  // Check if frequency for PLL is not too high. Now integer values are OK
+  // Calculate real frequency for PLL
+  i_new_freq = i_new_freq * i_MCLK_div;
+  // Just for case check if frequency is in limits
+  if(i_new_freq > CS2200_MAX_FREQ)
+  {
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CANT_SET_PLL_FREQ_TOO_HIGH, 1,1);
+    return GD_INCORRECT_PARAMETER;
+  }
+  while(i_new_freq < CS2200_MIN_FREQ)
+  {
+    // We can bypass this. Just double frequency at PLL and double MCLK div
+    i_new_freq = i_new_freq<<1;
+    i_MCLK_div = i_MCLK_div<<1;
+    e_status = brd_drv_set_MCLK_div(i_MCLK_div);
+    // Never should fail, but you never know
+    if(e_status != GD_SUCCESS) return e_status;
+  }
+
+  /* Set PLL. But for some reason frequency can be too high. So in that case
+   * setting fail and we show error.
+   */
+  e_status = cs2200_set_PLL_freq(i_new_freq);
+  if(e_status != GD_SUCCESS)
+  {
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CANT_SET_PLL_FREQ_TOO_HIGH, 1,1);
+    return GD_FAIL;
+  }
+
+  // Get real frequency from PLL and recalculate offset
+  e_status = cs2200_get_PLL_freq(&i_new_freq);
+  if(e_status != GD_SUCCESS) return GD_FAIL;
+  // Divide PLL frequency by MCLK divider value -> get real MCLK frequency
+  f_real_off = ((float)(1000000UL) *
+               (((float)i_new_freq /(float)i_MCLK_div) - (float)i_orig_freq))/
+               (float)i_orig_freq;
+  /* Check if is negative or positive and do round. thanks to this we also get
+   * most precise result for PLL
+   */
+  if(f_real_off > 0)
+  {
+    f_real_off = f_real_off + 0.5;
+  }
+  else
+  {
+    f_real_off = f_real_off -0.5;
+  }
+
+  // Now save value as integer
+  s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset = (int32_t)f_real_off;
+
+  sprintf(&msg[0], "MCLK real offset: %4.2f PPM\n", f_real_off);
+  brd_drv_send_msg(&msg[0],1,0,-1);
+
+  return e_status;
+}
+
+/**
+ * @brief Give MCLK PPM offset
+ *
+ * MCLK PPM offset is value which says how much is MCLK frequency different\n
+ * than original value.
+ * @param p_i_MCLK_ppm_offset Result will be written to this address.\n
+ *                            Frequency offset in PPM (1/1e6 th of frequency)
+ * @return GD_SUCCESS (0) if all right
+ */
+inline GD_RES_CODE brd_drv_get_MCLK_ppm(int32_t *p_i_MCLK_ppm_offset)
+{
+  *p_i_MCLK_ppm_offset = s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset;
   return GD_SUCCESS;
 }
 
@@ -2640,18 +2864,28 @@ GD_RES_CODE brd_drv_get_uac1(uint8_t *p_i_uac1_enable)
  */
 GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable)
 {
+  GD_RES_CODE e_status;
+
   if(i_enable == 0)
   {
     uac1_device_audio_set_auto_tune(0);
     i_auto_tune_pll = 0;
+    // And set PLL frequency with offset
+    e_status = brd_drv_set_MCLK_ppm(
+                  s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset);
   }
   else
   {
     uac1_device_audio_set_auto_tune(1);
     i_auto_tune_pll = 1;
+    /* Reset offset to zero -> just call set MCLK oversampling freq. function.
+     * This function set MCLK frequency back (MCLK PPM offset = 0)
+     */
+    e_status = brd_drv_set_MCLK_oversampling(
+                  s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling);
   }
 
-  return GD_SUCCESS;
+  return e_status;
 }
 
 /**

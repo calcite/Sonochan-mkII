@@ -9,9 +9,9 @@
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  2014/08/20\n
- * Modified: 2015/07/10
+ * Modified: 2015/07/16
  *
- * \version 0.4
+ * \version 0.4.1
  * \author Martin Stejskal
  */
 #include "ssc.h"
@@ -336,10 +336,10 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
   p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
   // Receive start delay - 1 pulse after edge (word offset)
   p_ssc->RCMR.sttdly = 1;
-  // Period offset
+  // Frame length
   p_ssc->RCMR.period = s_ssc_settings.i_frame_length -1;
 
-  // Data length
+  // Set data length (one sample per one channel)
   p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
   // MSB first - true
   p_ssc->RFMR.msbf = 1;
@@ -430,7 +430,7 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
   // MSB first - true
   p_ssc->TFMR.msbf = 1;
   // Transfer two words (left+right). Calculation is: DATNB+1, so there is 1
-  p_ssc->TFMR.datnb = 1;
+  p_ssc->TFMR.datnb = (2 -1);
   // Set frame size (Frame sync is one pulse)
   p_ssc->TFMR.fslen = (1 -1)
       & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
@@ -445,15 +445,15 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
   p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_RISING_TF;
   // Receive start delay - DSP data after FYNC pulse
   p_ssc->RCMR.sttdly = 1;
-  // Period offset
+  // Set frame length
   p_ssc->RCMR.period = (s_ssc_settings.i_frame_length) -1;
 
   // Data length
   p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
   // MSB first - true
   p_ssc->RFMR.msbf = 1;
-  // Transfer two words (left+right). Calculation is: DATNB+1, so there is 0
-  p_ssc->RFMR.datnb = (2 - 1);
+  // Transfer two words (left+right). Calculation is: DATNB+1, so there is 1
+  p_ssc->RFMR.datnb = (2 -1);
   // Set frame size (Frame sync is one pulse)
   p_ssc->RFMR.fslen = (1 -1)
       & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
@@ -552,10 +552,10 @@ SSC_RES_CODE ssc_set_digital_interface_mode_L_jus(void)
   p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
   // Receive start delay - 0 pulse after edge
   p_ssc->RCMR.sttdly = 0;
-  // Period offset
+  // Set frame length
   p_ssc->RCMR.period = s_ssc_settings.i_frame_length -1;
 
-  // Data length
+  // Set data length (one sample per one channel)
   p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
   // MSB first - true
   p_ssc->RFMR.msbf = 1;
@@ -664,7 +664,7 @@ SSC_RES_CODE ssc_set_digital_interface_mode_R_jus(void)
   // Period offset
   p_ssc->RCMR.period = s_ssc_settings.i_frame_length -1;
 
-  // Data length
+  // Set data length (one sample per one channel)
   p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
   // MSB first - true
   p_ssc->RFMR.msbf = 1;
