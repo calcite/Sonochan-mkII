@@ -104,7 +104,7 @@ void set_bootloader_pin(uint8_t gpio_pin_number, uint8_t i_active_level)
   // Create pointer to wanted address. This is chip dependent
   uint32_t *p_bootloader_seting=(uint32_t*)BOOTLOADER_CFG_WORD_ADDR;
 
-  // Just check if value differs. If it same, it does not have meening
+  // Just check if value differs. If it same, it does not have meaning
   // rewriting memory.
   if(*p_bootloader_seting != cfg.cfg_u32)
   {

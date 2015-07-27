@@ -1,0 +1,54 @@
+# Sonochan mkII - bootloader
+SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff1", MODE:="0666"
+
+# Allow all HID
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", MODE="0664", GROUP="usb"
+
+# Sonochan mkII - #00
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="0763", MODE:="0666"
+
+# Sonochan mkII - #01
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="0764", MODE:="0666"
+
+# Sonochan mkII - #02
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="0765", MODE:="0666"
+
+# Sonochan mkII - #03
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="0766", MODE:="0666"
+
+# Sonochan mkII - #04
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="0767", MODE:="0666"
+
+# Sonochan mkII - #05
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="0768", MODE:="0666"
+
+# Sonochan mkII - #06
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="0769", MODE:="0666"
+
+# Sonochan mkII - #07
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="076A", MODE:="0666"
+
+# Sonochan mkII - #08
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="076B", MODE:="0666"
+
+# Sonochan mkII - #09
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="076C", MODE:="0666"
+
+# Sonochan mkII - #10
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="076D", MODE:="0666"
+
+# Sonochan mkII - #11
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="076E", MODE:="0666"
+
+# Sonochan mkII - #12
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="076F", MODE:="0666"
+
+# Sonochan mkII - #13
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="0770", MODE:="0666"
+
+# Sonochan mkII - #14
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="0771", MODE:="0666"
+
+# Sonochan mkII - #15
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0433", ATTRS{idProduct}=="0772", MODE:="0666"
+

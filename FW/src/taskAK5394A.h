@@ -27,10 +27,10 @@
 #define TASKAK5394A_H_
 
 
-#define PDCA_CHANNEL_SSC_RX	   0	// highest priority of 8 channels
-#define PDCA_CHANNEL_SSC_TX	   1
-#define AUDIO_BUFFER_SIZE	(48*2*8) // 48 khz, stereo, 8 ms worth
-#define SPK_BUFFER_SIZE 	(48*2*8)
+#define PDCA_CHANNEL_SSC_RX     0	// highest priority of 8 channels
+#define PDCA_CHANNEL_SSC_TX     1
+#define AUDIO_BUFFER_SIZE       (48*2*8) // 48 khz, stereo, 8 ms worth
+#define SPK_BUFFER_SIZE         (48*2*8)
 
 
 //extern const gpio_map_t SSC_GPIO_MAP;
