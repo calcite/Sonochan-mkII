@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/07/16
+ * Modified: 2015/07/17
  *
- * \version 0.4.6
+ * \version 0.4.7
  * \author  Martin Stejskal
  */
 
@@ -24,7 +24,7 @@
  * In this mode non-standard settings can be used. This may decrease develop\n
  * time, but may confuse user. Beware!
  */
-#define BRD_DRV_DEBUG                                   1
+#define BRD_DRV_DEBUG                                   0
 /**
  * \brief Set default headphones volume in dB
  *
@@ -544,7 +544,7 @@ typedef struct{
   /** Word bit offset
    * Number of bits (BCLK intervals) before start of actual audio data.
    */
-  uint8_t i_word_bit_offset;
+  uint16_t i_word_bit_offset;
   /// Data length in bits
   uint8_t i_data_length;
   /// BCLK oversampling
@@ -872,6 +872,10 @@ typedef struct{
 ///\brief Double PLL frequency, so we can set odd multiplier BCLK of MCLK
 #define BRD_DRV_MSG_INFO_DOUBLING_PLL_FREQ_SET_BCLK_ODD_MUL     \
   "Doubling PLL frequency so BCLK can be odd multilier of MCLK\n"
+
+///\brief Settings from flash loaded
+#define BRD_DRV_MSG_INFO_SETTINGS_LOADED                \
+  "Setting loaded\n"
 /// @}
 
 /**

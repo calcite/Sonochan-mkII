@@ -60,7 +60,7 @@ all: elf hex
 # Build elf file
 elf: $(OBJS) $(USER_OBJS)
 	@echo Link $@
-	@avr32-gcc -nostartfiles -Wl,--gc-sections -Wl,-e,_trampoline -mpart=uc3a3256 -Wl,--gc-sections --rodata-writable -Wl,--direct-data -o"Sonochan_mkII.elf" $(OBJS) $(USER_OBJS) $(LIBS)
+	@avr32-gcc -nostartfiles -Wl,--gc-sections -Wl,-e,_trampoline -mpart=uc3a3256 --rodata-writable -Wl,--direct-data -o"Sonochan_mkII.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@avr32-size "Sonochan_mkII.elf"
 	@echo "  -> RAM usage (without malloc and stack) is data + bss"
 	@echo "  -> Flash usage is text + data"

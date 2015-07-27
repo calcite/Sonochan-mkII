@@ -87,7 +87,7 @@
 #define configTICK_RATE_HZ        ( ( portTickType ) 10000 )
 #define configMAX_PRIORITIES      ( ( unsigned portBASE_TYPE ) 5 )
 ////////////////#define configMINIMAL_STACK_SIZE  ( ( unsigned portSHORT ) 128 )
-#define configMINIMAL_STACK_SIZE  ( ( unsigned portSHORT ) 2048 )
+#define configMINIMAL_STACK_SIZE  ( ( unsigned portSHORT ) 128 )
 //#define configMINIMAL_STACK_SIZE  ( ( unsigned portSHORT ) 1024 )
 /* configTOTAL_HEAP_SIZE is not used when heap_3.c is used. */
 
@@ -126,7 +126,7 @@ to exclude the API function. */
 
 /* configHEAP_INIT is a boolean indicating whether to initialize the heap with
    0xA5 in order to be able to determine the maximal heap consumption. */
-#define configHEAP_INIT               0
+#define configHEAP_INIT               1
 
 /* Debug trace configuration.
    configDBG is a boolean indicating whether to activate the debug trace. */

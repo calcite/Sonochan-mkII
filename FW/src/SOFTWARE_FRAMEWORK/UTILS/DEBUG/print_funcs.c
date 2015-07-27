@@ -90,8 +90,15 @@ void init_dbg_rs232_ex(unsigned long baudrate, long pba_hz)
 void print_dbg(const char *str)
 {
   // Redirection to the debug USART.
-  print(DBG_USART, str);
+  //[Martin] Added simple mutex (because we use RTOS)
+  volatile static int i_occupied = 0;
 
+  if(i_occupied == 0)
+  {
+    i_occupied = 1;
+    print(DBG_USART, str);
+  }
+  i_occupied = 0;
 }
 
 

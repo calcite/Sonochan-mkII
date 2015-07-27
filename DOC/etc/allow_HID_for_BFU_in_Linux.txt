@@ -1,9 +1,7 @@
-As root create (or modify) file
- /etc/udev/rules.d/99-hidraw-permissions.rules
+As root copy file 99-sonochan_mkII.rules to
+ /etc/udev/rules.d/99-sonochan_mkII.rules
 
-And add following line:
- KERNEL=="hidraw*", SUBSYSTEM=="hidraw", MODE="0664", GROUP="usb"
- 
 Restart udev (or reboot). After that all uses in group "usb" should have r/w
- access to HID devices.
-
+ access to ALL (!) HID devices. If you are paranoid, just change tthis rule
+ according to your security.
+Also all users should have access to Sonochan mkII as sound card.
