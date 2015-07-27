@@ -281,49 +281,7 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_MCLK_oversampling
     },
     {
-#define BRD_DRV_CMD_BCLK_OVERSAM        BRD_DRV_CMD_MCLK_OVERSAM+1
-      BRD_DRV_CMD_BCLK_OVERSAM,
-      "BCLK frequency",
-      "Options: 16, 32, 64, 128, 256, 512 FSYNC",
-      uint16_type,
-      {.data_uint16 = 2},
-      {.data_uint16 = 512},
-      uint16_type,
-      {.data_uint16 = 2},
-      {.data_uint16 = 512},
-      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling,
-      brd_drv_set_BCLK_oversampling
-    },
-    {
-#define BRD_DRV_CMD_WORD_OFFSET     BRD_DRV_CMD_BCLK_OVERSAM+1
-        BRD_DRV_CMD_WORD_OFFSET,
-        "Word offset (delay between FSYNC and TX/RX_DATA)",
-        "0 ~ 255. Codec safe limit is 16. Value 256 means default value",
-        uint16_type,
-        {.data_uint16 = 0},
-        {.data_uint16 = 256},
-        uint16_type,
-        {.data_uint16 = 0},
-        {.data_uint16 = 256},
-        (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_word_bit_offset,
-        brd_drv_set_word_offset
-    },
-    {
-#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_WORD_OFFSET+1
-      BRD_DRV_CMD_DIG_AUD_INTERFACE,
-      "Digital audio interface mode",
-      "0-I2S ; 1-DSP ; 2-Left justified ; 3-Right justified",
-      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
-      {.data_uint32 = 0},
-      {.data_uint32 = 3},
-      uint32_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 3},
-      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_dig_aud_mode,
-      brd_drv_set_digital_audio_interface_mode
-    },
-    {
-#define BRD_DRV_CMD_MCLK_PPM_OFFSET     BRD_DRV_CMD_DIG_AUD_INTERFACE+1
+#define BRD_DRV_CMD_MCLK_PPM_OFFSET     BRD_DRV_CMD_MCLK_OVERSAM+1
       BRD_DRV_CMD_MCLK_PPM_OFFSET,
       "Offset of MCLK in PPM",
       "Allow slightly change MCLK frequency."
@@ -338,7 +296,49 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_MCLK_ppm
     },
     {
-#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_MCLK_PPM_OFFSET+1
+#define BRD_DRV_CMD_BCLK_OVERSAM        BRD_DRV_CMD_MCLK_PPM_OFFSET+1
+      BRD_DRV_CMD_BCLK_OVERSAM,
+      "BCLK frequency",
+      "Options: 16, 32, 64, 128, 256, 512 FSYNC",
+      uint16_type,
+      {.data_uint16 = 2},
+      {.data_uint16 = 512},
+      uint16_type,
+      {.data_uint16 = 2},
+      {.data_uint16 = 512},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling,
+      brd_drv_set_BCLK_oversampling
+    },
+    {
+#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_BCLK_OVERSAM+1
+      BRD_DRV_CMD_DIG_AUD_INTERFACE,
+      "Digital audio interface mode",
+      "0-I2S ; 1-DSP ; 2-Left justified ; 3-Right justified",
+      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
+      {.data_uint32 = 0},
+      {.data_uint32 = 3},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 3},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_dig_aud_mode,
+      brd_drv_set_digital_audio_interface_mode
+    },
+    {
+#define BRD_DRV_CMD_WORD_OFFSET     BRD_DRV_CMD_DIG_AUD_INTERFACE+1
+        BRD_DRV_CMD_WORD_OFFSET,
+        "Word offset (delay between FSYNC and TX/RX_DATA)",
+        "0 ~ 255. Codec safe limit is 16. Value 256 means default value",
+        uint16_type,
+        {.data_uint16 = 0},
+        {.data_uint16 = 256},
+        uint16_type,
+        {.data_uint16 = 0},
+        {.data_uint16 = 256},
+        (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_word_bit_offset,
+        brd_drv_set_word_offset
+    },
+    {
+#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_WORD_OFFSET+1
       BRD_DRV_CMD_RX_FSYNC_EDGE,
       "RX FSYNC edge",
       "RX FSYNC sync edge ; 0 - falling ; 1 - rising ; 2 - default",
