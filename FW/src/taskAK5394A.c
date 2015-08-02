@@ -149,6 +149,12 @@ void AK5394A_pdca_enable(void) {
 }
 
 void AK5394A_task_init(const Bool uac1) {
+
+  /* [Martin] Old code. Just for reference. Maybe in new commits will be
+   * removed.
+   * Now atually uac1 decision is not needed, because frequency is set
+   * dynamically. However I moded brd_drv_init() to somewhere else, so to be
+   * sure we can track what was changed (if something gets wrong)
   GD_RES_CODE e_status;
 
   // Set UACx variable in board driver too
@@ -167,8 +173,9 @@ void AK5394A_task_init(const Bool uac1) {
   if(e_status != GD_SUCCESS)
   {
     print_dbg("!!! Board initialization failed.\n If you do not panic, you should now....\n");
-    ///\todo More process
   }
+  */
+
 
   // set up SSC (already done by board driver)
   //[Martin] Old code. Just for reference.
