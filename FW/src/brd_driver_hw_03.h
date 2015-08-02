@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/07/17
+ * Modified: 2015/08/02
  *
- * \version 0.4.7
+ * \version 0.4.8
  * \author  Martin Stejskal
  */
 
@@ -24,7 +24,7 @@
  * In this mode non-standard settings can be used. This may decrease develop\n
  * time, but may confuse user. Beware!
  */
-#define BRD_DRV_DEBUG                                   0
+#define BRD_DRV_DEBUG                                   1
 /**
  * \brief Set default headphones volume in dB
  *
@@ -787,9 +787,17 @@ typedef struct{
 #define BRD_DRV_MSG_ERR_BCLK_LOWER_THAN_DATA_WORD       \
   "Can not set BCLK this low, because of data word size.\n"
 
+/// MCLK oversampling can not be 0
+#define BRD_DRV_MSG_ERR_MCLK_OVERSAM_CANNOT_BE_0        \
+  "MCLK oversampling can not be 0!\n"
+
 /// BCLK is not exact multiplier of MCLK
 #define BRD_DRV_MSG_ERR_BCLK_IS_NOT_MUL_OF_MCLK         \
   "BCLK is not exact multiplier of MCLK.\n"
+
+/// BCLK oversampling can not be 0
+#define BRD_DRV_MSG_ERR_BCLK_OVERSAM_CANNOT_BE_0        \
+  "BCLK oversampling can not be 0!\n"
 
 /// Request for setting data length, but BCLK is too low
 #define BRD_DRV_MSG_ERR_DATA_LEN_LONG_BCLK_LOW          \
@@ -873,9 +881,17 @@ typedef struct{
 #define BRD_DRV_MSG_INFO_DOUBLING_PLL_FREQ_SET_BCLK_ODD_MUL     \
   "Doubling PLL frequency so BCLK can be odd multilier of MCLK\n"
 
+///\brief Settings saved to flash
+#define BRD_DRV_MSG_INFO_SETTINGS_SAVED                 \
+  "Settings saved\n"
+
 ///\brief Settings from flash loaded
 #define BRD_DRV_MSG_INFO_SETTINGS_LOADED                \
-  "Setting loaded\n"
+  "Settings loaded\n"
+
+///\brief Board driver initialized
+#define BRD_DRV_MSG_INFO_BRD_DRV_INITIALIZED            \
+  "Board driver initialized\n"
 /// @}
 
 /**
@@ -1162,10 +1178,6 @@ void brd_drv_send_error_msg(
     const uint8_t i_write_to_DBG,
     const uint8_t i_write_to_LCD);
 //===========================| Low level functions |===========================
-GD_RES_CODE brd_drv_set_uac1(uint8_t i_uac1_enable);
-
-GD_RES_CODE brd_drv_get_uac1(uint8_t *p_i_uac1_enable);
-
 GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable);
 
 GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);

@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/07/17
+ * Modified: 2015/08/02
  *
- * \version 0.4.7
+ * \version 0.4.8
  * \author  Martin Stejskal
  */
 
@@ -51,14 +51,6 @@ static uint8_t i_auto_tune_pll;
  * something that we do not want.
  */
 static uint8_t i_product_name_number;
-
-/**
- * \brief Store information about actual UAC (USB Audio Class)
- *
- * If value is non zero, then UAC1 is used. Else UAC2 (need more specific\n
- * settings).
- */
-static uint8_t i_uac1 = 1;
 
 /**
  * \brief Store information if error occurred
@@ -281,7 +273,49 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_MCLK_oversampling
     },
     {
-#define BRD_DRV_CMD_MCLK_PPM_OFFSET     BRD_DRV_CMD_MCLK_OVERSAM+1
+#define BRD_DRV_CMD_BCLK_OVERSAM        BRD_DRV_CMD_MCLK_OVERSAM+1
+      BRD_DRV_CMD_BCLK_OVERSAM,
+      "BCLK frequency",
+      "Options: 16, 32, 64, 128, 256, 512 FSYNC",
+      uint16_type,
+      {.data_uint16 = 1},
+      {.data_uint16 = 512},
+      uint16_type,
+      {.data_uint16 = 1},
+      {.data_uint16 = 512},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling,
+      brd_drv_set_BCLK_oversampling
+    },
+    {
+#define BRD_DRV_CMD_WORD_OFFSET     BRD_DRV_CMD_BCLK_OVERSAM+1
+        BRD_DRV_CMD_WORD_OFFSET,
+        "Word offset (delay between FSYNC and TX/RX_DATA)",
+        "0 ~ 255. Codec safe limit is 16. Value 256 means default value",
+        uint16_type,
+        {.data_uint16 = 0},
+        {.data_uint16 = 256},
+        uint16_type,
+        {.data_uint16 = 0},
+        {.data_uint16 = 256},
+        (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_word_bit_offset,
+        brd_drv_set_word_offset
+    },
+    {
+#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_WORD_OFFSET+1
+      BRD_DRV_CMD_DIG_AUD_INTERFACE,
+      "Digital audio interface mode",
+      "0-I2S ; 1-DSP ; 2-Left justified ; 3-Right justified",
+      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
+      {.data_uint32 = 0},
+      {.data_uint32 = 3},
+      uint32_type,
+      {.data_uint32 = 0},
+      {.data_uint32 = 3},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_dig_aud_mode,
+      brd_drv_set_digital_audio_interface_mode
+    },
+    {
+#define BRD_DRV_CMD_MCLK_PPM_OFFSET     BRD_DRV_CMD_DIG_AUD_INTERFACE+1
       BRD_DRV_CMD_MCLK_PPM_OFFSET,
       "Offset of MCLK in PPM",
       "Allow slightly change MCLK frequency."
@@ -296,49 +330,7 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_MCLK_ppm
     },
     {
-#define BRD_DRV_CMD_BCLK_OVERSAM        BRD_DRV_CMD_MCLK_PPM_OFFSET+1
-      BRD_DRV_CMD_BCLK_OVERSAM,
-      "BCLK frequency",
-      "Options: 16, 32, 64, 128, 256, 512 FSYNC",
-      uint16_type,
-      {.data_uint16 = 2},
-      {.data_uint16 = 512},
-      uint16_type,
-      {.data_uint16 = 2},
-      {.data_uint16 = 512},
-      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling,
-      brd_drv_set_BCLK_oversampling
-    },
-    {
-#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_BCLK_OVERSAM+1
-      BRD_DRV_CMD_DIG_AUD_INTERFACE,
-      "Digital audio interface mode",
-      "0-I2S ; 1-DSP ; 2-Left justified ; 3-Right justified",
-      uint32_type,      // Because it is enum on 32 bit AVR must be 32 bit
-      {.data_uint32 = 0},
-      {.data_uint32 = 3},
-      uint32_type,
-      {.data_uint32 = 0},
-      {.data_uint32 = 3},
-      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.e_dig_aud_mode,
-      brd_drv_set_digital_audio_interface_mode
-    },
-    {
-#define BRD_DRV_CMD_WORD_OFFSET     BRD_DRV_CMD_DIG_AUD_INTERFACE+1
-        BRD_DRV_CMD_WORD_OFFSET,
-        "Word offset (delay between FSYNC and TX/RX_DATA)",
-        "0 ~ 255. Codec safe limit is 16. Value 256 means default value",
-        uint16_type,
-        {.data_uint16 = 0},
-        {.data_uint16 = 256},
-        uint16_type,
-        {.data_uint16 = 0},
-        {.data_uint16 = 256},
-        (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_word_bit_offset,
-        brd_drv_set_word_offset
-    },
-    {
-#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_WORD_OFFSET+1
+#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_MCLK_PPM_OFFSET+1
       BRD_DRV_CMD_RX_FSYNC_EDGE,
       "RX FSYNC edge",
       "RX FSYNC sync edge ; 0 - falling ; 1 - rising ; 2 - default",
@@ -471,7 +463,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 const gd_metadata BRD_DRV_metadata =
 {
         BRD_DRV_MAX_CMD_ID,              // Max CMD ID
-        "Board driver for Sonochan mkII v0.4.7",     // Description
+        "Board driver for Sonochan mkII v0.4.8",     // Description
         (gd_config_struct*)&BRD_DRV_config_table[0],
         0x0F    // Serial number (0~255)
 };
@@ -515,6 +507,7 @@ xSemaphoreHandle mutexADC;
 */
 void brd_drv_task_FreeRTOS(void *pvParameters)
 {
+  static uint8_t i_initialized = 0;
   portTickType xLastWakeTime;
 
   xLastWakeTime = xTaskGetTickCount();
@@ -522,6 +515,23 @@ void brd_drv_task_FreeRTOS(void *pvParameters)
   {
     vTaskDelayUntil(&xLastWakeTime, configTSK_HW_bridge_uniprot_PERIOD);
 
+    /* To be 100% sure, that during board initialization is used pre-defined
+     * stack, initialization is done at the task. Onlz once, but in task.
+     * So when checking RAM, we can see if heap overflows or not. Because when
+     * a lot of memory will be used and initialization will not be in task,
+     * it can rewrite some FreeRTOS variables in stack and whole system can
+     * freeze.
+     */
+    if(i_initialized == 0)
+    {
+      i_initialized = 1;
+      if(brd_drv_init() != GD_SUCCESS)
+      {
+        print_dbg("!!! Board initialization failed.\n If you do not panic, you should now....\n");
+        ///\todo More process
+      }
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_BRD_DRV_INITIALIZED,1,0,-1);
+    }
     // Call simple task
     brd_drv_task();
   }
@@ -571,6 +581,53 @@ GD_RES_CODE brd_drv_pre_init(void)
     e_status = cs2200_set_PLL_freq(8000000);
   }
 
+  //======================| Route MCLK and set prescaller |====================
+  // OSC1 is clocked by 12.288Mhz Osc (Clock from external PLL)
+  pm_enable_osc1_ext_clock(&AVR32_PM);
+  // from Xtal Oscillator
+  pm_enable_clk1(&AVR32_PM, AVR32_PM_OSCCTRL1_STARTUP_2048_RCOSC);
+
+  /*[Martin] Use GCLK0 as master clock because PLL can not produce
+   * frequency lower than 6 MHz. So we can use divider. In default we use
+   * 48 kHz sampling rate, so divider will be disabled. In previous we decided
+   * according to uac1 variable, but nowadays it does not make any sense,
+   * because frequency is changed dynamically according to sampling frequency
+   */
+  gpio_enable_module_pin(GCLK0, GCLK0_FUNCTION);
+  pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK0,   // GCLK0
+        0,        // OSC source
+        1,        // OSC1
+        0,        // Divider disabled
+        0);       // Divider ratio -> Fout = Fin/( 2*(DIV+1) )
+  pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK0);
+
+  //======================| Route BCLK and set prescaller |====================
+  // Route BCLK to GCLK1 module
+  gpio_enable_module_pin(GCLK1, GCLK1_FUNCTION);
+  ///\todo Simplify - Just write to registers
+  pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
+          0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
+          1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
+          1,                  // diven - enabled
+          1);                 // divided by 4.  Therefore GCLK1 = 3.072Mhz
+  // Anyway enable clock
+  pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+
+
+  /* If FreeRTOS is used, then create task. Note that
+   * "configTSK_brd_drv_*" should be defined in FreeRTOSConfig.h
+   * file to keep code clear. However it should be possible set settings
+   * here.
+   */
+#if BRD_DRV_SUPPORT_RTOS != 0
+  xTaskCreate(brd_drv_task_FreeRTOS,             // Task function
+      configTSK_brd_drv_NAME,       // String name
+      configTSK_brd_drv_STACK_SIZE, // Stack size
+      NULL,
+      configTSK_brd_drv_PRIORITY,   // 0 is lowest
+      NULL);
+#endif  // FREERTOS_USED
+
   // If all OK -> return SUCCESS (0)
   return GD_SUCCESS;
 }
@@ -603,68 +660,6 @@ GD_RES_CODE brd_drv_init(void)
   //=================================| IO pins |===============================
   // Set isolators I/O (recommended default)
   brd_drv_set_isolators_to_HiZ();
-
-  //======================| Route MCLK and set prescaller |====================
-  // OSC1 is clocked by 12.288Mhz Osc (Clock from external PLL)
-  pm_enable_osc1_ext_clock(&AVR32_PM);
-  // from Xtal Oscillator
-  pm_enable_clk1(&AVR32_PM, AVR32_PM_OSCCTRL1_STARTUP_2048_RCOSC);
-
-  /*[Martin] Use GCLK0 as master clock because PLL can not produce
-   * frequency lower than 6 MHz. So we can use divider. In default we use
-   * 48 kHz sampling rate, so divider will be disabled. So far support is
-   * only for UAC1
-   */
-  gpio_enable_module_pin(GCLK0, GCLK0_FUNCTION);
-  if(i_uac1 == 0)
-  {
-    // UAC2
-    pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK0,   // GCLK0
-        0,        // OSC source
-        1,        // OSC1
-        0,        // Divider disabled
-        0);       // Divider ratio -> Fout = Fin/( 2*(DIV+1) )
-    ///\todo Test USB Audio Class 2 and check if THIS CODE is correct
-    brd_drv_send_error_msg("BRD DRV: UAC2 not tested yet!\n", 1, 1);
-  }
-  else
-  {
-    // UAC1
-    pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK0,   // GCLK0
-        0,        // OSC source
-        1,        // OSC1
-        0,        // Divider disabled
-        0);       // Divider ratio -> Fout = Fin/( 2*(DIV+1) )
-  }
-  pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK0);
-
-  //======================| Route BCLK and set prescaller |====================
-  // Route BCLK to GCLK1 module
-  gpio_enable_module_pin(GCLK1, GCLK1_FUNCTION);
-  // LRCK is SCLK / 64 generated by TX_SSC
-  // so SCLK of 6.144Mhz ===> 96khz
-  if(i_uac1 == 0)
-  {
-    // UAC2
-    ///\todo Simplify - Just write to registers
-    pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
-          0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
-          1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
-          1,                  // diven - enabled
-          0);                 // divided by 2.  Therefore GCLK1 = 6.144Mhz
-  }
-  else
-  {
-    // UAC1
-    ///\todo Simplify - Just write to registers
-    pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
-          0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
-          1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
-          1,                  // diven - enabled
-          1);                 // divided by 4.  Therefore GCLK1 = 3.072Mhz
-  }
-  // Anyway enable clock
-  pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
 
   //================================| LCD stuff |==============================
   // Initialize LCD
@@ -750,22 +745,6 @@ GD_RES_CODE brd_drv_init(void)
      if(e_status != GD_SUCCESS) return e_status;
   }
 
-
-
-  /* If FreeRTOS is used, then create task. Note that
-   * "configTSK_brd_drv_*" should be defined in FreeRTOSConfig.h
-   * file to keep code clear. However it should be possible set settings
-   * here.
-   */
-#if BRD_DRV_SUPPORT_RTOS != 0
-  xTaskCreate(brd_drv_task_FreeRTOS,             // Task function
-      configTSK_brd_drv_NAME,       // String name
-      configTSK_brd_drv_STACK_SIZE, // Stack size (2^N)
-      NULL,
-      configTSK_brd_drv_PRIORITY,   // 0 is lowest
-      NULL);
-#endif  // FREERTOS_USED
-
   return GD_SUCCESS;
 }
 
@@ -806,6 +785,9 @@ void brd_drv_task(void)
   // Store information about BLCK oversampling value
   static uint32_t i_BCLK_ovrsam_old_value;
 
+
+
+
   // For saving status
   GD_RES_CODE e_status;
 
@@ -832,7 +814,6 @@ void brd_drv_task(void)
   {
     // ADC ready and timeout occurs -> let's process some data
     i_time_cnt = 0;
-
 
     //=============================| Get ADC values |==========================
     // Lock (if needed) ADC and save ADC values
@@ -1298,6 +1279,13 @@ GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling)
   uint16_t i_MCLK_ovrsmplng_backup =
               s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling;
 
+  // MCLK can not be 0!
+  if(i_MCLK_oversampling == 0)
+  {
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_MCLK_OVERSAM_CANNOT_BE_0,1,1);
+    return GD_INCORRECT_PARAMETER;
+  }
+
   /* Check if BCLK is exact multiplier of MCLK. If not we have to change MCLK
    * according to BCLK to be synchronized
    */
@@ -1459,6 +1447,13 @@ GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling)
 
   // Relative divide (MCLK oversampling)/(BLCK oversampling) ratio
   uint16_t i_MCLK_rel_div;
+
+  // BCLK oversampling value can not be 0
+  if(i_BCLK_ovrsmpling == 0)
+  {
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_BCLK_OVERSAM_CANNOT_BE_0, 1,1);
+    return GD_INCORRECT_PARAMETER;
+  }
 
 
   // Check MCLK oversampling value. BCLK must not be higher than MCLK
@@ -1750,11 +1745,13 @@ GD_RES_CODE brd_drv_save_all_settings(void){
       s_brd_drv_ssc_fine_settings.i_word_bit_offset,
       sizeof(s_brd_drv_ssc_fine_settings.i_word_bit_offset),
       1);
+
   flashc_memset32(
       (void *)&s_brd_drv_user_settings.i_MCLK_ppm_offset,
       s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset,
       sizeof(s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset),
       1);
+
 
   // Save information (code), that settings was saved
   flashc_memset8(
@@ -1763,6 +1760,7 @@ GD_RES_CODE brd_drv_save_all_settings(void){
       sizeof(BRD_DRV_FLASH_CHECK_CODE),
       1);
 
+  brd_drv_send_msg(BRD_DRV_MSG_INFO_SETTINGS_SAVED, 1,0,-1);
   return GD_SUCCESS;
 }
 
@@ -1880,11 +1878,11 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   s_brd_drv_ssc_fine_settings.i_data_length =
       s_brd_drv_user_settings.i_data_length;
 
-  s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling =
-      s_brd_drv_user_settings.i_BCLK_ovrsmpling;
-
   s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling =
       s_brd_drv_user_settings.i_MCLK_ovrsmpling;
+
+  s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling =
+      s_brd_drv_user_settings.i_BCLK_ovrsmpling;
 
   s_brd_drv_ssc_fine_settings.i_FSYNC_freq =
       s_brd_drv_user_settings.i_FSYNC_freq;
@@ -1970,10 +1968,9 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
     return e_status;
   }
 
-  // At debug output just say, that settings was loaded
-  brd_drv_send_msg(BRD_DRV_MSG_INFO_SETTINGS_LOADED, 1,0,-1);
 
-  // Return status of "last" function
+  brd_drv_send_msg(BRD_DRV_MSG_INFO_SETTINGS_LOADED, 1,0,-1);
+  // Just return status of last function
   return e_status;
 }
 
@@ -1993,36 +1990,22 @@ inline GD_RES_CODE brd_drv_load_default_settings(void)
   flashc_memset8(
       (void *)&i_brd_drv_settings_check,
       BRD_DRV_FLASH_CHECK_CODE+1, // Make sure, that code will be different
-      sizeof(i_brd_drv_settings_check),
+      sizeof(BRD_DRV_FLASH_CHECK_CODE),
       1);
 
   // Load value i_auto_tune_pll
   uac1_device_audio_get_auto_tune(&i_auto_tune_pll);
+
+  // Set as default mode (usually I2S)
+  e_status = ssc_set_digital_interface_mode(SSC_I2S);
+  if(e_status != GD_SUCCESS) return e_status;
+  s_brd_drv_ssc_fine_settings.e_dig_aud_mode = SSC_I2S;
 
   /* By default we want default offset :) */
   s_brd_drv_ssc_fine_settings.i_word_bit_offset = 256;
 
   // No MCLK offset
   s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset = 0;
-
-  // MCLK and BCLK oversampling (Default);
-  s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling =
-      BRD_DRV_DEFAULT_MCLK_OVERSAMPLING;
-  s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling =
-      BRD_DRV_DEFAULT_BCLK_OVERSAMPLING;
-
-  // Data length - must be done after setting BCLK and MCLK
-  e_status = brd_drv_set_data_length(BRD_DRV_DEFAULT_DATA_WORD_LENGTH);
-  if(e_status != GD_SUCCESS) return e_status;
-
-  // And call set FSYNC frequency, which set MCLK and BCLK dividers
-  e_status = brd_drv_set_FSYNC_freq(BRD_DRV_DEFAULT_FSYNC_FREQ);
-  if(e_status != GD_SUCCESS) return e_status;
-
-
-  // Set as default mode (usually I2S)
-  e_status = brd_drv_set_digital_audio_interface_mode(SSC_I2S);
-  if(e_status != GD_SUCCESS) return e_status;
 
   // Load SSC default values
   // FSYNC RX
@@ -2038,6 +2021,17 @@ inline GD_RES_CODE brd_drv_load_default_settings(void)
   // BCLK TX
   e_status = ssc_get_BCLK_TX_edge(
       &s_brd_drv_ssc_fine_settings.e_BCLK_TX_edge);
+  if(e_status != GD_SUCCESS) return e_status;
+  // MCLK and BCLK oversampling (Default);
+  s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling =
+      BRD_DRV_DEFAULT_MCLK_OVERSAMPLING;
+  s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling =
+      BRD_DRV_DEFAULT_BCLK_OVERSAMPLING;
+  // And call set FSYNC frequency, which set MCLK and BCLK dividers
+  e_status = brd_drv_set_FSYNC_freq(BRD_DRV_DEFAULT_FSYNC_FREQ);
+  if(e_status != GD_SUCCESS) return e_status;
+  // Data length - must be done after setting BCLK and MCLK
+  e_status = brd_drv_set_data_length(BRD_DRV_DEFAULT_DATA_WORD_LENGTH);
   if(e_status != GD_SUCCESS) return e_status;
 
   brd_drv_send_msg(BRD_DRV_MSG_INFO_FACTRY_STTNGS_LOADED,1,0,-1);
@@ -2416,9 +2410,9 @@ GD_RES_CODE brd_drv_set_word_offset(uint16_t i_word_offset)
   }
 
   // Just for sending debug information to UART
-  char c[30];
-  sprintf(&c[0],"word_offset set to: %d\n", i_word_offset);
-  brd_drv_send_msg(&c[0], 1,0,-1);
+  //char c[30];
+  //sprintf(&c[0],"word_offset set to: %d\n", i_word_offset);
+  //brd_drv_send_msg(&c[0], 1,0,-1);
 
   return e_status;
 }
@@ -2473,7 +2467,7 @@ GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset)
    * why messages are split into pieces.
    * Also moved to static (begin of memory) and problems disappear... strange
    */
-  char msg[60];
+  //char msg[100];
 
   // Keep information about MCLK divider value
   uint16_t i_MCLK_div;
@@ -2510,10 +2504,10 @@ GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset)
   }
 
   // We need to show user MCLK value, not real value at PLL
-  sprintf(&msg[0],"MCLK orig: %lu Hz required: %lu Hz\n",
+  /*sprintf(&msg[0],"MCLK orig: %lu Hz required: %lu Hz\n",
           i_orig_freq, i_new_freq);
   brd_drv_send_msg(&msg[0],1,0,-1);
-
+  */
 
   // Check if frequency for PLL is not too high. Now integer values are OK
   // Calculate real frequency for PLL
@@ -2566,9 +2560,9 @@ GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset)
   // Now save value as integer
   s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset = (int32_t)f_real_off;
 
-  sprintf(&msg[0], "MCLK real offset: %4.2f PPM\n", f_real_off);
+  /*sprintf(&msg[0], "MCLK real offset: %4.2f PPM\n", f_real_off);
   brd_drv_send_msg(&msg[0],1,0,-1);
-
+  */
   return e_status;
 }
 
@@ -2597,10 +2591,10 @@ inline GD_RES_CODE brd_drv_get_MCLK_ppm(int32_t *p_i_MCLK_ppm_offset)
 inline GD_RES_CODE brd_drv_show_FSYNC_freq(uint8_t i_line)
 {
   // For sprintf operations
-  char c[15];
+  /*char c[20];
 
   sprintf(&c[0],"FS %lu Hz\n", s_brd_drv_ssc_fine_settings.i_FSYNC_freq);
-  brd_drv_send_msg(&c[0],1,1,i_line);
+  brd_drv_send_msg(&c[0],1,1,i_line);*/
   return GD_SUCCESS;
 }
 
@@ -2613,10 +2607,10 @@ inline GD_RES_CODE brd_drv_show_FSYNC_freq(uint8_t i_line)
 inline GD_RES_CODE brd_drv_show_MCLK_freq(uint8_t i_line)
 {
   // Keep status
-  GD_RES_CODE e_status;
+  /*GD_RES_CODE e_status;
 
   // For sprintf operations
-  char c[15];
+  char c[20];
   // Keep MCLK frequency (from PLL)
   uint32_t i_MCLK_actual_freq;
 
@@ -2644,6 +2638,8 @@ inline GD_RES_CODE brd_drv_show_MCLK_freq(uint8_t i_line)
     brd_drv_send_msg(&c[0],0,1,i_line);
   }
   return e_status;
+  */
+  return GD_SUCCESS;
 }
 
 
@@ -2656,10 +2652,10 @@ inline GD_RES_CODE brd_drv_show_MCLK_freq(uint8_t i_line)
 inline GD_RES_CODE brd_drv_show_BCLK_ovrsampling(uint8_t i_line)
 {
   // For sprintf operations
-  char c[15];
+  /*char c[15];
 
   sprintf(&c[0],"BCLK %uxFS\n", s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling);
-  brd_drv_send_msg(&c[0],1,1,i_line);
+  brd_drv_send_msg(&c[0],1,1,i_line);*/
   return GD_SUCCESS;
 }
 
@@ -2673,15 +2669,15 @@ inline GD_RES_CODE brd_drv_show_volume(void)
 {
   // Show actual headphone volume settings
   // Volume as float value
-  float f_volume;
+  //float f_volume;
   /* Temporary string for text. Assume that text will not be longer than one
    * line on LCD
    */
-  char c[15];
+  /*char c[15];
   tlv320aic33_get_headphones_volume_db(&f_volume);
   sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
   brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_LINE_HP_VOLUME);
-
+*/
   return GD_SUCCESS;
 }
 
@@ -2864,41 +2860,6 @@ inline void brd_drv_send_error_msg(
 
 //===========================| Low level functions |===========================
 /**
- * @brief Set USB Audio Class mode
- * Because device has availability to support UAC1 and UAC2 when initializing\n
- * program should know actual settings, because of right setting MCLK and BCLK.
- *
- * @param i_uac1_enable Write non zero value to enable USB Audio Class 1.\n
- * Else USB Audio Class 2 will be selected as option.
- * @return GD_SUCCESS (0) if all right
- */
-GD_RES_CODE brd_drv_set_uac1(uint8_t i_uac1_enable)
-{
-  if(i_uac1_enable == 0)
-  {
-    i_uac1 = 0;
-  }
-  else
-  {
-    i_uac1 = 1;
-  }
-  return GD_SUCCESS;
-}
-
-/**
- * @brief Give actual value of USB Audio Class mode
- * @param p_i_uac1_enable Address, where result will be written.\n
- * Zero means UAC2. Other values mean UAC1.
- * @return GD_SUCCESS (0) if all right
- */
-GD_RES_CODE brd_drv_get_uac1(uint8_t *p_i_uac1_enable)
-{
-  *p_i_uac1_enable = i_uac1;
-  return GD_SUCCESS;
-}
-
-
-/**
  * \brief Enable or disable auto tune feature
  * @param i_enable Enable (1) or disable (0) feature
  * @return GD_SUCCESS (0) if all OK
@@ -2907,11 +2868,8 @@ GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable)
 {
   GD_RES_CODE e_status;
 
-  uint8_t i_auto_tune_backup = i_auto_tune_pll;
-
   if(i_enable == 0)
   {
-    // Auto tune off -> can set MCLK PPM offset
     uac1_device_audio_set_auto_tune(0);
     i_auto_tune_pll = 0;
     // And set PLL frequency with offset
@@ -2920,7 +2878,6 @@ GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable)
   }
   else
   {
-    // Auto tune on -> can not set MCLK PPM offset. Set only pure MCLK
     uac1_device_audio_set_auto_tune(1);
     i_auto_tune_pll = 1;
     /* Reset offset to zero -> just call set MCLK oversampling freq. function.
@@ -2928,12 +2885,6 @@ GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable)
      */
     e_status = brd_drv_set_MCLK_oversampling(
                   s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling);
-  }
-
-  // If no problem detected, restore value
-  if(e_status != GD_SUCCESS)
-  {
-    i_auto_tune_pll = i_auto_tune_backup;
   }
 
   return e_status;

@@ -93,11 +93,11 @@ void print_dbg(const char *str)
   //[Martin] Added simple mutex (because we use RTOS)
   volatile static int i_occupied = 0;
 
-  if(i_occupied == 0)
-  {
-    i_occupied = 1;
-    print(DBG_USART, str);
-  }
+  // Wait until previous print is done
+  while(i_occupied != 0);
+
+  i_occupied = 1;
+  print(DBG_USART, str);
   i_occupied = 0;
 }
 

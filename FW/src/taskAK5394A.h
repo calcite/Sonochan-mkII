@@ -26,11 +26,14 @@
 #ifndef TASKAK5394A_H_
 #define TASKAK5394A_H_
 
-
-#define PDCA_CHANNEL_SSC_RX     0	// highest priority of 8 channels
-#define PDCA_CHANNEL_SSC_TX     1
-#define AUDIO_BUFFER_SIZE       (48*2*8) // 48 khz, stereo, 8 ms worth
-#define SPK_BUFFER_SIZE         (48*2*8)
+/*[Martin] Reduced buffer size. We had some troubles with memory. Now it can
+ * be OK, but who is really interested in checking RAM dump every time when
+ * chip is re-programmed?
+ */
+#define PDCA_CHANNEL_SSC_RX        0	// highest priority of 8 channels
+#define PDCA_CHANNEL_SSC_TX        1
+#define AUDIO_BUFFER_SIZE       (48*2*6) // 48 khz, stereo, 8 ms worth
+#define SPK_BUFFER_SIZE         (48*2*6)
 
 
 //extern const gpio_map_t SSC_GPIO_MAP;
