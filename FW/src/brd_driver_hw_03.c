@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/08/02
+ * Modified: 2015/08/07
  *
- * \version 0.4.8
+ * \version 0.5.0
  * \author  Martin Stejskal
  */
 
@@ -287,21 +287,7 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_BCLK_oversampling
     },
     {
-#define BRD_DRV_CMD_WORD_OFFSET     BRD_DRV_CMD_BCLK_OVERSAM+1
-        BRD_DRV_CMD_WORD_OFFSET,
-        "Word offset (delay between FSYNC and TX/RX_DATA)",
-        "0 ~ 255. Codec safe limit is 16. Value 256 means default value",
-        uint16_type,
-        {.data_uint16 = 0},
-        {.data_uint16 = 256},
-        uint16_type,
-        {.data_uint16 = 0},
-        {.data_uint16 = 256},
-        (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_word_bit_offset,
-        brd_drv_set_word_offset
-    },
-    {
-#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_WORD_OFFSET+1
+#define BRD_DRV_CMD_DIG_AUD_INTERFACE   BRD_DRV_CMD_BCLK_OVERSAM+1
       BRD_DRV_CMD_DIG_AUD_INTERFACE,
       "Digital audio interface mode",
       "0-I2S ; 1-DSP ; 2-Left justified ; 3-Right justified",
@@ -315,7 +301,21 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_digital_audio_interface_mode
     },
     {
-#define BRD_DRV_CMD_MCLK_PPM_OFFSET     BRD_DRV_CMD_DIG_AUD_INTERFACE+1
+#define BRD_DRV_CMD_WORD_OFFSET     BRD_DRV_CMD_DIG_AUD_INTERFACE+1
+        BRD_DRV_CMD_WORD_OFFSET,
+        "Word offset (delay between FSYNC and TX/RX_DATA)",
+        "0 ~ 255. Codec safe limit is 16. Value 256 means default value",
+        uint16_type,
+        {.data_uint16 = 0},
+        {.data_uint16 = 256},
+        uint16_type,
+        {.data_uint16 = 0},
+        {.data_uint16 = 256},
+        (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_word_bit_offset,
+        brd_drv_set_word_offset
+    },
+    {
+#define BRD_DRV_CMD_MCLK_PPM_OFFSET     BRD_DRV_CMD_WORD_OFFSET+1
       BRD_DRV_CMD_MCLK_PPM_OFFSET,
       "Offset of MCLK in PPM",
       "Allow slightly change MCLK frequency."
@@ -463,7 +463,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 const gd_metadata BRD_DRV_metadata =
 {
         BRD_DRV_MAX_CMD_ID,              // Max CMD ID
-        "Board driver for Sonochan mkII v0.4.8",     // Description
+        "Board driver for Sonochan mkII v0.5.0",     // Description
         (gd_config_struct*)&BRD_DRV_config_table[0],
         0x0F    // Serial number (0~255)
 };
@@ -496,6 +496,7 @@ void brd_drv_clean_up_error_msg(void);
 #if BRD_DRV_SUPPORT_RTOS != 0
 portBASE_TYPE xStatus;
 xSemaphoreHandle mutexADC;
+xSemaphoreHandle mutexFSYNCfunc;
 #endif
 
 #if BRD_DRV_SUPPORT_RTOS != 0
@@ -508,12 +509,13 @@ xSemaphoreHandle mutexADC;
 void brd_drv_task_FreeRTOS(void *pvParameters)
 {
   static uint8_t i_initialized = 0;
-  portTickType xLastWakeTime;
+  //portTickType xLastWakeTime;
 
-  xLastWakeTime = xTaskGetTickCount();
+  //xLastWakeTime = xTaskGetTickCount();
   while (TRUE)
   {
-    vTaskDelayUntil(&xLastWakeTime, configTSK_HW_bridge_uniprot_PERIOD);
+    //vTaskDelayUntil(&xLastWakeTime, configTSK_HW_bridge_uniprot_PERIOD);
+    vTaskDelay(configTSK_HW_bridge_uniprot_PERIOD);
 
     /* To be 100% sure, that during board initialization is used pre-defined
      * stack, initialization is done at the task. Onlz once, but in task.
@@ -647,6 +649,7 @@ GD_RES_CODE brd_drv_init(void)
   // If RTOS support enable and create flag is set then create mutex
 #if (BRD_DRV_SUPPORT_RTOS != 0) && (BRD_DRV_RTOS_CREATE_MUTEX != 0)
   mutexADC = xSemaphoreCreateMutex();
+  mutexFSYNCfunc = xSemaphoreCreateMutex();
 #endif
   // Variable for storing status
   GD_RES_CODE e_status;
@@ -1223,6 +1226,16 @@ inline GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
  */
 GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq)
 {
+  /* At the begin: this function can be called at ANY TIME from
+   * *_usb_specific_request.c
+   * And also this function is called when loading settings. To avoid
+   * collision, there is simple loop.
+   */
+  while ( xSemaphoreTake( mutexFSYNCfunc, 0 ) != pdTRUE)
+  {
+    print_dbg("Waiting FSYNC2\n");
+  }
+
   // Store status code
   GD_RES_CODE e_status;
 
@@ -1241,9 +1254,11 @@ GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq)
   {
     // If fail, restore previous value
     s_brd_drv_ssc_fine_settings.i_FSYNC_freq = i_FSYNC_freq_backup;
+    xSemaphoreGive( mutexFSYNCfunc );
     return e_status;
   }
 
+  xSemaphoreGive( mutexFSYNCfunc );
   return e_status;
 }
 
@@ -2410,9 +2425,9 @@ GD_RES_CODE brd_drv_set_word_offset(uint16_t i_word_offset)
   }
 
   // Just for sending debug information to UART
-  //char c[30];
-  //sprintf(&c[0],"word_offset set to: %d\n", i_word_offset);
-  //brd_drv_send_msg(&c[0], 1,0,-1);
+  char c[30];
+  tfp_sprintf(&c[0],"word_offset set to: %d\n", i_word_offset);
+  brd_drv_send_msg(&c[0], 1,0,-1);
 
   return e_status;
 }
@@ -2462,12 +2477,8 @@ GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset)
   // For calculating real offset (need high precision)
   float f_real_off;
 
-  /* Memory space for message. I do not know why, but when used more than 80
-   * Bytes some crazy owerflow occurs and everything freeze. That is reason
-   * why messages are split into pieces.
-   * Also moved to static (begin of memory) and problems disappear... strange
-   */
-  //char msg[100];
+  /* Memory space for message. */
+  char msg[80];
 
   // Keep information about MCLK divider value
   uint16_t i_MCLK_div;
@@ -2504,10 +2515,11 @@ GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset)
   }
 
   // We need to show user MCLK value, not real value at PLL
-  /*sprintf(&msg[0],"MCLK orig: %lu Hz required: %lu Hz\n",
-          i_orig_freq, i_new_freq);
+  tfp_sprintf(&msg[0],
+              "MCLK orig: %lu Hz required (because of offset): %lu Hz\n",
+              i_orig_freq, i_new_freq);
   brd_drv_send_msg(&msg[0],1,0,-1);
-  */
+
 
   // Check if frequency for PLL is not too high. Now integer values are OK
   // Calculate real frequency for PLL
@@ -2560,9 +2572,13 @@ GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset)
   // Now save value as integer
   s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset = (int32_t)f_real_off;
 
-  /*sprintf(&msg[0], "MCLK real offset: %4.2f PPM\n", f_real_off);
+  //sprintf(&msg[0], "MCLK real offset: %4.2f PPM\n", f_real_off);
+  char c_float_val[20];
+  floatToStr(f_real_off, 2, &c_float_val[0]);
+
+  tfp_sprintf(&msg[0], "MCLK real offset: %s PPM\n", c_float_val);
   brd_drv_send_msg(&msg[0],1,0,-1);
-  */
+
   return e_status;
 }
 
@@ -2591,10 +2607,10 @@ inline GD_RES_CODE brd_drv_get_MCLK_ppm(int32_t *p_i_MCLK_ppm_offset)
 inline GD_RES_CODE brd_drv_show_FSYNC_freq(uint8_t i_line)
 {
   // For sprintf operations
-  /*char c[20];
+  char c[20];
 
-  sprintf(&c[0],"FS %lu Hz\n", s_brd_drv_ssc_fine_settings.i_FSYNC_freq);
-  brd_drv_send_msg(&c[0],1,1,i_line);*/
+  tfp_sprintf(&c[0],"FS %lu Hz\n", s_brd_drv_ssc_fine_settings.i_FSYNC_freq);
+  brd_drv_send_msg(&c[0],1,1,i_line);
   return GD_SUCCESS;
 }
 
@@ -2607,7 +2623,7 @@ inline GD_RES_CODE brd_drv_show_FSYNC_freq(uint8_t i_line)
 inline GD_RES_CODE brd_drv_show_MCLK_freq(uint8_t i_line)
 {
   // Keep status
-  /*GD_RES_CODE e_status;
+  GD_RES_CODE e_status;
 
   // For sprintf operations
   char c[20];
@@ -2625,7 +2641,7 @@ inline GD_RES_CODE brd_drv_show_MCLK_freq(uint8_t i_line)
 
   i_MCLK_actual_freq = i_MCLK_actual_freq / i_MCLK_divider;
 
-  sprintf(&c[0],"MCLK %lu\n", i_MCLK_actual_freq);
+  tfp_sprintf(&c[0],"MCLK %lu\n", i_MCLK_actual_freq);
   // Send message about frequency to debug output only if auto tune option is
   // disabled to avoid writing too verbose output on debug output
 
@@ -2638,8 +2654,6 @@ inline GD_RES_CODE brd_drv_show_MCLK_freq(uint8_t i_line)
     brd_drv_send_msg(&c[0],0,1,i_line);
   }
   return e_status;
-  */
-  return GD_SUCCESS;
 }
 
 
@@ -2652,10 +2666,10 @@ inline GD_RES_CODE brd_drv_show_MCLK_freq(uint8_t i_line)
 inline GD_RES_CODE brd_drv_show_BCLK_ovrsampling(uint8_t i_line)
 {
   // For sprintf operations
-  /*char c[15];
+  char c[20];
 
-  sprintf(&c[0],"BCLK %uxFS\n", s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling);
-  brd_drv_send_msg(&c[0],1,1,i_line);*/
+  tfp_sprintf(&c[0],"BCLK %uxFS\n", s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling);
+  brd_drv_send_msg(&c[0],1,1,i_line);
   return GD_SUCCESS;
 }
 
@@ -2669,15 +2683,18 @@ inline GD_RES_CODE brd_drv_show_volume(void)
 {
   // Show actual headphone volume settings
   // Volume as float value
-  //float f_volume;
+  float f_volume;
   /* Temporary string for text. Assume that text will not be longer than one
    * line on LCD
    */
-  /*char c[15];
+  char c[20];
+  char c_float[10];
   tlv320aic33_get_headphones_volume_db(&f_volume);
-  sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
+  //sprintf(&c[0], "Vol: %.1f dB\n", f_volume);
+  floatToStr(f_volume, 1, &c_float[0]);
+  tfp_sprintf(&c[0], "Vol: %s dB", c_float);
   brd_drv_send_msg(&c[0], 0, 1, BRD_DRV_LCD_LINE_HP_VOLUME);
-*/
+
   return GD_SUCCESS;
 }
 

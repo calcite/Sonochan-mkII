@@ -1,5 +1,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../src/tinyprintf.c \
+../src/tinyprintf_extra.c \
 ../src/bootloader_cfg.c \
 ../src/brd_driver_hw_03.c \
 ../src/cs2200_HAL_AVR32_UC3A3_HW_interface.c \
@@ -37,6 +39,8 @@ C_SRCS += \
 
 
 OBJS += \
+./src/tinyprintf.o \
+./src/tinyprintf_extra.o \
 ./src/bootloader_cfg.o \
 ./src/brd_driver_hw_03.o \
 ./src/cs2200_HAL_AVR32_UC3A3_HW_interface.o \
@@ -74,6 +78,8 @@ OBJS += \
 
 
 C_DEPS += \
+./src/tinyprintf.d \
+./src/tinyprintf_extra.d \
 ./src/bootloader_cfg.d \
 ./src/brd_driver_hw_03.d \
 ./src/cs2200_HAL_AVR32_UC3A3_HW_interface.d \

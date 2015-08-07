@@ -175,7 +175,7 @@ to exclude the API function. */
 #define configTSK_HW_bridge_uniprot_NAME       \
                                 ((const signed portCHAR *)"HW bridge uniprot")
 // [Martin] Original: 1024
-#define configTSK_HW_bridge_uniprot_STACK_SIZE  512
+#define configTSK_HW_bridge_uniprot_STACK_SIZE  256
 #define configTSK_HW_bridge_uniprot_PRIORITY    (tskIDLE_PRIORITY + 0)
 //[Martin] Original value: 200
 #define configTSK_HW_bridge_uniprot_PERIOD      231
@@ -183,9 +183,9 @@ to exclude the API function. */
 #define configTSK_brd_drv_NAME                  \
                                 ((const signed portCHAR *)"Board driver")
 // [Martin] Original: 2048
-#define configTSK_brd_drv_STACK_SIZE            1024
+#define configTSK_brd_drv_STACK_SIZE            256
 #define configTSK_brd_drv_PRIORITY              (tskIDLE_PRIORITY + 0)
-#define configTSK_brd_drv_PERIOD                1373
+#define configTSK_brd_drv_PERIOD                524
 
 
 
@@ -211,7 +211,7 @@ to exclude the API function. */
 #define UAC2_configTSK_AK5394A_PERIOD      200
 
 /* taskExercise definitions */
-#define configTSK_EXERCISE_STACK_SIZE      32
+#define configTSK_EXERCISE_STACK_SIZE      64
 #define configTSK_EXERCISE_PRIORITY        (tskIDLE_PRIORITY + 0 )
 #define configTSK_EXERCISE_PERIOD          10000  // 1000ms
 
