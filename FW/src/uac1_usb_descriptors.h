@@ -68,7 +68,7 @@ uint16_t uac1_usb_desc_get_PID(void);
 #define CONF_NB            1     //! Number of this configuration
 #define CONF_INDEX         0
 #define CONF_ATTRIBUTES    USB_CONFIG_SELFPOWERED
-#define MAX_POWER          130    // 260 mA
+#define MAX_POWER          175    // 350 mA
 
 
 

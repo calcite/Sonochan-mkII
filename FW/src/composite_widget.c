@@ -196,7 +196,7 @@ pm_freq_param_t   pm_freq_param=
 };
 
 
-
+#define STARTUP_DELAY_CONST     0xFFF
 /*! \brief Main function. Execution starts here.
  *
  * \retval 42 Fatal error.
@@ -205,6 +205,26 @@ int main(void)
 {
   // Make sure Watchdog timer is disabled initially (otherwise it interferes upon restart)
   wdt_disable();
+
+  //[Martin] To be sure, that power is already up, we wait here
+  volatile static uint32_t i_delay_cnt=0;
+  volatile static uint32_t i_delay_cnt_backup = 0;
+
+  while((i_delay_cnt < STARTUP_DELAY_CONST) &&
+        (i_delay_cnt_backup < STARTUP_DELAY_CONST))
+  {
+    i_delay_cnt++;
+    i_delay_cnt_backup++;
+    if(i_delay_cnt != i_delay_cnt_backup)
+    {
+      i_delay_cnt = 0;
+      i_delay_cnt_backup = 0;
+    }
+  }
+
+
+
+
 
 
   // Initialize Real Time Counter

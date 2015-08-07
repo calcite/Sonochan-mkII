@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/08/02
+ * Modified: 2015/08/07
  *
- * \version 0.4.8
+ * \version 0.5.0
  * \author  Martin Stejskal
  */
 
@@ -369,7 +369,17 @@
 #include <inttypes.h>
 
 // Because of sprintf()
-#include <stdio.h>
+//#include <stdio.h>
+/* sprintf() is pure evil. With combination of RTOS is cause many unexpected
+ * failures. So we use more lightweight version.
+ */
+#include "tinyprintf.h"
+/* Tinyprintf does not support printing float. So there is small library that
+ * simply recalculate float values to string (also with decimal point).
+ * However it is quite limited. On the another hand it is very fast and not so
+ * much memory consuming
+ */
+#include "tinyprintf_extra.h"
 
 // Cause of GCLKx stuff
 #include "pm.h"

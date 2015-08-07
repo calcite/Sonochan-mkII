@@ -5,7 +5,7 @@ OPT=-O2
 # Debug level - write as parameter (can be void). Eq: DBG=-gdwarf-2
 # or: DBG=-g2
 # or can be void (no debug informations). Eq.: DBG=
-DBG=
+DBG=-gdwarf-2
 
 
 
