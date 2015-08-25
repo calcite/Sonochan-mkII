@@ -33,7 +33,7 @@ REM echo --- User page programmed ---
 REM echo " 
 
 REM Change fuses to correct ones
-atprogram -t avrdragon -i JTAG -d at32uc3a3256 write -fs -o 0xFFFE1410 --values FFF7FFFF
+atprogram -t avrdragon -i JTAG -d at32uc3a3256 write -fs -o 0xFFFE1410 --values 6D37FFFF
 echo "
 echo --- Fuses changed ---
 echo " 

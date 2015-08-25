@@ -6,9 +6,9 @@
  * For now is supported only uc3a3256
  *
  * Created:  2015.04.03\n
- * Modified: 2015.04.03
+ * Modified: 2015.08.25
  *
- * \version 0.1
+ * \version 0.2
  * \author Martin Stejskal
  */
 #include "bootloader_cfg.h"

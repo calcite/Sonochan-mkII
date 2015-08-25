@@ -6,9 +6,9 @@
  * For now is supported only uc3a3256
  *
  * Created:  2015.04.03\n
- * Modified: 2015.04.03
+ * Modified: 2015.08.25
  *
- * \version 0.1
+ * \version 0.2
  * \author Martin Stejskal
  */
 
@@ -24,9 +24,11 @@
 /**
  * \breif Define address where is configuration word
  *
- * Only for uc3a3256.
+ * Bootloader configuration word is at the end of user page memory. So we\n
+ * need to get address of last word (4B)
  */
-#define BOOTLOADER_CFG_WORD_ADDR        0x808001FC
+#define BOOTLOADER_CFG_WORD_ADDR        \
+  (AVR32_FLASHC_USER_PAGE_ADDRESS + AVR32_FLASHC_PAGE_SIZE -4)
 
 //===============================| Structures |================================
 /**

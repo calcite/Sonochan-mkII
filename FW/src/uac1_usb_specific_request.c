@@ -552,12 +552,14 @@ void audio_set_cur(void)
 
     // OK, set FSYNC according to actual value
     /* Note, that following function should be simple as possible, because now
-     * this code is in USB environment.
+     * this code is in USB environment. So that is reason, why is there only
+     * request function and not whole function with all stuff
      */
-    if(brd_drv_set_FSYNC_freq(current_freq.frequency) != GD_SUCCESS)
+    if(brd_drv_set_FSYNC_freq_rqst(current_freq.frequency) != GD_SUCCESS)
     {
       brd_drv_send_error_msg("USB spec. req. SET FSYNC FAILED!\n",1,1);
     }
+
 
   }
 
