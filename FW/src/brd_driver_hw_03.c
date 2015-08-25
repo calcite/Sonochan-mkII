@@ -9,7 +9,7 @@
  * Created:  2014/04/23\n
  * Modified: 2015/08/25
  *
- * \version 0.5.1
+ * \version 0.5.2
  * \author  Martin Stejskal
  */
 
@@ -275,7 +275,22 @@ const gd_config_struct BRD_DRV_config_table[] =
       brd_drv_set_MCLK_oversampling
     },
     {
-#define BRD_DRV_CMD_BCLK_OVERSAM        BRD_DRV_CMD_MCLK_OVERSAM+1
+#define BRD_DRV_CMD_MCLK_PPM_OFFSET     BRD_DRV_CMD_MCLK_OVERSAM+1
+      BRD_DRV_CMD_MCLK_PPM_OFFSET,
+      "Offset of MCLK in PPM",
+      "Allow slightly change MCLK frequency."
+        " Auto tune PLL have to be disabled!",
+      int32_type,
+      {.data_int32 = -1000000},
+      {.data_int32 =  1000000},
+      int32_type,
+      {.data_int32 = -1000000},
+      {.data_int32 =  1000000},
+      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset,
+      brd_drv_set_MCLK_ppm
+    },
+    {
+#define BRD_DRV_CMD_BCLK_OVERSAM        BRD_DRV_CMD_MCLK_PPM_OFFSET+1
       BRD_DRV_CMD_BCLK_OVERSAM,
       "BCLK frequency",
       "Options: 16, 32, 64, 128, 256, 512 FSYNC",
@@ -317,22 +332,7 @@ const gd_config_struct BRD_DRV_config_table[] =
         brd_drv_set_word_offset
     },
     {
-#define BRD_DRV_CMD_MCLK_PPM_OFFSET     BRD_DRV_CMD_WORD_OFFSET+1
-      BRD_DRV_CMD_MCLK_PPM_OFFSET,
-      "Offset of MCLK in PPM",
-      "Allow slightly change MCLK frequency."
-        " Auto tune PLL have to be disabled!",
-      int32_type,
-      {.data_int32 = -1000000},
-      {.data_int32 =  1000000},
-      int32_type,
-      {.data_int32 = -1000000},
-      {.data_int32 =  1000000},
-      (GD_DATA_VALUE*)&s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset,
-      brd_drv_set_MCLK_ppm
-    },
-    {
-#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_MCLK_PPM_OFFSET+1
+#define BRD_DRV_CMD_RX_FSYNC_EDGE    BRD_DRV_CMD_WORD_OFFSET+1
       BRD_DRV_CMD_RX_FSYNC_EDGE,
       "RX FSYNC edge",
       "RX FSYNC sync edge ; 0 - falling ; 1 - rising ; 2 - default",
@@ -465,7 +465,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 const gd_metadata BRD_DRV_metadata =
 {
         BRD_DRV_MAX_CMD_ID,              // Max CMD ID
-        "Board driver for Sonochan mkII v0.5.1",     // Description
+        "Board driver for Sonochan mkII v0.5.2",     // Description
         (gd_config_struct*)&BRD_DRV_config_table[0],
         0x0F    // Serial number (0~255)
 };
@@ -596,25 +596,25 @@ GD_RES_CODE brd_drv_pre_init(void)
    * according to uac1 variable, but nowadays it does not make any sense,
    * because frequency is changed dynamically according to sampling frequency
    */
-  gpio_enable_module_pin(GCLK0, GCLK0_FUNCTION);
-  pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK0,   // GCLK0
+  gpio_enable_module_pin(MCLK_PIN, MCLK_FUNCTION);
+  pm_gc_setup(&AVR32_PM, MCLK_CLK,   // GCLK0
         0,        // OSC source
         1,        // OSC1
         0,        // Divider disabled
         0);       // Divider ratio -> Fout = Fin/( 2*(DIV+1) )
-  pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK0);
+  pm_gc_enable(&AVR32_PM, MCLK_CLK);
 
   //======================| Route BCLK and set prescaller |====================
   // Route BCLK to GCLK1 module
-  gpio_enable_module_pin(GCLK1, GCLK1_FUNCTION);
+  gpio_enable_module_pin(BCLK_PIN, BCLK_FUNCTION);
   ///\todo Simplify - Just write to registers
-  pm_gc_setup(&AVR32_PM, AVR32_PM_GCLK_GCLK1, // gc
+  pm_gc_setup(&AVR32_PM, BCLK_CLK, // gc
           0,                  // osc_or_pll: use Osc (if 0) or PLL (if 1)
           1,                  // pll_osc: select Osc0/PLL0 or Osc1/PLL1
           1,                  // diven - enabled
           1);                 // divided by 4.  Therefore GCLK1 = 3.072Mhz
   // Anyway enable clock
-  pm_gc_enable(&AVR32_PM, AVR32_PM_GCLK_GCLK1);
+  pm_gc_enable(&AVR32_PM, BCLK_CLK);
 
 
   /* If FreeRTOS is used, then create task. Note that
@@ -670,7 +670,7 @@ GD_RES_CODE brd_drv_init(void)
   if(e_status != GD_SUCCESS)
   {
     // Send message over debug interface
-    brd_drv_send_error_msg(BRD_DRV_MSG_LCD_INIT_FAIL, 1, 0);
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_LCD_INIT_FAIL, 1, 0);
     return e_status;
   }
 
@@ -688,7 +688,7 @@ GD_RES_CODE brd_drv_init(void)
   e_status = brd_drv_draw_logo();
   if(e_status != GD_SUCCESS)
   {
-    brd_drv_send_error_msg(BRD_DRV_MSG_DRAW_LOGO_FAIL, 1, 0);
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_DRAW_LOGO_FAIL, 1, 0);
     return e_status;
   }
 
@@ -700,7 +700,7 @@ GD_RES_CODE brd_drv_init(void)
   e_status = cs2200_set_safe_change_ratio_by_1(0);
   if(e_status != GD_SUCCESS)
   {
-    brd_drv_send_error_msg(BRD_DRV_MSG_PLL_SET_SAVE_FLAG_FAIL, 1 ,1);
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_PLL_SET_SAVE_FLAG_FAIL, 1 ,1);
     return e_status;
   }
 
@@ -715,7 +715,7 @@ GD_RES_CODE brd_drv_init(void)
 
   if(e_status != GD_SUCCESS)
   {
-    brd_drv_send_error_msg(BRD_DRV_MSG_ADC_INIT_FAIL, 1, 1);
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_ADC_INIT_FAIL, 1, 1);
     return e_status;
   }
 
@@ -731,7 +731,7 @@ GD_RES_CODE brd_drv_init(void)
   e_status = brd_drv_TLV_default();
   if(e_status != GD_SUCCESS)
   {
-    brd_drv_send_error_msg(BRD_DRV_MSG_CODEC_INIT_FAIL, 1, 1);
+    brd_drv_send_error_msg(BRD_DRV_MSG_ERR_CODEC_INIT_FAIL, 1, 1);
     return e_status;
   }
 
@@ -866,7 +866,7 @@ void brd_drv_task(void)
         {
           // If some problem -> tell user
           // Print do debug output and LCD
-          brd_drv_send_error_msg(BRD_DRV_TLV_FAILED_SET_HEADPHONE_VOL_DB,1,1);
+          brd_drv_send_error_msg(BRD_DRV_MSG_ERR_TLV_FAILED_SET_HEADPHONE_VOL_DB,1,1);
         }
         // Show volume value only if there is not any problem
         if(i_error_occurred == 0)
@@ -886,7 +886,7 @@ void brd_drv_task(void)
         e_status = tlv320aic33_set_headphones_volume_dB(f_volume);
         if(e_status != GD_SUCCESS)
         {
-          brd_drv_send_error_msg(BRD_DRV_TLV_FAILED_SET_HEADPHONE_VOL_DB,1,1);
+          brd_drv_send_error_msg(BRD_DRV_MSG_ERR_TLV_FAILED_SET_HEADPHONE_VOL_DB,1,1);
         }
         // Show volume value only if there is not any problem
         if(i_error_occurred == 0)
@@ -936,7 +936,7 @@ void brd_drv_task(void)
         e_con_vol = brd_drv_con_save_vol;
 
         // Send message
-        brd_drv_send_msg(BRD_DRV_CON_VOL_SAVE, 1, 0, -1);
+        brd_drv_send_msg(BRD_DRV_MSG_INFO_CON_VOL_SAVE, 1, 0, -1);
       }
     }// Check CON_VOLTAGE value
     else
@@ -949,7 +949,7 @@ void brd_drv_task(void)
         e_con_vol = brd_drv_con_high_vol;
 
         // Send warning message
-        brd_drv_send_warning_msg(BRD_DRV_CON_VOL_HIGH, 1, 1);
+        brd_drv_send_warning_msg(BRD_DRV_MSG_ERR_CON_VOL_HIGH, 1, 1);
       }
     }
 
@@ -1059,7 +1059,7 @@ inline GD_RES_CODE brd_drv_reset_i2s(void)
   brd_drv_TLV_default();
 
   // Send message to debug interface
-  brd_drv_send_msg(BRD_DRV_MSG_RESET_I2S_DONE, 1, 0, -1);
+  brd_drv_send_msg(BRD_DRV_MSG_INFO_RESET_I2S_DONE, 1, 0, -1);
 
   return GD_SUCCESS;
 }
@@ -1139,15 +1139,21 @@ inline GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
   /* Now set all fine configuration settings again. This is because SSC driver's
    * behavior is "set mode and all to default to make it working". But because
    * we're using generic driver support, we need to keep all settings to avoid
-   * de-synchronization between application and real setting in Sonochan mkII
+   * de-synchronization between application and real setting in Sonochan mkII.
+   *
+   * This is automatically done at setting word length if RJF is used.
    */
-  e_status = brd_drv_set_word_offset(
-               s_brd_drv_ssc_fine_settings.i_word_bit_offset);
-  if(e_status != GD_SUCCESS)
+  if(s_brd_drv_ssc_fine_settings.e_dig_aud_mode != SSC_RIGHT_JUSTIFIED)
   {
-    s_brd_drv_ssc_fine_settings.e_dig_aud_mode = e_dig_aud_mode_backup;
-    return e_status;
+    e_status = brd_drv_set_word_offset(
+                 s_brd_drv_ssc_fine_settings.i_word_bit_offset);
+    if(e_status != GD_SUCCESS)
+    {
+      s_brd_drv_ssc_fine_settings.e_dig_aud_mode = e_dig_aud_mode_backup;
+      return e_status;
+    }
   }
+
 
   e_status = ssc_set_BCLK_RX_edge(s_brd_drv_ssc_fine_settings.e_BCLK_RX_edge);
   if(e_status != GD_SUCCESS)
@@ -1177,8 +1183,8 @@ inline GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
     return e_status;
   }
 
-  // Following should not be necessary to update, but you never know....
-  e_status = ssc_set_data_length(s_brd_drv_ssc_fine_settings.i_data_length);
+  // Refresh data length (show warning if needed)
+  e_status = brd_drv_set_data_length(s_brd_drv_ssc_fine_settings.i_data_length);
   if(e_status != GD_SUCCESS)
   {
     s_brd_drv_ssc_fine_settings.e_dig_aud_mode = e_dig_aud_mode_backup;
@@ -1513,6 +1519,12 @@ GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling)
     return GD_INCORRECT_PARAMETER;
   }
 
+  // Our codec does not support BCLK lower than 32 -> in that case show message
+  if(i_BCLK_ovrsmpling < 32)
+  {
+    brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_CODEC_NOT_SUPP_LOWER_THAN_BCLK32,
+                             1,1);
+  }
   //=======================| End of checking parameters |======================
   // Calculate relative ratio (MCLK/BCLK)
   i_MCLK_rel_div = s_brd_drv_ssc_fine_settings.i_MCLK_ovrsmpling /
@@ -1604,6 +1616,13 @@ GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling)
   if(e_status == GD_SUCCESS)
   {
     s_brd_drv_ssc_fine_settings.i_BCLK_ovrsmpling = i_BCLK_ovrsmpling;
+    // Also we need to recalculate word offset if RJF is used
+    if(s_brd_drv_ssc_fine_settings.e_dig_aud_mode == SSC_RIGHT_JUSTIFIED)
+    {
+      e_status = brd_drv_set_word_offset(
+                    s_brd_drv_ssc_fine_settings.i_word_bit_offset);
+      if(e_status != GD_SUCCESS) return e_status;
+    }
   }
 
   return e_status;
@@ -2111,6 +2130,12 @@ GD_RES_CODE brd_drv_set_data_length(uint8_t i_data_length)
       e_status = tlv320aic33_set_word_length(20);}
     else{
       e_status = tlv320aic33_set_word_length(16);}
+
+    if(s_brd_drv_ssc_fine_settings.e_dig_aud_mode == SSC_DSP)
+    {
+      brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_CODEC_NOT_SUPP_WRLD_LEN_DSP,
+                               1,1);
+    }
   }
   else  // Supported value
   {
@@ -2119,9 +2144,16 @@ GD_RES_CODE brd_drv_set_data_length(uint8_t i_data_length)
   // Check status code
   if(e_status != GD_SUCCESS) return e_status;
 
-
   // If all OK, then save value
   s_brd_drv_ssc_fine_settings.i_data_length = i_data_length;
+
+  // If RJF -> recalculate word offset
+  if(s_brd_drv_ssc_fine_settings.e_dig_aud_mode == SSC_RIGHT_JUSTIFIED)
+  {
+    e_status = brd_drv_set_word_offset(
+                  s_brd_drv_ssc_fine_settings.i_word_bit_offset);
+    if(e_status != GD_SUCCESS) return e_status;
+  }
 
   // Anyway, return status
   return e_status;
@@ -2531,7 +2563,7 @@ GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset)
 
   // We need to show user MCLK value, not real value at PLL
   tfp_sprintf(&msg[0],
-              "MCLK orig: %lu Hz required (because of offset): %lu Hz\n",
+              "MCLK orig: %lu Hz | Required (with offset): %lu Hz\n",
               i_orig_freq, i_new_freq);
   brd_drv_send_msg(&msg[0],1,0,-1);
 
@@ -2585,7 +2617,7 @@ GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset)
   }
 
   // Now save value as integer
-  s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset = (int32_t)f_real_off;
+  s_brd_drv_ssc_fine_settings.i_MCLK_ppm_offset = i_MCLK_ppm_offset;
 
   //sprintf(&msg[0], "MCLK real offset: %4.2f PPM\n", f_real_off);
   char c_float_val[20];
@@ -3067,14 +3099,14 @@ GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag)
       // Mute off
       gpio_enable_module_pin(SSC_TX_DATA,SSC_TX_DATA_FUNCTION);
       // Send message
-      brd_drv_send_msg(BRD_DRV_MUTE_IN_MUTE_OFF, 1, 0, -1);
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_MUTE_IN_MUTE_OFF, 1, 0, -1);
     }
     else
     {
       // Mute on - set pin to low
       BRD_DRV_IO_LOW(SSC_TX_DATA);
       // Send message
-      brd_drv_send_msg(BRD_DRV_MUTE_IN_MUTE_ON, 1, 0, -1);
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_MUTE_IN_MUTE_ON, 1, 0, -1);
     }
   }
   else if(s_brd_drv_mute.e_mute_dir == brd_drv_dir_out)
@@ -3087,7 +3119,7 @@ GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag)
       // Set signal
       BRD_DRV_IO_LOW(BRD_DRV_MUTE_PIN);
       // Send message
-      brd_drv_send_msg(BRD_DRV_MUTE_OUT_MUTE_OFF, 1, 0, -1);
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_MUTE_OUT_MUTE_OFF, 1, 0, -1);
     }
     else
     {
@@ -3096,7 +3128,7 @@ GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag)
       // Set signal
       BRD_DRV_IO_HIGH(BRD_DRV_MUTE_PIN);
       // Send message
-      brd_drv_send_msg(BRD_DRV_MUTE_OUT_MUTE_ON, 1, 0, -1);
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_MUTE_OUT_MUTE_ON, 1, 0, -1);
     }
   }
   else
@@ -3190,7 +3222,7 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag)
     // Perform some activity only if set to 1
     if(i_reset_i2s_flag != 0)
     {
-      brd_drv_send_msg(BRD_DRV_MSG_RESET_I2S_INPUT_ON, 1, 0, -1);
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_RESET_I2S_INPUT_ON, 1, 0, -1);
       s_brd_drv_rst_i2s.i_rst_dai_val = 1;
       // Perform operations
       brd_drv_reset_i2s();
@@ -3201,7 +3233,7 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag)
     {
       // Set to 0 - turn off
       s_brd_drv_rst_i2s.i_rst_dai_val = 0;
-      brd_drv_send_msg(BRD_DRV_MSG_RESET_I2S_INPUT_OFF, 1, 0, -1);
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_RESET_I2S_INPUT_OFF, 1, 0, -1);
     }
   }
   else if(s_brd_drv_rst_i2s.e_rst_dai_dir == brd_drv_dir_out)
@@ -3213,7 +3245,7 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag)
       // Set RESET I2S signal to 0 - not needed reset I2S connector on AVR side
       BRD_DRV_IO_LOW(BRD_DRV_RESET_I2S_PIN);
       s_brd_drv_rst_i2s.i_rst_dai_val = 0;
-      brd_drv_send_msg(BRD_DRV_MSG_RESET_I2S_SET_TO_LOW, 1, 0, -1);
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_RESET_I2S_SET_TO_LOW, 1, 0, -1);
     }
     else
     {
@@ -3235,7 +3267,7 @@ GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag)
 
       // Do reset I2S bus on AVR side
       e_status = brd_drv_reset_i2s();
-      brd_drv_send_msg(BRD_DRV_MSG_RESET_I2S_SET_TO_HIGH, 1, 0, 0);
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_RESET_I2S_SET_TO_HIGH, 1, 0, 0);
 
       // Anyway set RESET I2S to low
       /* Note: Already done by brd_drv_reset_i2s(), so it is commented, but
@@ -3340,12 +3372,12 @@ GD_RES_CODE brd_drv_set_mclk_dir(e_brd_drv_dir_t e_mclk_dir)
   {
   case brd_drv_dir_in:
     BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_B_PIN);
-    BRD_DRV_IO_AS_INPUT(GCLK0);
+    BRD_DRV_IO_AS_INPUT(MCLK_PIN);
     BRD_DRV_IO_HIGH(BRD_DRV_MCLK_EN_A_PIN);
     break;
   case brd_drv_dir_out:
     BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_A_PIN);
-    gpio_enable_module_pin(GCLK0, GCLK0_FUNCTION);
+    gpio_enable_module_pin(MCLK_PIN, MCLK_FUNCTION);
     BRD_DRV_IO_HIGH(BRD_DRV_MCLK_EN_B_PIN);
     break;
   case brd_drv_dir_hiz:
@@ -3354,7 +3386,7 @@ GD_RES_CODE brd_drv_set_mclk_dir(e_brd_drv_dir_t e_mclk_dir)
      */
     BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_A_PIN);
     BRD_DRV_IO_LOW(BRD_DRV_MCLK_EN_B_PIN);
-    gpio_enable_module_pin(GCLK0, GCLK0_FUNCTION);
+    gpio_enable_module_pin(MCLK_PIN, MCLK_FUNCTION);
     break;
   default:
     return GD_INCORRECT_PARAMETER;
@@ -3380,17 +3412,17 @@ GD_RES_CODE brd_drv_set_bclk_dir(e_brd_drv_dir_t e_bclk_dir)
   {
   case brd_drv_dir_in:
     BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
-    BRD_DRV_IO_AS_INPUT(GCLK1);
+    BRD_DRV_IO_AS_INPUT(BCLK_PIN);
     BRD_DRV_IO_HIGH(BRD_DRV_BCLK_EN_A_PIN);
     break;
   case brd_drv_dir_out:
     BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
-    gpio_enable_module_pin(GCLK1, GCLK1_FUNCTION);
+    gpio_enable_module_pin(BCLK_PIN, BCLK_FUNCTION);
     BRD_DRV_IO_HIGH(BRD_DRV_BCLK_EN_B_PIN);
     break;
   case brd_drv_dir_hiz:
     BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
-    gpio_enable_module_pin(GCLK1, GCLK1_FUNCTION);
+    gpio_enable_module_pin(BCLK_PIN, BCLK_FUNCTION);
     BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
     break;
   default:
@@ -3828,7 +3860,7 @@ inline void brd_drv_process_mute_button(void)
   if((i_mute_btn != 0) && (i_mute_btn_previous == 0))
   {
     // Pressed button
-    brd_drv_send_msg(BRD_DRV_MSG_MUTE_BTN_PRESSED, 1, 0, -1);
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_MSG_MUTE_BTN_PRESSED, 1, 0, -1);
     brd_drv_set_mute(1);
   }
 
@@ -3836,7 +3868,7 @@ inline void brd_drv_process_mute_button(void)
   if((i_mute_btn == 0) && (i_mute_btn_previous != 0))
   {
     // Released button
-    brd_drv_send_msg(BRD_DRV_MSG_MUTE_BTN_RELEASED, 1, 0, -1);
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_MSG_MUTE_BTN_RELEASED, 1, 0, -1);
     brd_drv_set_mute(0);
   }
 
@@ -3867,7 +3899,7 @@ inline void brd_drv_process_mute_signal(void)
   // Check rising edge
   if((i_mute != 0) && (i_mute_previous == 0))
   {
-    brd_drv_send_msg(BRD_DRV_MSG_MUTE_RISING_EDGE, 1, 0, -1);
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_MUTE_RISING_EDGE, 1, 0, -1);
     // Mute on
     brd_drv_set_mute(1);
   }
@@ -3875,7 +3907,7 @@ inline void brd_drv_process_mute_signal(void)
   // Check falling edge
   if((i_mute == 0) && (i_mute_previous != 0))
   {
-    brd_drv_send_msg(BRD_DRV_MSG_MUTE_FALLING_EDGE, 1, 0, -1);
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_MUTE_FALLING_EDGE, 1, 0, -1);
     // Mute off
     brd_drv_set_mute(0);
   }
@@ -3917,7 +3949,7 @@ inline void brd_drv_process_rst_i2s_button(void)
   // Check for rising edge - pressed button
   if((i_rst_i2s_btn != 0) && (i_rst_i2s_btn_previous == 0))
   {
-    brd_drv_send_msg(BRD_DRV_MSG_RST_I2S_BTN_PRESSED, 1, 0, -1);
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_RST_I2S_BTN_PRESSED, 1, 0, -1);
   }
 
 
@@ -3925,7 +3957,7 @@ inline void brd_drv_process_rst_i2s_button(void)
   if((i_rst_i2s_btn == 0) && (i_rst_i2s_btn_previous != 0))
   {
     // Falling edge
-    brd_drv_send_msg(BRD_DRV_MSG_RST_I2S_BTN_RELEASED, 1, 0, -1);
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_RST_I2S_BTN_RELEASED, 1, 0, -1);
 
     if(i_time < BRD_DRV_SHORT_PRESS)
     {
@@ -3979,7 +4011,7 @@ inline void brd_drv_process_rst_i2s_signal(void)
     // Check rising edge
     if((i_rst_i2s != 0) && (i_rst_i2s_previous == 0))
     {
-      brd_drv_send_msg(BRD_DRV_MSG_RST_I2S_RISING_EDGE, 1, 0, -1);
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_RST_I2S_RISING_EDGE, 1, 0, -1);
       // Reset on
       brd_drv_set_rst_i2s(1);
     }
@@ -3987,7 +4019,7 @@ inline void brd_drv_process_rst_i2s_signal(void)
     // Check falling edge
     if((i_rst_i2s == 0) && (i_rst_i2s_previous != 0))
     {
-      brd_drv_send_msg(BRD_DRV_MSG_RST_I2S_FALLING_EDGE, 1, 0, -1);
+      brd_drv_send_msg(BRD_DRV_MSG_INFO_RST_I2S_FALLING_EDGE, 1, 0, -1);
       // Reset off
       brd_drv_set_rst_i2s(0);
     }
