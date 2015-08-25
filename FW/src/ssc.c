@@ -9,9 +9,9 @@
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  2014/08/20\n
- * Modified: 2015/07/16
+ * Modified: 2015/08/25
  *
- * \version 0.4.1
+ * \version 0.4.2
  * \author Martin Stejskal
  */
 #include "ssc.h"
@@ -332,26 +332,16 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_I2S(void)
   // Looks like FSYNC edge, but it is not
   p_ssc->TFMR.fsedge = 1;
 
-  // Receive start selection - start on any edge
-  p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
-  // Receive start delay - 1 pulse after edge (word offset)
-  p_ssc->RCMR.sttdly = 1;
-  // Frame length
-  p_ssc->RCMR.period = s_ssc_settings.i_frame_length -1;
-
-  // Set data length (one sample per one channel)
-  p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
-  // MSB first - true
-  p_ssc->RFMR.msbf = 1;
-  // Transfer one word (left then right). Calculation is: DATNB+1, so there is 0
-  p_ssc->RFMR.datnb = (1 - 1);
-  // Set frame size (Frame sync is entire left channel)
-  p_ssc->RFMR.fslen = (s_ssc_settings.i_frame_length -1) &
-      ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
-  p_ssc->RFMR.fslenhi = (s_ssc_settings.i_frame_length -1)
-      >>AVR32_SSC_TFMR_FSLEN_SIZE;
-  // Negative edge detection
-  p_ssc->RFMR.fsedge = 1;
+  // Set RX module according to TX
+  p_ssc->RCMR.start =   p_ssc->TCMR.start;
+  p_ssc->RCMR.sttdly =  p_ssc->TCMR.sttdly;
+  p_ssc->RCMR.period =  p_ssc->TCMR.period;
+  p_ssc->RFMR.datlen =  p_ssc->TFMR.datlen;
+  p_ssc->RFMR.msbf =    p_ssc->TFMR.msbf;
+  p_ssc->RFMR.datnb =   p_ssc->TFMR.datnb;
+  p_ssc->RFMR.fslen =   p_ssc->TFMR.fslen;
+  p_ssc->RFMR.fslenhi = p_ssc->TFMR.fslenhi;
+  p_ssc->RFMR.fsedge =  p_ssc->TFMR.fsedge;
 
 
   /* Following functions need to know which mode is active. So we set as
@@ -441,26 +431,16 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
   // Looks like FSYNC edge, but it is not
   p_ssc->TFMR.fsedge = 1;
 
-  // Receive start selection - start on any edge
-  p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_RISING_TF;
-  // Receive start delay - DSP data after FYNC pulse
-  p_ssc->RCMR.sttdly = 1;
-  // Set frame length
-  p_ssc->RCMR.period = (s_ssc_settings.i_frame_length) -1;
-
-  // Data length
-  p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
-  // MSB first - true
-  p_ssc->RFMR.msbf = 1;
-  // Transfer two words (left+right). Calculation is: DATNB+1, so there is 1
-  p_ssc->RFMR.datnb = (2 -1);
-  // Set frame size (Frame sync is one pulse)
-  p_ssc->RFMR.fslen = (1 -1)
-      & ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
-  p_ssc->RFMR.fslenhi = (1 -1)
-      >>AVR32_SSC_TFMR_FSLEN_SIZE;
-  // Negative edge detection
-  p_ssc->RFMR.fsedge = 1;
+  // Set RX module according to TX module
+  p_ssc->RCMR.start =   p_ssc->TCMR.start;
+  p_ssc->RCMR.sttdly =  p_ssc->TCMR.sttdly;
+  p_ssc->RCMR.period =  p_ssc->TCMR.period;
+  p_ssc->RFMR.datlen =  p_ssc->TFMR.datlen;
+  p_ssc->RFMR.msbf =    p_ssc->TFMR.msbf;
+  p_ssc->RFMR.datnb =   p_ssc->TFMR.datnb;
+  p_ssc->RFMR.fslen =   p_ssc->TFMR.fslen;
+  p_ssc->RFMR.fslenhi = p_ssc->TFMR.fslenhi;
+  p_ssc->RFMR.fsedge =  p_ssc->TFMR.fsedge;
 
 
   /* Following functions need to know which mode is active. So we set as
@@ -548,26 +528,16 @@ SSC_RES_CODE ssc_set_digital_interface_mode_L_jus(void)
   // Looks like FSYNC edge, but it is not
   p_ssc->TFMR.fsedge = 1;
 
-  // Receive start selection - start on any edge
-  p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
-  // Receive start delay - 0 pulse after edge
-  p_ssc->RCMR.sttdly = 0;
-  // Set frame length
-  p_ssc->RCMR.period = s_ssc_settings.i_frame_length -1;
-
-  // Set data length (one sample per one channel)
-  p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
-  // MSB first - true
-  p_ssc->RFMR.msbf = 1;
-  // Transfer one word (left then right). Calculation is: DATNB+1, so there is 0
-  p_ssc->RFMR.datnb = (1 - 1);
-  // Set frame size (Frame sync is entire left channel)
-  p_ssc->RFMR.fslen = (s_ssc_settings.i_frame_length -1) &
-      ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
-  p_ssc->RFMR.fslenhi = (s_ssc_settings.i_frame_length -1)
-      >>AVR32_SSC_TFMR_FSLEN_SIZE;
-  // Negative edge detection
-  p_ssc->RFMR.fsedge = 1;
+  // Set RX module according to TX module
+  p_ssc->RCMR.start =   p_ssc->TCMR.start;
+  p_ssc->RCMR.sttdly =  p_ssc->TCMR.sttdly;
+  p_ssc->RCMR.period =  p_ssc->TCMR.period;
+  p_ssc->RFMR.datlen =  p_ssc->TFMR.datlen;
+  p_ssc->RFMR.msbf =    p_ssc->TFMR.msbf;
+  p_ssc->RFMR.datnb =   p_ssc->TFMR.datnb;
+  p_ssc->RFMR.fslen =   p_ssc->TFMR.fslen;
+  p_ssc->RFMR.fslenhi = p_ssc->TFMR.fslenhi;
+  p_ssc->RFMR.fsedge =  p_ssc->TFMR.fsedge;
 
 
   /* Following functions need to know which mode is active. So we set as
@@ -656,27 +626,16 @@ SSC_RES_CODE ssc_set_digital_interface_mode_R_jus(void)
   // Looks like FSYNC edge, but it is not
   p_ssc->TFMR.fsedge = 1;
 
-  // Receive start selection - start on any edge
-  p_ssc->RCMR.start = AVR32_SSC_TCMR_START_DETECT_ANY_EDGE_TF;
-  // Receive start delay - X pulse after edge
-  p_ssc->RCMR.sttdly = (s_ssc_settings.i_frame_length -
-                        s_ssc_settings.i_data_length);
-  // Period offset
-  p_ssc->RCMR.period = s_ssc_settings.i_frame_length -1;
-
-  // Set data length (one sample per one channel)
-  p_ssc->RFMR.datlen = s_ssc_settings.i_data_length -1;
-  // MSB first - true
-  p_ssc->RFMR.msbf = 1;
-  // Transfer one word (left then right). Calculation is: DATNB+1, so there is 0
-  p_ssc->RFMR.datnb = (1 - 1);
-  // Set frame size (Frame sync is entire left channel)
-  p_ssc->RFMR.fslen = (s_ssc_settings.i_frame_length -1) &
-      ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
-  p_ssc->RFMR.fslenhi = (s_ssc_settings.i_frame_length -1)
-      >>AVR32_SSC_TFMR_FSLEN_SIZE;
-  // Negative edge detection
-  p_ssc->RFMR.fsedge = 1;
+  // Set RX module according to TX module
+  p_ssc->RCMR.start =   p_ssc->TCMR.start;
+  p_ssc->RCMR.sttdly =  p_ssc->TCMR.sttdly;
+  p_ssc->RCMR.period =  p_ssc->TCMR.period;
+  p_ssc->RFMR.datlen =  p_ssc->TFMR.datlen;
+  p_ssc->RFMR.msbf =    p_ssc->TFMR.msbf;
+  p_ssc->RFMR.datnb =   p_ssc->TFMR.datnb;
+  p_ssc->RFMR.fslen =   p_ssc->TFMR.fslen;
+  p_ssc->RFMR.fslenhi = p_ssc->TFMR.fslenhi;
+  p_ssc->RFMR.fsedge =  p_ssc->TFMR.fsedge;
 
 
   /* Following functions need to know which mode is active. So we set as
@@ -744,7 +703,7 @@ inline SSC_RES_CODE ssc_set_data_length(uint8_t i_data_length)
 
   // Same for all modes
   p_ssc->TFMR.datlen = i_data_length -1;
-  p_ssc->RFMR.datlen = i_data_length -1;
+  p_ssc->RFMR.datlen = p_ssc->TFMR.datlen;
 
   // And save value
   s_ssc_settings.i_data_length = i_data_length;
@@ -785,7 +744,7 @@ SSC_RES_CODE ssc_set_frame_length(uint8_t i_frame_length)
 
   // Period is same for all cases
   p_ssc->TCMR.period = i_frame_length -1;
-  p_ssc->RCMR.period = i_frame_length -1;
+  p_ssc->RCMR.period = p_ssc->TCMR.period;
 
   // Set frame size. This is mode dependent
   e_status = ssc_get_digital_interface_mode(&e_dai_mode);
@@ -800,10 +759,8 @@ SSC_RES_CODE ssc_set_frame_length(uint8_t i_frame_length)
     p_ssc->TFMR.fslenhi = (i_frame_length -1)
         >>AVR32_SSC_TFMR_FSLEN_SIZE;
 
-    p_ssc->RFMR.fslen = (i_frame_length -1) &
-        ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
-    p_ssc->RFMR.fslenhi = (i_frame_length -1)
-        >>AVR32_SSC_TFMR_FSLEN_SIZE;
+    p_ssc->RFMR.fslen = p_ssc->TFMR.fslen;
+    p_ssc->RFMR.fslenhi = p_ssc->TFMR.fslenhi;
   }// If e_mode is I2S, LJF, RJF
   else if(e_dai_mode == SSC_DSP)
   {
@@ -812,10 +769,8 @@ SSC_RES_CODE ssc_set_frame_length(uint8_t i_frame_length)
     p_ssc->TFMR.fslenhi = (1 -1)
         >>AVR32_SSC_TFMR_FSLEN_SIZE;
 
-    p_ssc->RFMR.fslen = (1 -1) &
-        ((1<<AVR32_SSC_TFMR_FSLEN_SIZE) -1);
-    p_ssc->RFMR.fslenhi = (1 -1)
-        >>AVR32_SSC_TFMR_FSLEN_SIZE;
+    p_ssc->RFMR.fslen = p_ssc->TFMR.fslen;
+    p_ssc->RFMR.fslenhi = p_ssc->TFMR.fslenhi;
   }
   else // Not I2S, DSP, LJF, RJF
   { // Unknown mode
@@ -858,7 +813,7 @@ SSC_RES_CODE ssc_set_word_offset(uint8_t i_word_offset)
 
   // Set word offset in TX and RX module
   p_ssc->TCMR.sttdly = i_word_offset;
-  p_ssc->RCMR.sttdly = i_word_offset;
+  p_ssc->RCMR.sttdly = p_ssc->TCMR.sttdly;
 
   return SSC_SUCCESS;
 }

@@ -9,7 +9,7 @@
  * Created:  2014/04/23\n
  * Modified: 2015/08/25
  *
- * \version 0.5.1
+ * \version 0.5.2
  * \author  Martin Stejskal
  */
 
@@ -229,10 +229,12 @@
  */
 //! @{
 
-#define GCLK0                   AVR32_PM_GCLK_0_1_PIN
-#define GCLK0_FUNCTION          AVR32_PM_GCLK_0_1_FUNCTION
-#define GCLK1                   AVR32_PM_GCLK_1_1_PIN
-#define GCLK1_FUNCTION          AVR32_PM_GCLK_1_1_FUNCTION
+#define MCLK_PIN                AVR32_PM_GCLK_0_1_PIN
+#define MCLK_FUNCTION           AVR32_PM_GCLK_0_1_FUNCTION
+#define MCLK_CLK                AVR32_PM_GCLK_GCLK0
+#define BCLK_PIN                AVR32_PM_GCLK_1_1_PIN
+#define BCLK_FUNCTION           AVR32_PM_GCLK_1_1_FUNCTION
+#define BCLK_CLK                AVR32_PM_GCLK_GCLK1
 //! @}
 
 
@@ -632,15 +634,11 @@ typedef struct{
  */
 ///\todo Sort messages to ERROR, WARNING and INFO
 /// Can not initialize LCD display
-#define BRD_DRV_MSG_LCD_INIT_FAIL       \
+#define BRD_DRV_MSG_ERR_LCD_INIT_FAIL       \
   "LCD initialization failed!\n"
 
-/// Sonochan mk II
-#define BRD_DRV_MSG_INFO_SONOCHAN_MK_II         \
-  "Snchn mkII"
-
 /// Can not draw logo
-#define BRD_DRV_MSG_DRAW_LOGO_FAIL      \
+#define BRD_DRV_MSG_ERR_DRAW_LOGO_FAIL      \
   "Write logo failed\n"
 
 /// To apply changes, please restart device
@@ -664,112 +662,32 @@ typedef struct{
   "Can not get PLL frequency\n"
 
 /// Can not initialize ADC
-#define BRD_DRV_MSG_ADC_INIT_FAIL       \
+#define BRD_DRV_MSG_ERR_ADC_INIT_FAIL       \
   "Can not initialize internal ADC\n"
 
 /// Can not initialize codec
-#define BRD_DRV_MSG_CODEC_INIT_FAIL     \
+#define BRD_DRV_MSG_ERR_CODEC_INIT_FAIL     \
   "Can not initialize codec\n"
 
 /// Can not set save flag
-#define BRD_DRV_MSG_PLL_SET_SAVE_FLAG_FAIL      \
+#define BRD_DRV_MSG_ERR_PLL_SET_SAVE_FLAG_FAIL      \
   "Can not set save flag at PLL\n"
 
 /// Can not set headphone volume in dB
-#define BRD_DRV_TLV_FAILED_SET_HEADPHONE_VOL_DB \
+#define BRD_DRV_MSG_ERR_TLV_FAILED_SET_HEADPHONE_VOL_DB \
   "Can not set headphone volume in DB\n"
 
 /// Can not write to LCD
-#define BRD_DRV_LCD_WRITE_FAIL                  \
+#define BRD_DRV_MSG_ERR_LCD_WRITE_FAIL                  \
   "Can not write to LCD\n"
 
-/// Voltage on connector side in save range
-#define BRD_DRV_CON_VOL_SAVE                    \
-  "Con: save voltage\n"
-
 /// Voltage on connector side is too high
-#define BRD_DRV_CON_VOL_HIGH                    \
+#define BRD_DRV_MSG_ERR_CON_VOL_HIGH                    \
   "Con: high voltage!\n"
-
-/// Mute direction IN ; Mute off
-#define BRD_DRV_MUTE_IN_MUTE_OFF                \
-  "MUTE (IN): OFF\n"
-
-/// Mute direction IN ; Mute on
-#define BRD_DRV_MUTE_IN_MUTE_ON                 \
-  "MUTE (IN): ON\n"
-
-/// Mute direction OUT ; Mute off
-#define BRD_DRV_MUTE_OUT_MUTE_OFF               \
-  "MUTE (OUT): OFF\n"
-
-/// Mute direction OUT ; Mute on
-#define BRD_DRV_MUTE_OUT_MUTE_ON                \
-  "MUTE (OUT): ON\n"
-
-/// Mute direction IN ; Button pressed ; Mute on
-#define BRD_DRV_MSG_MUTE_BTN_PRESSED            \
-  "MUTE_BTN pressed\n"
-
-/// Mute direction IN ; Button released ; Mute off
-#define BRD_DRV_MSG_MUTE_BTN_RELEASED           \
-  "MUTE_BTN released\n"
-
-/// Signal MUTE - rising edge
-#define BRD_DRV_MSG_MUTE_RISING_EDGE            \
-  "MUTE: rising edge\n"
-
-/// Signal MUTE - falling edge
-#define BRD_DRV_MSG_MUTE_FALLING_EDGE           \
-  "MUTE: falling edge\n"
 
 /// Info that connector is not powered so can not react for buttons
 #define BRD_DRV_MSG_ERR_CON_NOT_POWERED         \
   "Connector side is not powered\n"
-
-/// Error message was cleaned from LCD
-#define BRD_DRV_MSG_ERR_MSG_CLEARED             \
-  "Error message cleared\n"
-
-/// Info that restart I2S was occurred
-#define BRD_DRV_MSG_RESET_I2S_DONE              \
-  "Reset I2S done\n"
-
-/// Info that RESET_I2S_PIN was set to HIGH
-#define BRD_DRV_MSG_RESET_I2S_SET_TO_HIGH       \
-  "Reset I2S (OUT) set to HIGH\n"
-
-/// Info that RESET_I2S_PIN was set to LOW
-#define BRD_DRV_MSG_RESET_I2S_SET_TO_LOW        \
-  "Reset I2S (OUT) set to LOW\n"
-
-/// RESET_I2S_PIN is input and there is require to turn off reset I2S
-#define BRD_DRV_MSG_RESET_I2S_INPUT_OFF         \
-  "Reset I2S (IN) off\n"
-
-/// RESET_I2S_PIN is input and there is require to turn on reset I2S
-#define BRD_DRV_MSG_RESET_I2S_INPUT_ON          \
-  "Reset I2S (IN) on\n"
-
-/// Info that rising edge was detected on RESET_I2S_PIN
-#define BRD_DRV_MSG_RST_I2S_RISING_EDGE         \
-  "RESET_I2S: rising edge\n"
-
-/// Info that falling edge was detected on RESET_I2S_PIN
-#define BRD_DRV_MSG_RST_I2S_FALLING_EDGE        \
-  "RESET_I2S: falling edge\n"
-
-/// RESET_I2S_BTN was pressed
-#define BRD_DRV_MSG_RST_I2S_BTN_PRESSED         \
-  "RESET_I2S_BTN pressed\n"
-
-/// RESET_I2S_BTN was released
-#define BRD_DRV_MSG_RST_I2S_BTN_RELEASED        \
-  "RESET_I2S_BTN released\n"
-
-/// Error message was removed
-#define BRD_DRV_MSG_INFO_ERROR_CLEANED          \
-  "ERROR message deleted\n\n\n"
 
 /// When setting MCLK oversampling value and PLL value is too high
 #define BRD_DRV_MSG_ERR_PLL_HIGH_FREQ           \
@@ -841,13 +759,13 @@ typedef struct{
 /// @}
 
 
+
 /**
  * \name Warning messages
  * @{
  */
 #define BRD_DRV_MSG_WRN_FLASH_NOT_VALID_SETTINGS        \
   "Non valid settings in user flash!\n"
-
 
 #define BRD_DRV_MSG_WRN_CAN_NOT_SET_PLL_TRYING_AGAIN    \
   "Can not set external PLL. Trying again...\n"
@@ -860,13 +778,103 @@ typedef struct{
 
 #define BRD_DRV_MSG_WRN_CODEC_NOT_SUPPORT_HIGH_WORD_OFFSET      \
   "Codec does not support this word offset!\n"
+
+#define BRD_DRV_MSG_WRN_CODEC_NOT_SUPP_WRLD_LEN_DSP             \
+  "Codec not support this world length in DSP\n"
+
+#define BRD_DRV_MSG_WRN_CODEC_NOT_SUPP_LOWER_THAN_BCLK32        \
+  "Codec not support BCLK lower than 32\n"
 /// @}
+
 
 
 /**
  * \name Information messages
  * @{
  */
+/// Sonochan mk II
+#define BRD_DRV_MSG_INFO_SONOCHAN_MK_II         \
+  "Snchn mkII"
+
+/// Voltage on connector side in save range
+#define BRD_DRV_MSG_INFO_CON_VOL_SAVE                    \
+  "Con: save voltage\n"
+
+/// Mute direction IN ; Mute off
+#define BRD_DRV_MSG_INFO_MUTE_IN_MUTE_OFF                \
+  "MUTE (IN): OFF\n"
+
+/// Mute direction IN ; Mute on
+#define BRD_DRV_MSG_INFO_MUTE_IN_MUTE_ON                 \
+  "MUTE (IN): ON\n"
+
+/// Mute direction OUT ; Mute off
+#define BRD_DRV_MSG_INFO_MUTE_OUT_MUTE_OFF               \
+  "MUTE (OUT): OFF\n"
+
+/// Mute direction OUT ; Mute on
+#define BRD_DRV_MSG_INFO_MUTE_OUT_MUTE_ON                \
+  "MUTE (OUT): ON\n"
+
+/// Mute direction IN ; Button pressed ; Mute on
+#define BRD_DRV_MSG_INFO_MSG_MUTE_BTN_PRESSED            \
+  "MUTE_BTN pressed\n"
+
+/// Mute direction IN ; Button released ; Mute off
+#define BRD_DRV_MSG_INFO_MSG_MUTE_BTN_RELEASED           \
+  "MUTE_BTN released\n"
+
+/// Signal MUTE - rising edge
+#define BRD_DRV_MSG_INFO_MUTE_RISING_EDGE            \
+  "MUTE: rising edge\n"
+
+/// Signal MUTE - falling edge
+#define BRD_DRV_MSG_INFO_MUTE_FALLING_EDGE           \
+  "MUTE: falling edge\n"
+
+/// Error message was cleaned from LCD
+#define BRD_DRV_MSG_INFO_ERR_MSG_CLEARED             \
+  "Error message cleared\n"
+
+/// Info that restart I2S was occurred
+#define BRD_DRV_MSG_INFO_RESET_I2S_DONE              \
+  "Reset I2S done\n"
+
+/// Info that RESET_I2S_PIN was set to HIGH
+#define BRD_DRV_MSG_INFO_RESET_I2S_SET_TO_HIGH       \
+  "Reset I2S (OUT) set to HIGH\n"
+
+/// Info that RESET_I2S_PIN was set to LOW
+#define BRD_DRV_MSG_INFO_RESET_I2S_SET_TO_LOW        \
+  "Reset I2S (OUT) set to LOW\n"
+
+/// RESET_I2S_PIN is input and there is require to turn off reset I2S
+#define BRD_DRV_MSG_INFO_RESET_I2S_INPUT_OFF         \
+  "Reset I2S (IN) off\n"
+
+/// RESET_I2S_PIN is input and there is require to turn on reset I2S
+#define BRD_DRV_MSG_INFO_RESET_I2S_INPUT_ON          \
+  "Reset I2S (IN) on\n"
+
+/// Info that rising edge was detected on RESET_I2S_PIN
+#define BRD_DRV_MSG_INFO_RST_I2S_RISING_EDGE         \
+  "RESET_I2S: rising edge\n"
+
+/// Info that falling edge was detected on RESET_I2S_PIN
+#define BRD_DRV_MSG_INFO_RST_I2S_FALLING_EDGE        \
+  "RESET_I2S: falling edge\n"
+
+/// RESET_I2S_BTN was pressed
+#define BRD_DRV_MSG_INFO_RST_I2S_BTN_PRESSED         \
+  "RESET_I2S_BTN pressed\n"
+
+/// RESET_I2S_BTN was released
+#define BRD_DRV_MSG_INFO_RST_I2S_BTN_RELEASED        \
+  "RESET_I2S_BTN released\n"
+
+/// Error message was removed
+#define BRD_DRV_MSG_INFO_ERROR_CLEANED          \
+  "ERROR message deleted\n\n\n"
 
 #define BRD_DRV_MSG_INFO_LOAD_FACTRY_STTNGS         \
   "Loading factory settings...\n"

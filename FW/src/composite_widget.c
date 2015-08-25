@@ -196,7 +196,7 @@ pm_freq_param_t   pm_freq_param=
 };
 
 
-#define STARTUP_DELAY_CONST     0xAFF
+#define STARTUP_DELAY_CONST     0x7FF
 /*! \brief Main function. Execution starts here.
  *
  * \retval 42 Fatal error.
