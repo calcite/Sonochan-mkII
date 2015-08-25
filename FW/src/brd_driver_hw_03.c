@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/08/07
+ * Modified: 2015/08/25
  *
- * \version 0.5.0
+ * \version 0.5.1
  * \author  Martin Stejskal
  */
 
@@ -33,6 +33,8 @@ static s_brd_drv_rst_dai_t s_brd_drv_rst_i2s;
  * \brief Store directions for MCLK, BCLK, FSYNC, TX_DATA, RX_DATA
  */
 static s_brd_drv_pure_dai_dir_t s_brd_drv_pure_dai_dir;
+
+static s_brd_drv_FSYNC_freq_req_t s_brd_drv_FSYNC_freq_req;
 
 /**
  * \brief Store fine settings of SSC module
@@ -463,7 +465,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 const gd_metadata BRD_DRV_metadata =
 {
         BRD_DRV_MAX_CMD_ID,              // Max CMD ID
-        "Board driver for Sonochan mkII v0.5.0",     // Description
+        "Board driver for Sonochan mkII v0.5.1",     // Description
         (gd_config_struct*)&BRD_DRV_config_table[0],
         0x0F    // Serial number (0~255)
 };
@@ -496,7 +498,6 @@ void brd_drv_clean_up_error_msg(void);
 #if BRD_DRV_SUPPORT_RTOS != 0
 portBASE_TYPE xStatus;
 xSemaphoreHandle mutexADC;
-xSemaphoreHandle mutexFSYNCfunc;
 #endif
 
 #if BRD_DRV_SUPPORT_RTOS != 0
@@ -649,7 +650,6 @@ GD_RES_CODE brd_drv_init(void)
   // If RTOS support enable and create flag is set then create mutex
 #if (BRD_DRV_SUPPORT_RTOS != 0) && (BRD_DRV_RTOS_CREATE_MUTEX != 0)
   mutexADC = xSemaphoreCreateMutex();
-  mutexFSYNCfunc = xSemaphoreCreateMutex();
 #endif
   // Variable for storing status
   GD_RES_CODE e_status;
@@ -804,9 +804,19 @@ void brd_drv_task(void)
   volatile avr32_adc_t *p_adc;
   p_adc = (avr32_adc_t*)BDR_DRV_ADC_ADDRESS;
 
-  // Pointer to GPIO memory (if needed, then uncomment following line)
-  //volatile avr32_gpio_port_t *gpio_port;
 
+  //===========================| FSYNC request check |=========================
+  // Check if there is request for setting FSYNC frequency
+  if(s_brd_drv_FSYNC_freq_req.i_request != 0)
+  {
+    e_status = brd_drv_set_FSYNC_freq(
+        s_brd_drv_FSYNC_freq_req.i_new_FSYNC_freq);
+    if(e_status != GD_SUCCESS)
+    {
+      brd_drv_send_error_msg(BRD_DRV_MSG_ERR_SET_FSYNC_FREQ_REQ_FAILED,1,1);
+    }
+    s_brd_drv_FSYNC_freq_req.i_request = 0;
+  }
 
   /* Check if all ADC conversions are done and if there is "time" for some
    * data processing
@@ -1219,23 +1229,12 @@ inline GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
  * Because all is based from external PLL frequency, function set also\n
  * external PLL, MCLK and BCLK dividers (on UC3A). As result of all this\n
  * should be correct FSYNC frequency.
- * @note This function is used by USB driver, so that is main reason why all\n
- * messages (debug/info) are commened
+ *
  * @param i_FSYNC_freq FSYNC frequency in Hz
  * @return GD_SUCCESS (0) if all OK
  */
 GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq)
 {
-  /* At the begin: this function can be called at ANY TIME from
-   * *_usb_specific_request.c
-   * And also this function is called when loading settings. To avoid
-   * collision, there is simple loop.
-   */
-  while ( xSemaphoreTake( mutexFSYNCfunc, 0 ) != pdTRUE)
-  {
-    print_dbg("Waiting FSYNC2\n");
-  }
-
   // Store status code
   GD_RES_CODE e_status;
 
@@ -1254,11 +1253,9 @@ GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq)
   {
     // If fail, restore previous value
     s_brd_drv_ssc_fine_settings.i_FSYNC_freq = i_FSYNC_freq_backup;
-    xSemaphoreGive( mutexFSYNCfunc );
     return e_status;
   }
 
-  xSemaphoreGive( mutexFSYNCfunc );
   return e_status;
 }
 
@@ -1276,6 +1273,24 @@ GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq)
 inline GD_RES_CODE brd_drv_get_FSYNC_freq(uint32_t *p_i_FSYNC_freq)
 {
   *p_i_FSYNC_freq = s_brd_drv_ssc_fine_settings.i_FSYNC_freq;
+  return GD_SUCCESS;
+}
+
+
+
+/**
+ * @brief Just request to set FSYNC frequency. Will be executed later
+ *
+ * Because at USB stack we need really fast response, there is no time to set
+ * FSYNC frequency through brd_drv_set_FSYNC_freq() function. So we simply
+ * send request and frequency will be set shortly.
+ * @param i_FSYNC_freq FSYNC frequency in Hz
+ * @return GD_SUCCESS (0) if all OK
+ */
+inline GD_RES_CODE brd_drv_set_FSYNC_freq_rqst(uint32_t i_FSYNC_freq)
+{
+  s_brd_drv_FSYNC_freq_req.i_new_FSYNC_freq = i_FSYNC_freq;
+  s_brd_drv_FSYNC_freq_req.i_request = 1;
   return GD_SUCCESS;
 }
 

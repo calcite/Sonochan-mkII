@@ -196,17 +196,23 @@ pm_freq_param_t   pm_freq_param=
 };
 
 
-#define STARTUP_DELAY_CONST     0xFFF
+#define STARTUP_DELAY_CONST     0xAFF
 /*! \brief Main function. Execution starts here.
  *
  * \retval 42 Fatal error.
  */
 int main(void)
 {
-  // Make sure Watchdog timer is disabled initially (otherwise it interferes upon restart)
+  /* Make sure Watchdog timer is disabled initially
+   * (otherwise it interferes upon restart)
+   */
   wdt_disable();
 
-  //[Martin] To be sure, that power is already up, we wait here
+  /*[Martin] To be sure, that power is already up, we wait here
+   * Also this should stop problems with unexpected USB disconnection when
+   * USB hub us overloaded. Also we doubling counting to be sure, that no error
+   * occurred
+   */
   volatile static uint32_t i_delay_cnt=0;
   volatile static uint32_t i_delay_cnt_backup = 0;
 
@@ -230,7 +236,8 @@ int main(void)
   // Initialize Real Time Counter
   rtc_init(&AVR32_RTC, RTC_OSC_RC, 0);  // RC clock at 115kHz
   rtc_disable_interrupt(&AVR32_RTC);
-  rtc_set_top_value(&AVR32_RTC, RTC_COUNTER_MAX);  // Counter reset once per 10 seconds
+  // Counter reset once per 10 seconds
+  rtc_set_top_value(&AVR32_RTC, RTC_COUNTER_MAX);
   rtc_enable(&AVR32_RTC);
 
   // Set CPU and PBA clock

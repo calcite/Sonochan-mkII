@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/08/07
+ * Modified: 2015/08/25
  *
- * \version 0.5.0
+ * \version 0.5.1
  * \author  Martin Stejskal
  */
 
@@ -515,6 +515,16 @@ typedef struct{
 
 
 /**
+ * @brief Structure for delayed setting FSYNC frequency
+ *
+ * Contains new (requested frequency) and status flag
+ */
+typedef struct{
+  uint32_t i_new_FSYNC_freq;
+  uint8_t  i_request;
+}s_brd_drv_FSYNC_freq_req_t;
+
+/**
  * \brief Structure for "EEPROM" settings
  *
  * In this structure are all variables, that should be saved to EEPROM like\n
@@ -824,6 +834,10 @@ typedef struct{
 /// MCLK PPM offset should not be set when auto tune is enabled
 #define BRD_DRV_MSG_ERR_AUTO_TUNE_ENABLED_MCLK_PPM_OFF_NOT_ALLOW        \
   "Can not set MCLK PPM offset because auto tune PLL is enabled\n"
+
+/// Settings FSYNC frequency (through request) failed
+#define BRD_DRV_MSG_ERR_SET_FSYNC_FREQ_REQ_FAILED               \
+  "Setting FSYNC frequency failed!\n"
 /// @}
 
 
@@ -889,7 +903,7 @@ typedef struct{
 
 ///\brief Double PLL frequency, so we can set odd multiplier BCLK of MCLK
 #define BRD_DRV_MSG_INFO_DOUBLING_PLL_FREQ_SET_BCLK_ODD_MUL     \
-  "Doubling PLL frequency so BCLK can be odd multilier of MCLK\n"
+  "Doubling PLL frequency so BCLK can be odd multiplier of MCLK\n"
 
 ///\brief Settings saved to flash
 #define BRD_DRV_MSG_INFO_SETTINGS_SAVED                 \
@@ -1132,6 +1146,8 @@ GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
 
 GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq);
 GD_RES_CODE brd_drv_get_FSYNC_freq(uint32_t *p_i_FSYNC_freq);
+
+GD_RES_CODE brd_drv_set_FSYNC_freq_rqst(uint32_t i_FSYNC_freq);
 
 GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling);
 GD_RES_CODE brd_drv_get_MCLK_oversampling(uint16_t *p_i_MCLK_oversampling);
