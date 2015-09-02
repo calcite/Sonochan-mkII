@@ -10,6 +10,9 @@ DBG=-gdwarf-2
 
 
 # DO NOT TOUCH!
+# Name of text file containing build number.
+include build_counter.mak
+
 -include ../makefile.init
 
 RM := rm -rf
@@ -55,15 +58,20 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: elf hex
+all: elf hex build_cnt
 
 # Build elf file
 elf: $(OBJS) $(USER_OBJS)
 	@echo Link $@
-	@avr32-gcc -nostartfiles -Wl,--gc-sections -Wl,-e,_trampoline -mpart=uc3a3256 --rodata-writable -Wl,--direct-data -Wl,--stack,0x2000 -o"Sonochan_mkII.elf" $(OBJS) $(USER_OBJS) $(LIBS)
+	@avr32-gcc -nostartfiles -Wl,--gc-sections -Wl,-e,_trampoline \
+	 -mpart=uc3a3256 --rodata-writable -Wl,--direct-data \
+	 -Wl,--stack,0x2000 \
+	 -o"Sonochan_mkII.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@avr32-size -A "Sonochan_mkII.elf"
 	@echo "  -> RAM usage (without malloc and stack) is data + bss"
 	@echo "  -> Flash usage is text + data"
+
+
 hex: hex_program hex_user
 
 hex_program:

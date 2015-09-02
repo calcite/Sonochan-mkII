@@ -7,9 +7,9 @@
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/08/25
+ * Modified: 2015/09/02
  *
- * \version 0.5.2
+ * \version 0.6.0
  * \author  Martin Stejskal
  */
 
@@ -24,7 +24,7 @@
  * In this mode non-standard settings can be used. This may decrease develop\n
  * time, but may confuse user. Beware!
  */
-#define BRD_DRV_DEBUG                                   1
+#define BRD_DRV_DEBUG                                   0
 /**
  * \brief Set default headphones volume in dB
  *
@@ -50,30 +50,65 @@
 
 
 /**
- * \name Digital audio interface default parameters
+ * \name Digital audio interface - default parameters
  *
  * @{
  */
 
 /**
- * \brief MCLK oversampling relative to FSYNC singal
+ * @brief Default Digital Audio Interface mode
+ *
+ * Options: SSC_I2S/SSC_DSP/SSC_LEFT_JUSTIFIED/SSC_RIGHT_JUSTIFIED
+ */
+#define BRD_DRV_DEFAULT_DAI_MODE                SSC_I2S
+
+/**
+ * \brief Default MCLK oversampling relative to FSYNC singal
  */
 #define BRD_DRV_DEFAULT_MCLK_OVERSAMPLING       256
 
 /**
- * \brief BCLK oversampling relative to FSYNC singal
+ * \brief Default BCLK oversampling relative to FSYNC singal
  */
 #define BRD_DRV_DEFAULT_BCLK_OVERSAMPLING       64
 
+/**
+ * @brief Default data word length
+ */
 #define BRD_DRV_DEFAULT_DATA_WORD_LENGTH        24
 
 /**
  * \brief This is only for reference.
  *
- * After connection audio driver change frequency anyway.
+ * After connection audio driver change frequency anyway. This is only \n
+ * "start up" value
  */
 #define BRD_DRV_DEFAULT_FSYNC_FREQ              48000UL
 
+/**
+ * @brief By default, enable auto tune?
+ *
+ * 0 - Auto tune disabled (MCLK Fix) ; 1 - Auto tune enabled
+ */
+#define BRD_DRV_DEFAULT_AUTO_TUNE               1
+/// @}
+
+
+/**
+ * @name Digital audio interface - default signal direction settings
+ *
+ * Options: brd_drv_dir_out, brd_drv_dir_in and brd_drv_dir_hiz
+ *
+ * @{
+ */
+
+#define BRD_DRV_DEFAULT_MUTE_DIR                brd_drv_dir_hiz
+#define BRD_DRV_DEFAULT_RESET_DAI_DIR           brd_drv_dir_hiz
+#define BRD_DRV_DEFAULT_MCLK_DIR                brd_drv_dir_hiz
+#define BRD_DRV_DEFAULT_BCLK_DIR                brd_drv_dir_hiz
+#define BRD_DRV_DEFAULT_FSYNC_DIR               brd_drv_dir_hiz
+#define BRD_DRV_DEFAULT_DATA_TX_DIR             brd_drv_dir_hiz
+#define BRD_DRV_DEFAULT_DATA_RX_DIR             brd_drv_dir_hiz
 /// @}
 
 /**
@@ -280,59 +315,6 @@
 ///@}
 
 
-/**
- * \name Display configuration
- *
- * @{
- */
-/**
- * \brief Define on which line begin write logo
- *
- * This should be set to 0 or at least same as BRD_DRV_LCD_WARN_MSG_LINE
- */
-#define BRD_DRV_LCD_LINE_LOGO                   0
-
-/**
- * \brief Define on which line begin write warning message
- *
- * This should be set to 0, because when warning message disappear logo is\n
- * written on these lines.
- */
-#define BRD_DRV_LCD_LINE_WARN_MSG               0
-
-/**
- * \brief Define on which line begin write info message
- *
- * It is recommended to leave BRD_DRV_LCD_WARN_MSG_LINE 2 lines and rest\n
- * for info message. This value define where info message start
- */
-#define BRD_DRV_LCD_LINE_INFO_MSG               2
-
-/**
- * \brief Define on which line will be FSYNC frequency written
- */
-#define BRD_DRV_LCD_LINE_FSYNC_FREQ             2
-
-/**
- * \brief Define on which line will be written MCLK frequency
- */
-#define BRD_DRV_LCD_LINE_MCLK_FREQ              3
-
-/**
- * \brief Define on which line will be written BCLK oversampling value
- */
-#define BRD_DRV_LCD_LINE_BCLK_OVRSAMPLING       4
-
-
-/**
- * \brief Define on which line will be displayed headphone volume
- */
-#define BRD_DRV_LCD_LINE_HP_VOLUME              5
-
-///@}
-
-
-
 //============================| Advanced settings |============================
 /**
  * \brief Define sample and hold time in ADC CLK cycles
@@ -370,8 +352,6 @@
 // Basic data types
 #include <inttypes.h>
 
-// Because of sprintf()
-//#include <stdio.h>
 /* sprintf() is pure evil. With combination of RTOS is cause many unexpected
  * failures. So we use more lightweight version.
  */
@@ -395,8 +375,8 @@
 // For codec control
 #include "tlv320aic33.h"
 
-// For LCD support
-#include "LCD_5110.h"
+// For display support
+#include "display.h"
 
 // Operations with flash memory
 #include "flashc.h"
@@ -632,34 +612,13 @@ typedef struct{
  * This is set of error messages, which will be written to debug UART or LCD
  * @{
  */
-///\todo Sort messages to ERROR, WARNING and INFO
 /// Can not initialize LCD display
 #define BRD_DRV_MSG_ERR_LCD_INIT_FAIL       \
   "LCD initialization failed!\n"
 
-/// Can not draw logo
-#define BRD_DRV_MSG_ERR_DRAW_LOGO_FAIL      \
-  "Write logo failed\n"
-
 /// To apply changes, please restart device
 #define BRD_DRV_MSG_ERR_DEVICE_RESTART_REQUIRED                         \
   "Device MUST be restarted to apply settings!\n"
-
-/// Can not show FSYNC frequency
-#define BRD_DRV_MSG_ERR_CAN_NOT_SHOW_FSYNC_FREQ                         \
-  "Can not show FSYNC freq.\n"
-
-/// Can not show MCLK frequency
-#define BRD_DRV_MSG_ERR_CAN_NOT_SHOW_MCLK_FREQ                          \
-  "Can not show MCLK freq.\n"
-
-/// Can not show BCLK oversampling value
-#define BRD_DRV_MSG_ERR_CAN_NOT_SHOW_BCLK_OVRSMPLING                    \
-  "Can not show BCLK oversampling value\n"
-
-/// Can not get PLL frequency
-#define BRD_DRV_MSG_ERR_CAN_NOT_GET_PLL_FREQ                            \
-  "Can not get PLL frequency\n"
 
 /// Can not initialize ADC
 #define BRD_DRV_MSG_ERR_ADC_INIT_FAIL       \
@@ -756,6 +715,10 @@ typedef struct{
 /// Settings FSYNC frequency (through request) failed
 #define BRD_DRV_MSG_ERR_SET_FSYNC_FREQ_REQ_FAILED               \
   "Setting FSYNC frequency failed!\n"
+
+/// FSYNC can not be zero
+#define BRD_DRV_MSG_ERR_FSYNC_CAN_NOT_BE_ZERO                   \
+  "FSYNC frequency is set to 0!"
 /// @}
 
 
@@ -1151,6 +1114,8 @@ GD_RES_CODE brd_drv_reset_i2s(void);
 
 GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
     e_ssc_digital_audio_interface_t e_mode);
+GD_RES_CODE brd_drv_get_digital_audio_interface_mode(
+    e_ssc_digital_audio_interface_t *p_e_mode);
 
 GD_RES_CODE brd_drv_set_FSYNC_freq(uint32_t i_FSYNC_freq);
 GD_RES_CODE brd_drv_get_FSYNC_freq(uint32_t *p_i_FSYNC_freq);
@@ -1160,10 +1125,15 @@ GD_RES_CODE brd_drv_set_FSYNC_freq_rqst(uint32_t i_FSYNC_freq);
 GD_RES_CODE brd_drv_set_MCLK_oversampling(uint16_t i_MCLK_oversampling);
 GD_RES_CODE brd_drv_get_MCLK_oversampling(uint16_t *p_i_MCLK_oversampling);
 
+GD_RES_CODE brd_drv_get_MCLK_freq(uint32_t *p_i_MCLK_freq);
+
 GD_RES_CODE brd_drv_set_BCLK_oversampling(uint16_t i_BCLK_ovrsmpling);
 GD_RES_CODE brd_drv_get_BCLK_oversampling(uint16_t *p_i_BCLK_oversampling);
 
+GD_RES_CODE brd_drv_get_volume_dB(float *p_f_volume);
+
 GD_RES_CODE brd_drv_set_number_to_product_name(uint8_t i_number);
+GD_RES_CODE brd_drv_get_number_from_product_name(uint8_t *p_i_number);
 
 GD_RES_CODE brd_drv_save_all_settings(void);
 
@@ -1186,15 +1156,6 @@ GD_RES_CODE brd_drv_get_word_offset(uint16_t *p_i_word_offset);
 GD_RES_CODE brd_drv_set_MCLK_ppm(int32_t i_MCLK_ppm_offset);
 GD_RES_CODE brd_drv_get_MCLK_ppm(int32_t *p_i_MCLK_ppm_offset);
 
-GD_RES_CODE brd_drv_show_FSYNC_freq(uint8_t i_line);
-
-GD_RES_CODE brd_drv_show_MCLK_freq(uint8_t i_line);
-
-GD_RES_CODE brd_drv_show_BCLK_ovrsampling(uint8_t i_line);
-
-GD_RES_CODE brd_drv_show_volume(void);
-
-GD_RES_CODE brd_drv_draw_logo(void);
 
 void brd_drv_send_msg(
     const char * p_msg,
@@ -1212,9 +1173,11 @@ void brd_drv_send_error_msg(
     const uint8_t i_write_to_DBG,
     const uint8_t i_write_to_LCD);
 //===========================| Low level functions |===========================
-GD_RES_CODE brd_drv_auto_tune(uint8_t i_enable);
+GD_RES_CODE brd_drv_set_auto_tune(uint8_t i_enable);
 
 GD_RES_CODE brd_drv_set_isolators_to_HiZ(void);
+
+GD_RES_CODE brd_drv_get_auto_tune(uint8_t *p_i_enable);
 
 GD_RES_CODE brd_drv_set_isolators(s_brd_drv_pure_dai_dir_t s_pure_dai_dir);
 
@@ -1232,9 +1195,9 @@ GD_RES_CODE brd_drv_set_mute_dir(e_brd_drv_dir_t e_mute_dir);
 
 GD_RES_CODE brd_drv_set_mute(uint8_t i_mute_flag);
 
-GD_RES_CODE brd_drv_set_rst_i2s_dir(e_brd_drv_dir_t e_rst_i2s_dir);
+GD_RES_CODE brd_drv_set_rst_dai_dir(e_brd_drv_dir_t e_rst_dai_dir);
 
-GD_RES_CODE brd_drv_set_rst_i2s(uint8_t i_reset_i2s_flag);
+GD_RES_CODE brd_drv_set_rst_dai(uint8_t i_reset_dai_flag);
 
 GD_RES_CODE brd_drv_set_BCLK_div(uint16_t i_div);
 
