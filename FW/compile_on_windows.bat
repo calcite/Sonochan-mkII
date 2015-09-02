@@ -25,3 +25,4 @@ SET PATH_TO_OBJCOPY=%PATH_TO_OBJCOPY%;c:\Program Files (x86)\Atmel\Atmel Toolcha
 REM DO NOT TOUCH!
 SET PATH=%PATH_TO_MAKE%;%PATH_TO_GCC%;%PATH_TO_OBJCOPY%;%PATH%;
 cd Release && make all
+cd ..
