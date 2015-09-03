@@ -83,9 +83,9 @@
 #include "taskAK5394A.h"
 
 //[Martin]
+#include "brd_driver_hw_03.h"
 #include "ssc.h"
-#include "sync_control.h"
-
+#include "cs2200.h"
 #include "print_funcs.h"
 #include <stdio.h>
 

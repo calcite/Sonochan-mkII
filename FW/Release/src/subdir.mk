@@ -18,7 +18,6 @@ C_SRCS += \
 ../src/HW_bridge_uniprot.c \
 ../src/uniprot.c \
 ../src/ssc.c \
-../src/sync_control.c \
 ../src/composite_widget.c \
 ../src/device_audio_task.c \
 ../src/device_generic_hid.c \
@@ -58,7 +57,6 @@ OBJS += \
 ./src/HW_bridge_uniprot.o \
 ./src/uniprot.o \
 ./src/ssc.o \
-./src/sync_control.o \
 ./src/composite_widget.o \
 ./src/device_audio_task.o \
 ./src/device_generic_hid.o \
@@ -98,7 +96,6 @@ C_DEPS += \
 ./src/HW_bridge_uniprot.d \
 ./src/uniprot.d \
 ./src/ssc.d \
-./src/sync_control.d \
 ./src/composite_widget.d \
 ./src/device_audio_task.d \
 ./src/device_generic_hid.d \
