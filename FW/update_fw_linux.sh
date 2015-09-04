@@ -57,5 +57,5 @@ echo -e ""$line"Running application. Have fun."$line""
 if [ $? -eq 0 ] ; then
   echo -e ""$line"All OK :)"$line""
 else
-  echo -e ""$line"Something gets wrong :(\n Check fw_update.log"$line""
+  echo -e ""$line"Something went wrong :(\n Check fw_update.log"$line""
 fi
