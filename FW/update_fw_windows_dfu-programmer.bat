@@ -60,5 +60,5 @@ echo %line% &&^
 echo Running application. Have fun. &&^
 echo %line%
 
-if NOT ERRORLEVEL 0 echo All OK :)
-if ERRORLEVEL 0 echo Something gets wrong :( Check fw_update.log
+if %ERRORLEVEL% == 0 echo All OK :)
+if %ERRORLEVEL% NEQ 0 echo Something went wrong :( Check fw_update.log
