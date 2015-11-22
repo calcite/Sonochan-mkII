@@ -33,9 +33,9 @@ Czech Republic
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/09/02
+ * Modified: 2015/11/12
  *
- * \version 0.6.0
+ * \version 0.6.1
  * \author  Martin Stejskal
  */
 
@@ -483,7 +483,7 @@ const gd_config_struct BRD_DRV_config_table[] =
 const gd_metadata BRD_DRV_metadata =
 {
         BRD_DRV_MAX_CMD_ID,              // Max CMD ID
-        "Board driver for Sonochan mkII v0.6.0",     // Description
+        "Board driver for Sonochan mkII v0.6.1",     // Description
         (gd_config_struct*)&BRD_DRV_config_table[0],
         0x0F    // Serial number (0~255)
 };
@@ -508,6 +508,8 @@ void brd_drv_process_mute_signal(void);
 void brd_drv_process_rst_i2s_button(void);
 
 void brd_drv_process_rst_i2s_signal(void);
+
+void brd_drv_clean_up_info_msg(void);
 
 void brd_drv_clean_up_error_msg(void);
 
@@ -534,7 +536,7 @@ void brd_drv_task_FreeRTOS(void *pvParameters)
   while (TRUE)
   {
     //vTaskDelayUntil(&xLastWakeTime, configTSK_HW_bridge_uniprot_PERIOD);
-    vTaskDelay(configTSK_HW_bridge_uniprot_PERIOD);
+    vTaskDelay(configTSK_brd_drv_PERIOD);
 
     /* To be 100% sure, that during board initialization is used pre-defined
      * stack, initialization is done at the task. Onlz once, but in task.
@@ -549,7 +551,11 @@ void brd_drv_task_FreeRTOS(void *pvParameters)
       if(brd_drv_init() != GD_SUCCESS)
       {
         print_dbg("!!! Board initialization failed.\n If you do not panic, you should now....\n");
-        ///\todo More process
+        // We can not continue. So let's stay in loop
+        while(1)
+        {
+          print_dbg("!!! Board initialization failed !!!\n\n");
+        }
       }
       brd_drv_send_msg(BRD_DRV_MSG_INFO_BRD_DRV_INITIALIZED,1,0,-1);
     }
@@ -688,8 +694,9 @@ GD_RES_CODE brd_drv_init(void)
     brd_drv_send_error_msg(BRD_DRV_MSG_ERR_LCD_INIT_FAIL, 1, 0);
     return e_status;
   }
+  brd_drv_send_msg(BRD_DRV_MSG_INFO_INIT_BRD, 1,1,0);
 
-//==============================| External PLL |===============================
+  //==============================| External PLL |=============================
   // Precise setting of PLL
   /* Turn of save setting when changing frequency by 1. We want continuous
    * clock at "any price". PLL CLK OUT should work as expected.
@@ -702,7 +709,7 @@ GD_RES_CODE brd_drv_init(void)
   }
 
 
-//===================================| ADC |===================================
+  //===================================| ADC |=================================
   // Take control over ADC
   BRD_DRV_LOCK_ADC_MODULE_IF_RTOS
   // ADC for volume control
@@ -717,13 +724,13 @@ GD_RES_CODE brd_drv_init(void)
   }
 
 
-//===============================| SSC module |================================
+  //===============================| SSC module |==============================
   // Preset SSC
   e_status = ssc_init();
     if(e_status != GD_SUCCESS)
       return e_status;
 
-//==================================| Codec |==================================
+  //==================================| Codec |================================
   // Prepare TLV (CS2200 have to be already initialized)
   e_status = brd_drv_TLV_default();
   if(e_status != GD_SUCCESS)
@@ -733,17 +740,21 @@ GD_RES_CODE brd_drv_init(void)
   }
 
 
-//======================| Try load settings from flash |=======================
+  //======================| Try load settings from flash |=====================
   /* Try to restore settings. If fail (invalid setting in user flash),
    * then keep all pins in Hi-Z. But some settings should be defined. So that
    * is why is there if() condition
    */
+
   e_status = brd_drv_restore_all_settings();
   if(e_status != GD_SUCCESS)
   {
-     e_status = brd_drv_load_default_settings();
-     if(e_status != GD_SUCCESS) return e_status;
+    e_status = brd_drv_load_default_settings();
+    if(e_status != GD_SUCCESS) return e_status;
   }
+
+  // Show regular data on LCD
+  brd_drv_clean_up_info_msg();
 
   return GD_SUCCESS;
 }
@@ -1872,7 +1883,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   e_status = brd_drv_set_bclk_dir(s_brd_drv_user_settings.e_bclk_dir);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! BCLK dir fail ! ");
+    print_dbg(" ! BCLK dir fail ! \n");
     return e_status;
   }
 
@@ -1880,7 +1891,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   e_status=brd_drv_set_fsync_dir(s_brd_drv_user_settings.e_fsync_dir);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! FS dir fail ! ");
+    print_dbg(" ! FS dir fail ! \n");
     return e_status;
   }
 
@@ -1888,7 +1899,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   e_status = brd_drv_set_tx_data_dir(s_brd_drv_user_settings.e_tx_data_dir);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! TXD dir fail ! ");
+    print_dbg(" ! TXD dir fail ! \n");
     return e_status;
   }
 
@@ -1896,7 +1907,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   e_status = brd_drv_set_rx_data_dir(s_brd_drv_user_settings.e_rx_data_dir);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! RXD dir fail ! ");
+    print_dbg(" ! RXD dir fail ! \n");
     return e_status;
   }
 
@@ -1946,7 +1957,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
                   s_brd_drv_ssc_fine_settings.i_data_length);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! Set data length failed ! ");
+    print_dbg(" ! Set data length failed ! \n");
     return e_status;
   }
 
@@ -1954,7 +1965,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   e_status = brd_drv_set_FSYNC_freq(s_brd_drv_ssc_fine_settings.i_FSYNC_freq);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! FSYNC failed ! ");
+    print_dbg(" ! FSYNC failed ! \n");
     return e_status;
   }
 
@@ -1962,7 +1973,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       s_brd_drv_user_settings.e_dig_audio_mode);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! Set dig. aud. itfce failed ! ");
+    print_dbg(" ! Set dig. aud. itfce failed ! \n");
     return e_status;
   }
 
@@ -1970,7 +1981,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       s_brd_drv_user_settings.e_BCLK_RX_edge);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! BCLK RX edge fail ! ");
+    print_dbg(" ! BCLK RX edge fail ! \n");
     return e_status;
   }
 
@@ -1978,7 +1989,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       s_brd_drv_user_settings.e_BCLK_TX_edge);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! BCLK TX edge fail ! ");
+    print_dbg(" ! BCLK TX edge fail ! \n");
     return e_status;
   }
 
@@ -1986,7 +1997,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       s_brd_drv_user_settings.e_FSYNC_RX_edge);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! RX FSYNC dir fail ! ");
+    print_dbg(" ! RX FSYNC dir fail ! \n");
     return e_status;
   }
 
@@ -1994,7 +2005,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       s_brd_drv_user_settings.e_FSYNC_TX_edge);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! FSYNC TX edge fail ! ");
+    print_dbg(" ! FSYNC TX edge fail ! \n");
     return e_status;
   }
 
@@ -2004,7 +2015,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
       s_brd_drv_user_settings.i_word_bit_offset);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! WORD bit OFFSET fail ! ");
+    print_dbg(" ! WORD bit OFFSET fail ! \n");
     return e_status;
   }
 
@@ -2012,7 +2023,7 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
   e_status = brd_drv_set_auto_tune(s_brd_drv_user_settings.i_auto_tune_pll);
   if(e_status != GD_SUCCESS)
   {
-    print_dbg(" ! Auto tune PLL fail ! ");
+    print_dbg(" ! Auto tune PLL fail ! \n");
     return e_status;
   }
 
@@ -2898,21 +2909,12 @@ inline GD_RES_CODE brd_drv_set_isolators_to_HiZ(void)
   volatile avr32_gpio_port_t *gpio_port;
 
   //================================| Pure I2S |===============================
-#if BRD_DRV_DEBUG != 1
   // Set output enables to low -> disable them by default
   brd_drv_set_mclk_dir(brd_drv_dir_hiz);
   brd_drv_set_bclk_dir(brd_drv_dir_hiz);
   brd_drv_set_fsync_dir(brd_drv_dir_hiz);
   brd_drv_set_tx_data_dir(brd_drv_dir_hiz);
   brd_drv_set_rx_data_dir(brd_drv_dir_hiz);
-#else
-  // This is only for debug purpose. Can be changed any time!!!
-  brd_drv_set_mclk_dir(brd_drv_dir_out);
-  brd_drv_set_bclk_dir(brd_drv_dir_out);
-  brd_drv_set_fsync_dir(brd_drv_dir_out);
-  brd_drv_set_tx_data_dir(brd_drv_dir_out);
-  brd_drv_set_rx_data_dir(brd_drv_dir_out);
-#endif
   //=============================| Reset and mute |============================
   brd_drv_set_mute_dir(brd_drv_dir_hiz);
   brd_drv_set_rst_dai_dir(brd_drv_dir_hiz);
@@ -3342,13 +3344,102 @@ GD_RES_CODE brd_drv_set_bclk_dir(e_brd_drv_dir_t e_bclk_dir)
 {
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
+
+  // Following variables are used only when want to switch to input
+  int pin_state = 0;
+#if BRD_DRV_SUPPORT_RTOS != 0
+  portTickType actual_time = xTaskGetTickCount();
+  /* Assume that minimum input frequency is BRD_DRV_MIN_DET_FREQ Hz and
+   * configTICK_RATE_HZ is higher than BRD_DRV_MIN_DET_FREQ Hz.
+   */
+  portTickType end_time = actual_time +
+                          (configTICK_RATE_HZ/BRD_DRV_MIN_DET_FREQ);
+#else
+  // No RTOS used. Just use hard-coded values
+  uint32_t actual_time = 0;
+  uint32_t end_time = 0x1FFFFFFF;
+#endif
+
   switch(e_bclk_dir)
   {
   case brd_drv_dir_in:
+    /* If we set BCLK to input, but there are no clocks, it can cause freeze
+     * of SSC module (I guess...) and in that all system. So We need to check
+     * clock first. If no clock were detected, switch to FAIL safe -> Hi-Z
+     * and show error message.
+     */
+    ssc_set_BCLK_src_int();
+    // On connector side turn off output driver (connector -> world)
     BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
+    // Set BCLK pin as input
     BRD_DRV_IO_AS_INPUT(BCLK_PIN);
+    // On MCU side turn on output driver (connector -> MCU)
     BRD_DRV_IO_HIGH(BRD_DRV_BCLK_EN_A_PIN);
+
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_BCLK_DTCT_FREQ, 1, 0, -1);
+
+
+    // Wait for low level
+    while(1)
+    {
+      pin_state = gpio_get_pin_value(BCLK_PIN);
+      if(pin_state == 0)
+      {
+        brd_drv_send_msg(BRD_DRV_MSG_INFO_BCLK_DTCT_FREQ_L_DET, 1, 0, -1);
+        break;
+      }
+#if BRD_DRV_SUPPORT_RTOS != 0
+      actual_time = xTaskGetTickCount();
+#else
+      actual_time++;
+#endif
+      if(actual_time > end_time)
+      {
+        brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_BCLK_DTCT_FREQ_L_NDET, 1, 1);
+        // Set Hi-Z for BLCK (fail safe)
+        BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
+        gpio_enable_module_pin(BCLK_PIN, BCLK_FUNCTION);
+        BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
+        return GD_TIMEOUT;
+      }
+    }
+
+
+    // Wait for high level
+#if BRD_DRV_SUPPORT_RTOS != 0
+      end_time = xTaskGetTickCount() + (configTICK_RATE_HZ/BRD_DRV_MIN_DET_FREQ);
+#else
+      actual_time = 0;
+#endif
+    while(1)
+    {
+      pin_state = gpio_get_pin_value(BCLK_PIN);
+      if(pin_state != 0)
+      {
+        brd_drv_send_msg(BRD_DRV_MSG_INFO_BCLK_DTCT_FREQ_H_DET, 1, 0, -1);
+        break;
+      }
+#if BRD_DRV_SUPPORT_RTOS != 0
+      actual_time = xTaskGetTickCount();
+#else
+      actual_time++;
+#endif
+      if(actual_time > end_time)
+      {
+        brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_BCLK_DTCT_FREQ_H_NDET, 1, 1);
+        // Set Hi-Z for BCLK (fail safe)
+        BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
+        gpio_enable_module_pin(BCLK_PIN, BCLK_FUNCTION);
+        BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_B_PIN);
+        return GD_TIMEOUT;
+      }
+    }
+    /* Some clock detected -> switch SSC module to BCLK pin source. Now it is
+     * user's problem if CLK will disappear
+     */
+    ssc_set_BCLK_src_ext();
     break;
+
   case brd_drv_dir_out:
     BRD_DRV_IO_LOW(BRD_DRV_BCLK_EN_A_PIN);
     gpio_enable_module_pin(BCLK_PIN, BCLK_FUNCTION);
@@ -3384,18 +3475,128 @@ GD_RES_CODE brd_drv_set_fsync_dir(e_brd_drv_dir_t e_fsync_dir)
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
 
+  // Following variables are used only when want to switch to input
+  int pin_state = 0;
+#if BRD_DRV_SUPPORT_RTOS != 0
+  portTickType actual_time = xTaskGetTickCount();
+  /* Assume that minimum input frequency is BRD_DRV_MIN_DET_FREQ Hz and
+   * configTICK_RATE_HZ is higher than BRD_DRV_MIN_DET_FREQ Hz.
+   */
+  portTickType end_time = actual_time +
+                          (configTICK_RATE_HZ/BRD_DRV_MIN_DET_FREQ);
+#else
+  // No RTOS used. Just use hard-coded values
+  uint32_t actual_time = 0;
+  uint32_t end_time = 0x1FFFFFFF;
+#endif
+
   switch(e_fsync_dir)
   {
+  /* Input is tricky. If there is not CLK for some time, it may cause freezing
+   * whole system (because of infinate waiting for some synchronization....).
+   * So before switch we check for frequency. If no frequency is there ->
+   * -> switch back before something fucks up.
+   */
   case brd_drv_dir_in:
+    // Turn off output driver at connector side
     BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
-    // SSC as slave. So TX module will not generate FSYNC
-    e_status = ssc_set_FSYNC_role(SSC_ROLE_RX);
-    if(e_status != GD_SUCCESS)
-    {
-      return e_status;
-    }
+    // And also turn off output driver at MCU's side
+    BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
+
+    /* Generate few pulses
+     */
+    e_status = ssc_set_FSYNC_role(SSC_ROLE_TX);
+    if(e_status != GD_SUCCESS) return e_status;
+    /* There is special pin, which is used by another task (for syncing L and R
+     * channel. Anyway, we can use it for detecting frequency as well. It is
+     * used only as input.
+     */
+    ssc_wait_for_FSYNC_RX();
+    ssc_wait_for_FSYNC_RX();
+    ssc_wait_for_FSYNC_RX();
+
+    // Just in case
+    BRD_DRV_IO_AS_INPUT(SSC_EXTERNAL_FSYNC_DETECTION_PIN);
+    /* Disable FSYNC pin on SSC (only TX module can generate clock, because
+     * SSC set RX module as "read only".
+     */
+    BRD_DRV_IO_AS_INPUT(SSC_TX_FSYNC);
+    // Turn on output driver at MCU side (connector -> MCU)
     BRD_DRV_IO_HIGH(BRD_DRV_FS_EN_A_PIN);
+
+    brd_drv_send_msg(BRD_DRV_MSG_INFO_FSYNC_DTCT_FREQ, 1, 0,-1);
+    // Wait for low level
+    while(1)
+    {
+      pin_state = gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN);
+      if(pin_state == 0)
+      {
+        brd_drv_send_msg(BRD_DRV_MSG_INFO_FSYNC_DTCT_FREQ_L_DET, 1,0,-1);
+        break;
+      }
+#if BRD_DRV_SUPPORT_RTOS != 0
+      actual_time = xTaskGetTickCount();
+#else
+      actual_time++;
+#endif
+      if(actual_time > end_time)
+      {
+        brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_FSYNC_DTCT_FREQ_L_NDET, 1,1);
+        // Set Hi-Z option (fail safe)
+        BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
+        BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
+        /* If Hi-Z set we want listen at least through codec. Do not care about
+         * error code.
+         */
+        gpio_enable_module_pin(SSC_TX_FSYNC, SSC_TX_FSYNC_FUNCTION);
+        ssc_set_FSYNC_role(SSC_ROLE_TX);
+        return GD_TIMEOUT;
+      }
+    }
+
+
+    // Wait for high level
+#if BRD_DRV_SUPPORT_RTOS != 0
+      end_time = xTaskGetTickCount() + (configTICK_RATE_HZ/BRD_DRV_MIN_DET_FREQ);
+#else
+      actual_time = 0;
+#endif
+    while(1)
+    {
+      pin_state = gpio_get_pin_value(SSC_EXTERNAL_FSYNC_DETECTION_PIN);
+      if(pin_state != 0)
+      {
+        brd_drv_send_msg(BRD_DRV_MSG_INFO_FSYNC_DTCT_FREQ_H_DET, 1,0,-1);
+        break;
+      }
+#if BRD_DRV_SUPPORT_RTOS != 0
+      actual_time = xTaskGetTickCount();
+#else
+      actual_time++;
+#endif
+      if(actual_time > end_time)
+      {
+        brd_drv_send_warning_msg(BRD_DRV_MSG_WRN_FSYNC_DTCT_FREQ_H_NDET, 1,1);
+        // Set Hi-Z option (fail safe)
+        BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
+        BRD_DRV_IO_LOW(BRD_DRV_FS_EN_B_PIN);
+        /* If Hi-Z set we want listen at least through codec. Do not care about
+         * error code.
+         */
+        gpio_enable_module_pin(SSC_TX_FSYNC, SSC_TX_FSYNC_FUNCTION);
+        ssc_set_FSYNC_role(SSC_ROLE_TX);
+        return GD_TIMEOUT;
+      }
+    }
+
+    // Allow SSC module to use FSYNC TX pin again
+    gpio_enable_module_pin(SSC_TX_FSYNC, SSC_TX_FSYNC_FUNCTION);
+
+    // And switch to
+    e_status = ssc_set_FSYNC_role(SSC_ROLE_RX);
+    if(e_status != GD_SUCCESS) return e_status;
     break;
+
   case brd_drv_dir_out:
     BRD_DRV_IO_LOW(BRD_DRV_FS_EN_A_PIN);
     e_status = ssc_set_FSYNC_role(SSC_ROLE_TX);
@@ -3412,7 +3613,7 @@ GD_RES_CODE brd_drv_set_fsync_dir(e_brd_drv_dir_t e_fsync_dir)
     e_status = ssc_set_FSYNC_role(SSC_ROLE_TX);
     if(e_status != GD_SUCCESS)
     {
-      return GD_SUCCESS;
+      return e_status;
     }
     break;
   default:
@@ -3561,8 +3762,6 @@ inline GD_RES_CODE brd_drv_get_MCLK_div(uint16_t *p_i_div)
 
   return GD_SUCCESS;
 }
-
-
 
 
 //=========================| Functions not for user |==========================
@@ -3963,13 +4162,17 @@ inline void brd_drv_process_rst_i2s_signal(void)
 }
 
 
+inline void brd_drv_clean_up_info_msg(void)
+{
+  disp_clear_info();
+}
 
 inline void brd_drv_clean_up_error_msg(void)
 {
   // Pointer to GPIO memory
   volatile avr32_gpio_port_t *gpio_port;
 
-  disp_clear_info();
+
   disp_clear_warn();
   disp_clear_err();
 

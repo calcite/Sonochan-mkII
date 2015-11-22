@@ -33,9 +33,9 @@ Czech Republic
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/09/02
+ * Modified: 2015/11/22
  *
- * \version 0.6.0
+ * \version 0.6.1
  * \author  Martin Stejskal
  */
 
@@ -371,6 +371,12 @@ Czech Republic
  */
 #define BRD_DRV_ADC_START_UP_TIME                       10
 
+/**
+ * @brief Define minimum frequency which will be detected
+ *
+ * This is only valid for case that RTOS support is enabled.
+ */
+#define BRD_DRV_MIN_DET_FREQ            1UL
 //================================| Includes |=================================
 // IO pins
 #include <avr32/io.h>
@@ -424,6 +430,7 @@ Czech Republic
 #if BRD_DRV_SUPPORT_RTOS != 0
 #include "FreeRTOS.h"
 #include "task.h"
+#include "FreeRTOSConfig.h"
 #endif
 
 //===========================| Additional includes |===========================
@@ -451,7 +458,8 @@ typedef enum{
         GD_INCORRECT_PARAMETER =       2,//!< GD_INCORRECT_PARAMETER
         GD_INCORRECT_CMD_ID =          3,//!< GD_INCORRECT_CMD_ID
         GD_CMD_ID_NOT_EQUAL_IN_FLASH = 4,//!< GD_CMD_ID_NOT_EQUAL_IN_FLASH
-        GD_INCORRECT_DEVICE_ID =       5 //!< GD_INCORRECT_DEVICE_ID
+        GD_INCORRECT_DEVICE_ID =       5,//!< GD_INCORRECT_DEVICE_ID
+        GD_TIMEOUT =                   6,//!< GD_TIMEOUT
 } GD_RES_CODE;
 #endif
 #endif
@@ -773,6 +781,22 @@ typedef struct{
 
 #define BRD_DRV_MSG_WRN_CODEC_NOT_SUPP_LOWER_THAN_BCLK32        \
   "Codec not support BCLK lower than 32\n"
+
+///\brief When detecting frequency at BCLK, low level is not detected
+#define BRD_DRV_MSG_WRN_BCLK_DTCT_FREQ_L_NDET           \
+  "BCLK: Low level NOT detected!\n"
+
+///\brief When detecting frequency at BCLK, high level is not detected
+#define BRD_DRV_MSG_WRN_BCLK_DTCT_FREQ_H_NDET           \
+  "BCLK: High level NOT detected!\n"
+
+///\brief When detecting frequency at FSYNC, low level is not detected
+#define BRD_DRV_MSG_WRN_FSYNC_DTCT_FREQ_L_NDET           \
+  "FSYNC: Low level NOT detected!\n"
+
+///\brief When detecting frequency at FSYNC, high level is not detected
+#define BRD_DRV_MSG_WRN_FSYNC_DTCT_FREQ_H_NDET           \
+  "FSYNC: High level NOT detected!\n"
 /// @}
 
 
@@ -781,9 +805,17 @@ typedef struct{
  * \name Information messages
  * @{
  */
-/// Sonochan mk II
-#define BRD_DRV_MSG_INFO_SONOCHAN_MK_II         \
-  "Snchn mkII"
+/// Message when initializing board driver
+#define BRD_DRV_MSG_INFO_INIT_BRD                       \
+  "Initializing device...\n"
+
+/// Informs that board driver waiting for other tasks
+#define BRD_DRV_MSG_INFO_WTING_4_TSKS                   \
+  "Waiting for other tasks...\n"
+
+/// When all dependent tasks are ready
+#define BRD_DRV_MSG_INFO_TSKS_RDY                       \
+  "Tasks are ready now\n"
 
 /// Voltage on connector side in save range
 #define BRD_DRV_MSG_INFO_CON_VOL_SAVE                    \
@@ -913,6 +945,32 @@ typedef struct{
 ///\brief Board driver initialized
 #define BRD_DRV_MSG_INFO_BRD_DRV_INITIALIZED            \
   "Board driver initialized\n"
+
+///\brief Detecting frequency at BCLK signal when set as input
+#define BRD_DRV_MSG_INFO_BCLK_DTCT_FREQ                 \
+  "BCLK: Detecting frequency...\n"
+
+///\brief When detecting frequency at BCLK, low level detected
+#define BRD_DRV_MSG_INFO_BCLK_DTCT_FREQ_L_DET           \
+  "BCLK: Low level detected\n"
+
+///\brief When detecting frequency at BCLK, high level detected
+#define BRD_DRV_MSG_INFO_BCLK_DTCT_FREQ_H_DET           \
+  "BCLK: High level detected\n"
+
+///\brief Detecting frequency at FSYNC signal when set as input
+#define BRD_DRV_MSG_INFO_FSYNC_DTCT_FREQ                 \
+  "FSYNC: Detecting frequency...\n"
+
+///\brief When detecting frequency at FSYNC, low level detected
+#define BRD_DRV_MSG_INFO_FSYNC_DTCT_FREQ_L_DET           \
+  "FSYNC: Low level detected\n"
+
+///\brief When detecting frequency at FSYNC, high level detected
+#define BRD_DRV_MSG_INFO_FSYNC_DTCT_FREQ_H_DET           \
+  "FSYNC: High level detected\n"
+
+
 /// @}
 
 /**

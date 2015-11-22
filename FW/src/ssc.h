@@ -35,9 +35,9 @@ Czech Republic
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  2014/08/20\n
- * Modified: 2015/08/25
+ * Modified: 2015/09/04
  *
- * \version 0.4.2
+ * \version 0.4.3
  * \author Martin Stejskal
  */
 //[Martin] Because this is cross dependent
@@ -346,6 +346,8 @@ SSC_RES_CODE ssc_get_BCLK_RX_edge(e_ssc_edge_t *p_e_edge);
 SSC_RES_CODE ssc_set_BCLK_TX_edge(e_ssc_edge_t e_edge);
 SSC_RES_CODE ssc_get_BCLK_TX_edge(e_ssc_edge_t *p_e_edge);
 
+SSC_RES_CODE ssc_set_BCLK_src_int(void);
+SSC_RES_CODE ssc_set_BCLK_src_ext(void);
 
 SSC_RES_CODE ssc_disable_RX_TX(void);
 SSC_RES_CODE ssc_enable_RX_TX(void);
