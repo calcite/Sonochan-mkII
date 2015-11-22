@@ -35,9 +35,9 @@ Czech Republic
  * \a http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=93874
  *
  * Created:  26.08.2013\n
- * Modified: 08.12.2014
+ * Modified: 11.12.2015
  *
- * \version 1.4
+ * \version 1.5
  * \author Martin Stejskal, Tomas Bajus
  */
 

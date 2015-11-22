@@ -35,9 +35,9 @@ Czech Republic
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  2014/08/20\n
- * Modified: 2015/08/25
+ * Modified: 2015/09/04
  *
- * \version 0.4.2
+ * \version 0.4.3
  * \author Martin Stejskal
  */
 #include "ssc.h"
@@ -116,7 +116,8 @@ SSC_RES_CODE ssc_init(void)
    * RX module work always as slave.
    */
   // No divider active
-  p_ssc->CMR.div = AVR32_SSC_CMR_DIV_NOT_ACTIVE;
+  //p_ssc->CMR.div = AVR32_SSC_CMR_DIV_NOT_ACTIVE;
+  p_ssc->CMR.div = 10;
 
   // Transmit clock Selection - use signal from TX_CLOCK
   p_ssc->TCMR.cks = AVR32_SSC_TCMR_CKS_TK_PIN;
@@ -1175,7 +1176,53 @@ inline SSC_RES_CODE ssc_get_BCLK_TX_edge(e_ssc_edge_t *p_e_edge)
 }
 
 
+/**
+ * @brief Set BCLK source to internal clock
+ *
+ * This is useful for moments that we can not verify if BCLK is actually\n
+ * there. Because when there are no clock, SSC device freeze and this can\n
+ * cause freeze of whole system. So in these cases it is good idea to switch\n
+ * clock to internal. However frequency is not accurate, but hey: at least\n
+ * no system freeze.
+ *
+ * @return SSC_SUCCESS (0) if all OK
+ */
+SSC_RES_CODE ssc_set_BCLK_src_int(void)
+{
+  // Pointer to SSC (memory and structure)
+  volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
 
+  p_ssc->TCMR.cks = AVR32_SSC_TCMR_CKS_DIV_CLOCK;
+  p_ssc->RCMR.cks = AVR32_SSC_RCMR_CKS_DIV_CLOCK;
+
+  return SSC_SUCCESS;
+}
+
+
+/**
+ * @brief Set BCLK source to external pin
+ *
+ * In case, that there is CLK at BCLK pin for sure, we can switch BCLK source\n
+ * to BCLK external pin. It is not good idea to switch to BCLK external pin\n
+ * if there is no CLK, because whole system can freeze. So call this function\n
+ * only if you are really sure that on BCLK pin is really some CLK.
+ *
+ * @return SSC_SUCCESS (0) if all OK
+ */
+SSC_RES_CODE ssc_set_BCLK_src_ext(void)
+{
+  // Pointer to SSC (memory and structure)
+  volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
+
+  // Transmit clock Selection - use signal from TX_CLOCK
+  p_ssc->TCMR.cks = AVR32_SSC_TCMR_CKS_TK_PIN;
+  // Receive clock selection - RX_CLOCK pin
+  p_ssc->RCMR.cks = AVR32_SSC_RCMR_CKS_RK_PIN;
+
+  return SSC_SUCCESS;
+}
 
 
 /**

@@ -35,9 +35,9 @@ Czech Republic
  * \a http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=93874
  *
  * Created:  26.08.2013\n
- * Modified: 08.12.2014
+ * Modified: 11.12.2015
  *
- * \version 1.4
+ * \version 1.5
  * \author Martin Stejskal, Tomas Bajus
  */
 
@@ -79,7 +79,8 @@ typedef enum{
   GD_INCORRECT_PARAMETER =       2,//!< GD_INCORRECT_PARAMETER
   GD_INCORRECT_CMD_ID =          3,//!< GD_INCORRECT_CMD_ID
   GD_CMD_ID_NOT_EQUAL_IN_FLASH = 4,//!< GD_CMD_ID_NOT_EQUAL_IN_FLASH
-  GD_INCORRECT_DEVICE_ID =       5 //!< GD_INCORRECT_DEVICE_ID
+  GD_INCORRECT_DEVICE_ID =       5,//!< GD_INCORRECT_DEVICE_ID
+  GD_TIMEOUT =                   6,//!< GD_TIMEOUT
 } GD_RES_CODE;
 #endif
 
