@@ -375,8 +375,10 @@ Czech Republic
  * @brief Define minimum frequency which will be detected
  *
  * This is only valid for case that RTOS support is enabled.
+ * For some unknown reason it does not comply with reality. Really do not know
+ * why, but so it is.
  */
-#define BRD_DRV_MIN_DET_FREQ            1UL
+#define BRD_DRV_MIN_DET_FREQ            100UL
 //================================| Includes |=================================
 // IO pins
 #include <avr32/io.h>
