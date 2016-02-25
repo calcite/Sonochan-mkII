@@ -377,8 +377,10 @@ Czech Republic
  * This is only valid for case that RTOS support is enabled.
  * For some unknown reason it does not comply with reality. Really do not know
  * why, but so it is.
+ * Just keep value 1UL to make it working well. Maybe by time someone discover
+ * real cause of this problem.
  */
-#define BRD_DRV_MIN_DET_FREQ            100UL
+#define BRD_DRV_MIN_DET_FREQ            1UL
 //================================| Includes |=================================
 // IO pins
 #include <avr32/io.h>
