@@ -1,5 +1,5 @@
 # ==<| Sonochan mkII |>==
-![alt tag](https://github.com/calcite/Sonochan-mkII/raw/master/DOC/photo/snchn_mkII-production.jpg)
+![alt tag](https://github.com/calcite/Sonochan-mkII/raw/master/DOC/photo/snchn_mkII-production_small.jpg)
 
 ## Description
  * Polymorph usb soundcard (USB <--> [I2S/DSP/LJF/RJF]) based on "SDR Widget"
