@@ -1131,6 +1131,22 @@ inline GD_RES_CODE brd_drv_set_digital_audio_interface_mode(
     return e_status;
   }
 
+  // BCLK direction
+  e_status = brd_drv_set_bclk_dir(s_brd_drv_pure_dai_dir.e_bclk_dir);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! BCLK dir fail ! (Set DAI)\n");
+    return e_status;
+  }
+
+  // FRAME SYNC direction
+  e_status=brd_drv_set_fsync_dir(s_brd_drv_pure_dai_dir.e_fsync_dir);
+  if(e_status != GD_SUCCESS)
+  {
+    print_dbg(" ! FS dir fail ! (Set DAI)\n");
+    return e_status;
+  }
+
   // Inform about set interface to debug
   switch(e_mode)
   {
@@ -1879,6 +1895,12 @@ GD_RES_CODE brd_drv_restore_all_settings(void){
     return e_status;
   }
 
+  /* BCLK and FRAME SYNC direction is part of
+   * brd_drv_set_digital_audio_interface_mode(), but we need to make sure
+   * there is clock and if not, when fallback to default value. Simply try
+   * to set it and if everything is OK, function that set interface just
+   * set SSC once again according to actual values
+   */
   // BCLK direction
   e_status = brd_drv_set_bclk_dir(s_brd_drv_user_settings.e_bclk_dir);
   if(e_status != GD_SUCCESS)
