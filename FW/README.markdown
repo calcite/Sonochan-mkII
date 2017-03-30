@@ -25,7 +25,10 @@
    console). If appears something like `command not found`, then you
    need to install `make` (please use uncle Google)
  * Open file `compile_on_linux.sh` and edit line begun with
-   `PATH=${AVR32BIN:=` . Just change path to `avr32-bin` command.
+   `PATH=${AVR32BIN:=` . Just change path to `avr32-bin` command. Example:
+`PATH=${AVR32BIN:=/opt/non-portage/avr32-tools/bin}:$PATH`
+ * Make sure, that heareds were copied to `avr32-tools/avr32/include/`
+   else compilation will fail.
  * If needed `chmod 755 compile_on_linux.sh` (script will be executable)
  * run `./compile_on_linux.sh` 
 
