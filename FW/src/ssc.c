@@ -35,9 +35,9 @@ Czech Republic
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  2014/08/20\n
- * Modified: 2015/09/04
+ * Modified: 2017/09/15
  *
- * \version 0.4.3
+ * \version 0.5
  * \author Martin Stejskal
  */
 #include "ssc.h"
@@ -433,13 +433,13 @@ inline SSC_RES_CODE ssc_set_digital_interface_mode_DSP(void)
   volatile avr32_ssc_t *p_ssc;
   p_ssc = SSC_DEVICE;
 
-  // Start TX on any FSYNC change
+  // Start TX on rising FSYNC change
   p_ssc->TCMR.start = AVR32_SSC_TCMR_START_DETECT_RISING_TF;
   /* Transmit transmit delay
-   * In Typical DSP is this delay 1, so data came after falling edge of
+   * In Typical DSP is this delay 0, so data came with rising edge of
    * FSYNC pulse. However, this module can send data during rising edge.
    */
-  p_ssc->TCMR.sttdly = 1;
+  p_ssc->TCMR.sttdly = 0;
   // Set frame length
   p_ssc->TCMR.period = (s_ssc_settings.i_frame_length) -1;
   // Set data length (one sample per one channel)
@@ -871,6 +871,8 @@ inline SSC_RES_CODE ssc_get_word_offset(uint8_t *p_i_word_offset)
 /* [Martin] It looks like this function is not being used in future, because of
  * PDCA synchronization (synchronize once, then do not need SSC -> changes not
  * applied immediately)
+ * [Martin] After 2 years: not sure about previous statement, but this seems
+ * to be hardware specific. Maybe not 100% correct. Adding code.
  */
 /**
  * @brief Set on which edge will RX module synchronized
@@ -883,12 +885,34 @@ inline SSC_RES_CODE ssc_get_word_offset(uint8_t *p_i_word_offset)
  */
 inline SSC_RES_CODE ssc_set_FSYNC_RX_edge(e_ssc_edge_t e_edge)
 {
+  // Pointer to SSC (memory and structure)
+  volatile avr32_ssc_t *p_ssc;
+  p_ssc = SSC_DEVICE;
+
   // Check input parameter
   if( (e_edge != SSC_EDGE_FALLING) &&
       (e_edge != SSC_EDGE_RISING) &&
       (e_edge != SSC_EDGE_DEFAULT))
   {
     return SSC_INCORRECT_PARAMETER;
+  }
+
+  // Process value itself
+  switch(e_edge)
+  {
+  case SSC_EDGE_FALLING:
+    p_ssc->RCMR.cki = 0;
+    break;
+  case SSC_EDGE_RISING:
+    p_ssc->RCMR.cki = 1;
+    break;
+  case SSC_EDGE_DEFAULT:
+    // At all modes always receive samples on rising edge
+    p_ssc->RCMR.cki = 1;
+    break;
+  // Some fail -> error
+  default:
+    return SSC_FAIL;
   }
 
   // Else is all OK -> save value

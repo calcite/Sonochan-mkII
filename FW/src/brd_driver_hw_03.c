@@ -33,9 +33,9 @@ Czech Republic
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/11/12
+ * Modified: 2017/09/15
  *
- * \version 0.6.1
+ * \version 0.7
  * \author  Martin Stejskal
  */
 
@@ -2523,13 +2523,14 @@ GD_RES_CODE brd_drv_set_word_offset(uint16_t i_word_offset)
   // Check if we want to set default offset.
   if(i_word_offset == 256)
   {
-    if((s_brd_drv_ssc_fine_settings.e_dig_aud_mode == SSC_I2S) ||
-       (s_brd_drv_ssc_fine_settings.e_dig_aud_mode == SSC_DSP))
+    if(s_brd_drv_ssc_fine_settings.e_dig_aud_mode == SSC_I2S)
     {
       // Set offset to 1
       i_word_offset = 1;
     }
-    else if(s_brd_drv_ssc_fine_settings.e_dig_aud_mode == SSC_LEFT_JUSTIFIED)
+    else if((s_brd_drv_ssc_fine_settings.e_dig_aud_mode == SSC_LEFT_JUSTIFIED)
+            ||
+            (s_brd_drv_ssc_fine_settings.e_dig_aud_mode == SSC_DSP))
     {
       // Set offset to 0
       i_word_offset = 0;

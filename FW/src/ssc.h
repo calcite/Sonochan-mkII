@@ -35,9 +35,9 @@ Czech Republic
  * (FSYNC) SSC-RX_FRAME_SYNC <-----> SSC-TX_FRAME_SYNC\n
  * \n
  * Created:  2014/08/20\n
- * Modified: 2015/09/04
+ * Modified: 2017/09/15
  *
- * \version 0.4.3
+ * \version 0.5
  * \author Martin Stejskal
  */
 //[Martin] Because this is cross dependent

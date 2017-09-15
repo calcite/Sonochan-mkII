@@ -30,9 +30,9 @@ Czech Republic
  * \brief Driver for codec TLV320AIC33
  *
  * Created:  2014/04/02\n
- * Modified: 2015/07/07
+ * Modified: 2017/09/15
  *
- * \version 0.3
+ * \version 0.4
  * \author Martin Stejskal, Tomas Bajus
  */
 
@@ -1814,17 +1814,11 @@ GD_RES_CODE tlv320aic33_set_data_interface(
   e_status = tlv320aic33_write_data(9, p0_r9.i_reg);
   if(e_status != GD_SUCCESS) return e_status;
 
-  // If in DSP mode we need also change reg. 10 to set correct/standard offset
-  if(e_mode == serial_data_bus_uses_DSP_mode)
-  {
-    // This register is just 8 bit value. It have no meaning to read from it
-    p0_r10.s.AudioSerialDataWordOffsetControl = 1;
-    e_status = tlv320aic33_write_data(10, p0_r10.i_reg);
-  }
-  // If I2S, Right or left justify, we need to set at reg 10 offset 0
-  else if((e_mode == serial_data_bus_uses_I2S_mode) ||
-          (e_mode == serial_data_bus_uses_right_justified_mode) ||
-          (e_mode == serial_data_bus_uses_left_justified_mode))
+  // By default, I2S, RJF, LJF and DSP are using word offset 1 bit
+  if((e_mode == serial_data_bus_uses_I2S_mode) ||
+     (e_mode == serial_data_bus_uses_right_justified_mode) ||
+     (e_mode == serial_data_bus_uses_left_justified_mode) ||
+     (e_mode == serial_data_bus_uses_DSP_mode))
   {
     // This register is just 8 bit value. It have no meaning to read from it
     p0_r10.s.AudioSerialDataWordOffsetControl = 0;

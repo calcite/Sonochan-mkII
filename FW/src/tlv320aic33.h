@@ -30,9 +30,9 @@ Czech Republic
  * \brief Driver for codec TLV320AIC33
  *
  * Created:  2014/04/02\n
- * Modified: 2015/07/07
+ * Modified: 2017/09/15
  *
- * \version 0.3
+ * \version 0.4
  * \author Martin Stejskal, Tomas Bajus
  */
 

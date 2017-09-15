@@ -33,9 +33,9 @@ Czech Republic
  * Written only for AVR32 UC3A3.
  *
  * Created:  2014/04/23\n
- * Modified: 2015/11/22
+ * Modified: 2017/09/15
  *
- * \version 0.6.1
+ * \version 0.7
  * \author  Martin Stejskal
  */
 
